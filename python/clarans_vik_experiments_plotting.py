@@ -1,13 +1,6 @@
 # Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
 # Written by James Newling <jnewling@idiap.ch>
-# zentas is a k-medoids library written in C++ and Python. This file is part of zentas.
-# zentas is free software: you can redistribute it and/or modify it under the terms of
-# the GNU General Public License version 3 as published by the Free Software Foundation.
-# zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-# PURPOSE. See the GNU General Public License for more details. You should have received
-# a copy of the GNU General Public License along with zentas. If not, see
-# <http://www.gnu.org/licenses/>.
+# zentas is a k-medoids library written in C++ and Python. This file is part of zentas. zentas is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation. zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with zentas. If not, see <http://www.gnu.org/licenses/>.
 
 import hardpaths
 reload(hardpaths)
@@ -166,7 +159,7 @@ def plot_sim_experiments(maxtime = 64.0):
   
   pl.subplots_adjust(wspace = 0.18, bottom = 0.2)
   
-  pl.legend()
+  pl.legend(frameon = False)
   fname = os.path.join(os.path.expanduser('~'), savedir, 'vik_clarans_sim.pdf')
   pl.savefig(fname)
   
@@ -219,7 +212,8 @@ def plot_real_experiments(maxtime = 2000.0):
   pl.text(x = bottom_left[0], y = bottom_left[1], s = "genome", transform=ax.transAxes)
   pl.ylim(ymin = 0.99*pl.ylim()[0])
   pl.yticks([1, 1.1])
-  
+  pl.xlim([2**6, 2**10.4])
+    
   pl.subplot(2,2,3)
   ax = pl.gca()  
   plot_experiment("mnist_parallel", relative = True)
@@ -240,6 +234,7 @@ def plot_real_experiments(maxtime = 2000.0):
   pl.xlabel('time [s]')
   pl.ylim(ymin = 0.99*pl.ylim()[0])
   pl.yticks([1, 1.1, 1.2])
+  pl.xlim([2**6, 2**10.4])
   
   
   pl.subplots_adjust(wspace = 0.18, bottom = 0.2)

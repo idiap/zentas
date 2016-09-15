@@ -1,16 +1,19 @@
 # Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
 # Written by James Newling <jnewling@idiap.ch>
-# zentas is a k-medoids library written in C++ and Python. This file is part of zentas.
-# zentas is free software: you can redistribute it and/or modify it under the terms of
-# the GNU General Public License version 3 as published by the Free Software Foundation.
-# zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-# PURPOSE. See the GNU General Public License for more details. You should have received
-# a copy of the GNU General Public License along with zentas. If not, see
-# <http://www.gnu.org/licenses/>.
+# zentas is a k-medoids library written in C++ and Python. This file is part of zentas. zentas is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation. zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with zentas. If not, see <http://www.gnu.org/licenses/>.
 
 import hardpaths
 reload(hardpaths)
+
+zentas_dir = hardpaths.zentas_dir
+infipath = hardpaths.infipath
+infiexec = hardpaths.infiexec
+zentas_output_dir = hardpaths.zentas_output_dir
+zentas_data_dir = hardpaths.zentas_data_dir
+clarans_vik_results_base = hardpaths.clarans_vik_results_base
+english_words_dir = hardpaths.english_words_dir
+fasta_data_dir = hardpaths.fasta_data_dir
+
 
 import sys
 import os
@@ -21,14 +24,6 @@ reload(load_joensuu_data)
 
 
 
-zentas_dir = hardpaths.zentas_dir
-infipath = hardpaths.infipath
-infiexec = hardpaths.infiexec
-zentas_output_dir = hardpaths.zentas_output_dir
-zentas_data_dir = hardpaths.zentas_data_dir
-clarans_vik_results_base = hardpaths.clarans_vik_results_base
-english_words_dir = hardpaths.english_words_dir
-fasta_data_dir = hardpaths.fasta_data_dir
 
 sys.path.append(os.path.join(zentas_dir, "build/cleaninstall/lib"))
 

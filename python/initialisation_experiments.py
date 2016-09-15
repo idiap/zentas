@@ -1,13 +1,6 @@
 # Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
 # Written by James Newling <jnewling@idiap.ch>
-# zentas is a k-medoids library written in C++ and Python. This file is part of zentas.
-# zentas is free software: you can redistribute it and/or modify it under the terms of
-# the GNU General Public License version 3 as published by the Free Software Foundation.
-# zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-# PURPOSE. See the GNU General Public License for more details. You should have received
-# a copy of the GNU General Public License along with zentas. If not, see
-# <http://www.gnu.org/licenses/>.
+# zentas is a k-medoids library written in C++ and Python. This file is part of zentas. zentas is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation. zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with zentas. If not, see <http://www.gnu.org/licenses/>.
 
 import hardpaths
 reload(hardpaths)
@@ -21,41 +14,157 @@ import numpy as np
 import numpy.random as npr
 import time
 import random
-import matplotlib.pyplot as pl
-import matplotlib.gridspec as gridspec
 import copy
+
+import os
+import cPickle
+
+
+import copy
+
 
 import hardpaths
 
-from IPython.core.debugger import Tracer
-
-import load_joensuu_data
-reload(load_joensuu_data)
-
+import matplotlib.pyplot as pl
+import matplotlib.gridspec as gridspec
 
 import matplotlib 
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['text.usetex'] = True
 
+from IPython.core.debugger import Tracer
 pl.ion()
 
 
-NRUNS_KMEANSPP = 32
-#ALGS =  ['cl_s1.0', 'pp', 'cl_s2.5'] # "BF",  'un', # ["BF"] #  ["BF"] # # ["BF"]# 'cl_s1.0', , 'cl_s4.0'
-ALGS =  ["un", 'pp', "BF", 'cl_s1.0', 'cl_s2.5'] #   'un',  # ["BF"] #  ["BF"] # # ["BF"]# 'cl_s1.0', , 'cl_s4.0'
+import load_joensuu_data
+reload(load_joensuu_data)
 
 
+NRUNS_KMEANSPP = 40
+ALGS =  ["un", 'pp', "BF", 'cl_s1.0', 'cl_s3.0']
 
-JUST_BF = False
-if ALGS == ["BF"]:
-  JUST_BF = True
+
+colors ={"un":"#dab595",'pp':"#48464a","BF":"#008b50",'cl_s1.0':"#f19e34",'cl_s3.0':"#cc252a", "none":'w'}
+
+def get_alg_color(alg):
+  if alg == 'none':
+    return 'w'
+  else:
+    return colors[ALGS.index(alg)]
+
+
+def get_abridged(dataset):
+  text = dataset
+  if 'Mopsi' in text:
+    text = 'Mopsi'
+  elif 'ConfLong' in text:
+    text = 'ConfLong'
+  elif 'KDDCUP04' in text:
+    text = 'KDDCUP04'
+  elif 'europe' in text:
+    text = 'europe'
+  return text
+
+def get_label(alg):
+  label = alg
+  k = alg
+  if k == 'pp':
+    label = r'\texttt{k-means}++' #$\mathbf{k}$-means++'
+  elif k == 'un':
+    label = r'\texttt{uni}'
+  elif k == 'cl_s1.0':
+    label = r'\texttt{cl-1}'
+  elif k == 'cl_s3.0':
+    label = r'\texttt{cl-3.0}'
+  elif k == 'BF':
+    label = r'\texttt{bf}'
+
+  return label
+
+  
+
+
+linestyles = {
+"un":"-",
+'pp':"-",
+"BF":"-",
+'cl_s1.0':"-", 
+'cl_s3.0':"-"}
+
+
+linewidths = {
+"un":0.5,
+"pp":0.5,
+"BF":0.5,
+"cl_s1.0":0.5,
+"cl_s3.0":0.5
+}
+
+markers = {
+"un":"+",
+"pp":"+",
+"BF":"+",
+"cl_s1.0":"x",
+"cl_s3.0":"x"
+}
+
+
+markersizes = {
+"un":5,
+"pp":5,
+"BF":5,
+"cl_s1.0":5,
+"cl_s3.0":5
+}
+
+
+fullalgname = {
+"un":r'\texttt{uni}',
+"pp":r'\texttt{k-means}++',
+"BF":r'\texttt{bf}',
+"cl_s1.0":r'\texttt{cl-1.0}',
+"cl_s3.0":r'\texttt{cl-3.0}'
+}
+
+
+# The K-s to run with
+trueks = {}
+trueks['ConfLongDemo_JSI_164860'] =  11
+trueks['birch1'] = 100
+trueks['birch2'] = 100
+trueks['birch3'] = 100
+trueks['s1']  = 15
+trueks['s2']  = 15
+trueks['s3']  = 15
+trueks['s4']  = 15
+trueks['a1']  = 20
+trueks['a2']  = 35
+trueks['a3']  = 50
+trueks['dim032']  = 16
+trueks['dim064']  = 16
+trueks['dim1024'] = 16
+trueks['yeast'] =  20
+trueks['housec8'] = 200 #-1
+trueks['MopsiLocationsUntil2012-Finland'] =  50 #100#-1
+trueks['mnist'] = 150 #10
+trueks['europediff'] = 600 #-1
+trueks['KDDCUP04Bio'] = 300 #2000
+
+for a in trueks.keys():
+  trueks[a]*=2
+  trueks[a] = int(trueks[a])
+
+
   
   
 
-def initialisation_test(X, K, algs = ALGS, dataset = None):
+def initialisation_test(X, K, algs = ALGS, dataset = None, n_threads = 3):
+  """
+  (1) run k means ++ and lloyd with K centers on X. Set TL to be NRUNS_KMEANSPP times this.
+  (2) for alg in algs : run series of alg + lloyd while TL not exceeded.
+  (3) return the results
+  """
   
-  
-  n_threads = 3
   ndata, dimension = X.shape
   seed = npr.randint(100000)
   random.seed(seed)
@@ -101,7 +210,7 @@ def initialisation_test(X, K, algs = ALGS, dataset = None):
         elif switch_type == 's':
           maxtime = 100000000.
           maxrounds = int(K*float(k.split('_')[-1][1::]))
-          max_proposals = 100000
+          max_proposals = 10000
           
         indices_init = np.array(random.sample(xrange(ndata), K), dtype = np.uint64)
         indices_init.sort()
@@ -130,7 +239,6 @@ def initialisation_test(X, K, algs = ALGS, dataset = None):
           raise RuntimeError("unrecognised cl : " + cl)
         
         out = kmeans.get_clustering(X = X, n_clusters = K, algorithm = 'auto', init = init, verbose = 2, capture_verbose = True, seed = seed, n_threads = n_threads)
-        #Tracer()()
         mses.append(float(out['output'].split("\n")[-3].split(" : ")[1].split()[0]))
         times.append(time.time() - t_start)
     
@@ -142,7 +250,6 @@ def initialisation_test(X, K, algs = ALGS, dataset = None):
   if dataset != None:
     runtime_write_fn = os.path.join(hardpaths.initialisation_experiments_runtimes_dir, dataset + ".txt")
     
-    
     filly = open(runtime_write_fn, "w")
     filly.write(t_elapsed)
     filly.close()
@@ -152,125 +259,44 @@ def initialisation_test(X, K, algs = ALGS, dataset = None):
   
 
 
-
-colors = [
-"#dab595",
-"#48464a",
-"#008b50",
-"#f19e34",
-"#cc252a",
-'b'
-]
-
-def get_alg_color(alg):
-  if alg == 'none':
-    return 'w'
-  else:
-    return colors[ALGS.index(alg)]
-
-#'un', 'cl_s0.5', 'cl_s2.0', 'pp', "BF"
-
-linestyles = [
-'-',
-'-',
-':',
-':',
-':',
-'-']
-
-linewidths = [
-0.5,
-0.5,
-0.5,
-0.5,
-0.5,
-0.5]
-
-markers = [
-'+',
-'x',
-'+',
-'x',
-'x',
-'.'
-]
-
-def get_alg_marker(alg):
-  if alg == 'none':
-    return 'w'
-  else:
-    return markers[ALGS.index(alg)]
-
-
-markersizes = [
-4,
-5,
-4,
-6,
-3,
-5,
-]
-
-
-
-
-def plot_initialisation_test(scores, with_legend = False,  algs = ALGS):
+def joensuu_experiment(dataset = "MopsiLocationsUntil2012-Finland", K = 15, writedata = True):
   """
-  The new plotting idea
+  (1) Read data
+  (2) Get results via initialisation_test
+  (3) Write results
   """
-  fig = pl.gcf()
-  ax = pl.gca()
-  pl.cla()
-
-  minscore = 10**55
-  maxscore = 0
-  for ik, k in enumerate(algs):
-    minscore = min(minscore, scores[k]['mses'].min())
-    maxscore = max(maxscore, scores[k]['mses'].max())
-
-  lines = []
-  labels = []
+  X = load_joensuu_data.load_data(dataset)
+  scores = initialisation_test(X, K)
+  resultsdir = hardpaths.elapsed_time_kmeanspp
   
-  for ik, k in enumerate(algs):
-    color = colors[ik]
-    scores_sorted = scores[k]['mses'].copy()
-    scores_sorted.sort()
-    cum_counts = 1 - np.linspace(0, 1, scores_sorted.size)
+  if not os.path.exists(resultsdir):
+    os.makedirs(resultsdir)
     
-    label = k
-    if k == 'pp':
-      label = r'\texttt{k-means}++' #$\mathbf{k}$-means++'
-    elif k == 'un':
-      label = r'\texttt{uni}'
-    elif k == 'cl_s1.0':
-      label = r'\texttt{cl-1}'
-    elif k == 'cl_s2.5':
-      label = r'\texttt{cl-2.5}'
-    elif k == 'BF':
-      label = r'\texttt{bf}'
-    
-    line = pl.plot(scores_sorted/minscore, cum_counts, marker = markers[ik], linestyle =  linestyles[ik], linewidth = linewidths[ik], markersize = markersizes[ik], label = label, color = color, alpha = 1.0) #
-    labels.append(label) 
-    
-    lines.append(line[0])
-    
-  if with_legend:
-    pl.legend(loc = 'lower right')
-
-  xlims = pl.xlim()
-  xlim_diff = xlims[1] - xlims[0]
-  pl.xticks([1, xlims[1]], [1, xlims[1]])#], [])
+  filly = open(os.path.join(resultsdir, "%s.txt"%(dataset,)), "w")
+  value = scores['t_elapsed_1_kmeanspp']
+  print value
+  filly.write("%.5f"%(value))
+  filly.close()
   
-  pl.xlim([1 - 0.05*xlim_diff, xlims[1] + 0.05*xlim_diff])
+  if writedata:
+    resultsdir = hardpaths.initialisation_result_pickles        
+    filly = open(os.path.join(resultsdir, "%s.pkl"%(dataset,)), "w")
+    cPickle.dump(scores, filly)
+    filly.close()
   
-  pl.ylim([-0.03,1.03])
-  
-  pl.yticks([])
-  
-  pl.subplots_adjust(top = 0.98)
   
 
-  return lines, labels
+def all_experiments(writedata = True):  
+  """
+  All rank vs energy plots.
+  """
+  alldatasets = trueks.keys()
+  alldatasets.sort(key = str.lower)
+  for ik, k in enumerate(alldatasets):
+    print "\n"
+    print "********************    ", ik, "  :  ", k, "    ***********************"
+    print "\n"
+    bla = joensuu_experiment(k, trueks[k], writedata = writedata)
     
 
 def grid_data_initialisation_test():
@@ -297,7 +323,53 @@ def grid_data_initialisation_test():
 
 
 
-# from joensuu
+
+
+
+def plot_initialisation_test(scores, with_legend = False,  algs = ALGS):
+  """
+  Plots energies ranked from best run to worst run. Does not capture time.
+  """
+  fig = pl.gcf()
+  ax = pl.gca()
+  pl.cla()
+
+  minscore = 10**55
+  maxscore = 0
+  for ik, k in enumerate(algs):
+    minscore = min(minscore, scores[k]['mses'].min())
+    maxscore = max(maxscore, scores[k]['mses'].max())
+
+  lines = []
+  labels = []
+  
+  for ik, k in enumerate(algs):
+    color = colors[k]
+    scores_sorted = scores[k]['mses'].copy()
+    scores_sorted.sort()
+    cum_counts = 1 - np.linspace(0, 1, scores_sorted.size)
+    label = fullalgname[k]
+    line = pl.plot(scores_sorted/minscore, cum_counts, marker = markers[k], linestyle =  linestyles[k], linewidth = linewidths[k], markersize = markersizes[k], label = label, color = color, alpha = 1.0)
+    labels.append(label) 
+    lines.append(line[0])
+    
+  if with_legend:
+    pl.legend(loc = 'lower right')
+
+  xlims = pl.xlim()
+  xlim_diff = xlims[1] - xlims[0]
+  pl.xticks([1, xlims[1]], [1, xlims[1]])#], [])
+  
+  pl.xlim([1 - 0.05*xlim_diff, xlims[1] + 0.05*xlim_diff])
+  pl.ylim([-0.03,1.03])
+  pl.yticks([])
+  pl.subplots_adjust(top = 0.98)
+  
+  return lines, labels
+    
+
+
+# from joensuu website. This is ALL the data.
 joensuu_datasets = [
 'birch1',
 'birch2',
@@ -321,79 +393,18 @@ joensuu_datasets = [
 
 
 
-# all datasets
-trueks = {}
-
-trueks['ConfLongDemo_JSI_164860'] =  11
-trueks['birch1'] = 100
-trueks['birch2'] = 100
-trueks['birch3'] = 100
-trueks['s1']  = 15
-trueks['s2']  = 15
-trueks['s3']  = 15
-trueks['s4']  = 15
-trueks['a1']  = 20
-trueks['a2']  = 35
-trueks['a3']  = 50
-trueks['dim032']  = 16
-trueks['dim064']  = 16
-trueks['dim1024'] = 16
-trueks['MopsiLocationsUntil2012-Finland'] =  100#-1
-trueks['yeast'] =  10
-trueks['housec8'] = 400 #-1
-trueks['mnist'] = 400 #10
-trueks['europediff'] = 1000 #-1
-trueks['KDDCUP04Bio'] = 500 #2000
-
-for a in trueks.keys():
-  trueks[a]*=1.1
-  trueks[a] = int(trueks[a])
 
 
 
 
-import os
-import cPickle
-def joensuu_experiment(dataset = "MopsiLocationsUntil2012-Finland", K = 15, writedata = True):
-  X = load_joensuu_data.load_data(dataset)
-  scores = initialisation_test(X, K)
-  
-  
-  resultsdir = hardpaths.elapsed_time_kmeanspp
-  
-  if not os.path.exists(resultsdir):
-    os.makedirs(resultsdir)
-    
-  filly = open(os.path.join(resultsdir, "%s.txt"%(dataset,)), "w")
-  value = scores['t_elapsed_1_kmeanspp']
-  print value
-  filly.write("%.5f"%(value))
-  filly.close()
-  
-  if writedata:
 
-    resultsdir = hardpaths.initialisation_result_pickles    
-    ##for a half-run, to save time,
-    if JUST_BF:
-
-      filly_t = open(os.path.join(resultsdir, "%s.pkl"%(dataset,)), "r")
-      previous_scores = cPickle.load(filly_t)
-      filly_t.close()
-      for k in previous_scores.keys():
-        scores[k] = previous_scores[k]
-    
-    
-    #back to all-run-code, don't remove.
-    
-    filly = open(os.path.join(resultsdir, "%s.pkl"%(dataset,)), "w")
-    cPickle.dump(scores, filly)
-    filly.close()
-  
-  
   
 def write_statistics():
+  """
+  Write the statistics : dataset, K, N, dim, TL. 
+  """
   elapsed_dir = hardpaths.elapsed_time_kmeanspp
-  basedir = clarans_paper_dir
+  basedir = hardpaths.clarans_paper_dir
   fn = os.path.join(basedir, "dataset_stats.txt")
   filly = open(fn, "w")
   datasets = trueks.keys()
@@ -414,38 +425,14 @@ def write_statistics():
 """%(get_abridged(k), ndata, dimension, K, allocated_time))
   filly.close()
 
-def all_experiments(writedata = True):  
-  alldatasets = trueks.keys()
-  alldatasets.sort(key = str.lower)
-  for ik, k in enumerate(alldatasets):
-    print "\n"
-    print "********************    ", ik, "  :  ", k, "    ***********************"
-    print "\n"
-    bla = joensuu_experiment(k, trueks[k], writedata = writedata)
-    
-  write_statistics()
 
-def get_abridged(dataset):
-  text = dataset
-  if 'Mopsi' in text:
-    text = 'Mopsi'
-  elif 'ConfLong' in text:
-    text = 'ConfLong'
-  elif 'KDDCUP04' in text:
-    text = 'KDDCUP04'
-  elif 'europe' in text:
-    text = 'europe'
-  return text
-  
 
-import copy
-def plot_all_experiments():
+def plot_all_experiments(save = True, filename = "initplots.pdf"):
   resultsdir = hardpaths.initialisation_result_pickles
   pl.figure(num = 8, figsize = (6, 13))
   pl.clf()
   datasets = trueks.keys()
   datasets.sort(key = str.lower)
-  #Tracer()()
   for ik, dataset in enumerate(datasets):
     filly = open(os.path.join(resultsdir, "%s.pkl"%(dataset,)), "r")
     scores = cPickle.load(filly)
@@ -453,6 +440,7 @@ def plot_all_experiments():
     pl.subplot(7,3,ik+1)
       
     lines, labels = plot_initialisation_test(scores, with_legend = False)
+
     if ik%3 == 0:
       pl.yticks([0,1], [0,1])
 
@@ -461,10 +449,6 @@ def plot_all_experiments():
     text = dataset
     
     text = get_abridged(dataset)
-    
-    
-    #elif 'mnist' in text:
-      #text = 'mnist-p'
     
     pl.text(0.96, 0.97, text, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
     
@@ -486,18 +470,22 @@ def plot_all_experiments():
   ax = pl.gca()
   ax.axis('off')
   
-  #pl.subplots_adjust(hspace = 0.14, wspace = 0.05)
-  fname = os.path.join(clarans_paper_dir, "iniplots.pdf")
-  pl.savefig(fname)
   
-  import commands
-  commands.getstatusoutput('pdfcrop %s %s'%(fname, fname))
+  if save: 
+    ##pl.subplots_adjust(hspace = 0.14, wspace = 0.05)
+    fname = os.path.join(hardpaths.clarans_paper_dir, filename)
+    pl.savefig(fname)
+    import commands
+    commands.getstatusoutput('pdfcrop %s %s'%(fname, fname))
+  
+  
+  
+  
 
-
-
-
-
-def get_all_events(threshold = 1.001):
+def get_all_events(threshold = 1.01):
+  """
+  Get "The Champions league" data.
+  """
   resultsdir = hardpaths.initialisation_result_pickles
   results = {}
   for ik, dataset in enumerate(trueks.keys()):
@@ -530,8 +518,6 @@ def get_all_events(threshold = 1.001):
     all_times = all_times[order]
     all_algs = all_algs[order]
     
-
-
     events = [(9.999**19.999, 0, ['none'])] # (lowest energy, time, algs within threshold of energy)
     
     alg_lowest = dict.fromkeys(ALGS)
@@ -546,33 +532,26 @@ def get_all_events(threshold = 1.001):
         event_time = all_times[i] /  maxtime
         lowest_mse = min(all_mses[i], events[-1][0])
         current_bests = [a for a in ALGS if alg_lowest[a] <= threshold*lowest_mse]
-        
-        #Tracer()()
-      #else:
-        #current_bests = events[-1][2]
-        
         events.append((lowest_mse, event_time, current_bests))
     
     events.append((-1, 1., ['none']))
-
     all_events[dataset] = events
   
   return all_events
   
  
-def colorblob(threshold = 1.001):
+def colorblob(threshold = 1.01, filename = 'colorblob.pdf'):
  
+  pl.close('all')
   all_events = get_all_events(threshold)
-  
-    #Tracer()()
-  pl.figure(198)
+  pl.figure(198, figsize = (8, 10))
   pl.clf()
   ax = pl.gca()
   #pl.clf()
   
   artists = []
   
-  xibob = 1.5
+  xibob = 1.6
   datasets = trueks.keys()
   datasets.sort(key = str.lower)
   datasets = datasets[-1::-1]
@@ -586,7 +565,7 @@ def colorblob(threshold = 1.001):
       
 
       for best_i in range(n_best):
-        trect = pl.Rectangle([events[i][1], xibob*ik + best_i/(n_best + 0.)], events[i+1][1] - events[i][1], 1./n_best, facecolor = get_alg_color(events[i][2][best_i]), edgecolor = 'none')
+        trect = pl.Rectangle([events[i][1], xibob*ik + best_i/(n_best + 0.)], events[i+1][1] - events[i][1], 1./n_best, facecolor = colors[events[i][2][best_i]], edgecolor = 'none')
         artists.append(trect)
   
     for artsy_type in artists:
@@ -598,7 +577,7 @@ def colorblob(threshold = 1.001):
   pl.subplots_adjust(left = 0.43, bottom = 0.15, top = 0.95)
 
   pl.xlabel('fraction of time limit (TL) elapsed')
-  fname = os.path.join(hardpaths.clarans_paper_dir, 'colorblob.pdf')
+  fname = os.path.join(hardpaths.clarans_paper_dir, filename)
   pl.savefig(fname)
   
   import commands
@@ -606,7 +585,7 @@ def colorblob(threshold = 1.001):
 
 
 
-def colorblob_cheat(dataset = 'yeast', threshold = 1.001):
+def colorblob_cheat(dataset = 'yeast', threshold = 1.01, filename = 'colorblob_example.pdf'):
 
   resultsdir = hardpaths.initialisation_result_pickles
   results = {}
@@ -632,7 +611,7 @@ def colorblob_cheat(dataset = 'yeast', threshold = 1.001):
   print dataset, min_E
   pl.subplot(gs[0:3, 0:1])  
   for a in ALGS:
-    pl.plot(results[dataset][a]['times'], results[dataset][a]['mses']/min_E, color = get_alg_color(a), marker = get_alg_marker(a), linestyle = '.', markersize = 7, markeredgewidth = 2)
+    pl.plot(results[dataset][a]['times'], results[dataset][a]['mses']/min_E, color = colors[a], marker = markers[a], linestyle = '.', markersize = 7, markeredgewidth = 2)
     
   ylim = pl.ylim()
   yrange = ylim[1] - ylim[0]
@@ -652,7 +631,7 @@ def colorblob_cheat(dataset = 'yeast', threshold = 1.001):
     
 
     for best_i in range(n_best):
-      trect = pl.Rectangle([events[i][1], 0 + best_i/(n_best + 0.)], events[i+1][1] - events[i][1], 1./n_best, facecolor = get_alg_color(events[i][2][best_i]), edgecolor = 'none')
+      trect = pl.Rectangle([events[i][1], 0 + best_i/(n_best + 0.)], events[i+1][1] - events[i][1], 1./n_best, facecolor = colors[events[i][2][best_i]], edgecolor = 'none')
       artists.append(trect)
 
   for artsy_type in artists:
@@ -671,7 +650,7 @@ def colorblob_cheat(dataset = 'yeast', threshold = 1.001):
 
   pl.subplots_adjust(bottom = 0.6)
 
-  fname = os.path.join(hardpaths.clarans_paper_dir, 'colorblob_example.pdf')
+  fname = os.path.join(hardpaths.clarans_paper_dir, filename)
   pl.savefig(fname)
   
   import commands
@@ -679,36 +658,24 @@ def colorblob_cheat(dataset = 'yeast', threshold = 1.001):
 
 
 
-def get_label(alg):
-  label = alg
-  k = alg
-  if k == 'pp':
-    label = r'\texttt{k-means}++' #$\mathbf{k}$-means++'
-  elif k == 'un':
-    label = r'\texttt{uni}'
-  elif k == 'cl_s1.0':
-    label = r'\texttt{cl-1}'
-  elif k == 'cl_s2.5':
-    label = r'\texttt{cl-2.5}'
-  elif k == 'BF':
-    label = r'\texttt{bf}'
 
-  return label
-
-def mintracker(logy = True):
+def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):#, "un", "BF"]):
+  
+  figname = 'mintracker_%dalgs.pdf'%(len(ALGSused),)
+ 
  
   pl.close('all')
-  pl.figure(1983, figsize = (12, 9))
+  pl.figure(1983, figsize = (11, 10.5)) #width, height.
   pl.clf()
   ax = pl.gca()
   
   xibob = 1.5
   datasets = trueks.keys()
   datasets.sort(key = str.lower)
-  #datasets = datasets[-1::-1]
   resultsdir = hardpaths.initialisation_result_pickles
   results = {}
   
+  #Get the mimumum of ALGSused
   MINS = {}
   for ikop, dataset in enumerate(datasets):
     filly = open(os.path.join(resultsdir, "%s.pkl"%(dataset,)), "r")
@@ -716,19 +683,16 @@ def mintracker(logy = True):
     filly.close()
     results[dataset] = scores
     MINS[dataset] = 10**30
-    for algi, alg in enumerate(ALGS):
+    for algi, alg in enumerate(ALGSused):
       MINS[dataset] = min(MINS[dataset], results[dataset][alg]['mses'].min())
 
+  kmeanspp_final_relative = {}
   for iid, dataset in enumerate(datasets):
-    
-
-    #if iid == 9:
-      #pl.ylabel('log relative energy ', verticalalignment = 'bottom', labelpad = 20)
-    
         
     pl.subplot(7, 3, iid + 1)
     
-    if iid + 1 in [18, 19, 20]:
+    figns_xlab = [18, 19, 20]      
+    if iid + 1 in figns_xlab:
       pl.xlabel('fraction of TL elapsed')
       pl.xticks([0,1], [0,1])
     
@@ -738,131 +702,117 @@ def mintracker(logy = True):
     if iid == 9:
       pl.ylabel('$\log_{1.01} (E/E_{min})$', fontsize = 'large')
 
+    
     lines = []
     MAXE = 0
-    for algi, alg in enumerate(ALGS):
+    for algi, alg in enumerate(ALGSused):
+      mins = []
+      min_times = []
+      
+      #get the mimum curve data 
+      for evi, evmse in enumerate(results[dataset][alg]['mses'].tolist()):
+        if evi == 0 or evmse < mins[-1]:
+          if results[dataset][alg]['times'][evi] < results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP:
+            mins.append(evmse)
+            min_times.append(results[dataset][alg]['times'][evi])
       
       
-      if alg not in ["un", "BF"]: #   'un',  # ["BF"] #  ["BF"] # # ["BF"]# 'cl_s1.0', , 'cl_s4.0'
-  
-        
-        mins = []
-        min_times = []
-        for evi, evmse in enumerate(results[dataset][alg]['mses'].tolist()):
-          if evi == 0 or evmse < mins[-1]:
-            if results[dataset][alg]['times'][evi] < results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP:
-              mins.append(evmse)
-              min_times.append(results[dataset][alg]['times'][evi])
-        
-        #mins.append(mins[-1])
-        #min_times.append(results[dataset]['t_elapsed_1_kmeanspp']*32)
-        
-        #mins = np.array(mins[1::])/np.min(mins)
-        #min_times = np.array(min_times[1::])/min_times[-1]
-        
-        if logy:
-          yvalstoplot = np.log10(results[dataset][alg]['mses']/MINS[dataset])/np.log10(1.01)
-        
-        else: 
-          yvalstoplot = results[dataset][alg]['mses']/MINS[dataset]
-
-        
+      yvalstoplot = np.log10(results[dataset][alg]['mses']/MINS[dataset])/np.log10(1.01)
+      
+      if alg in ALGSused: #   'un',  # ["BF"] #  ["BF"] # # ["BF"]# 'cl_s1.0', , 'cl_s4.0'
         MAXE = max(MAXE, yvalstoplot.max())
-        pl.plot(results[dataset][alg]['times']/(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP), yvalstoplot, color = colors[algi], marker = markers[algi], linestyle = '.', markersize = 4)
         
-        if len (mins) > 0:
-          mins = np.array(mins).repeat(2)
-          min_times = np.array(min_times).repeat(2)
-          min_times = min_times[1::].tolist()
-          min_times.append(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP)
-          min_times = np.array(min_times)/min_times[-1]
-          
-          
-          #Tracer()()
-          label = get_label(alg)
+      pl.plot(results[dataset][alg]['times']/(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP), yvalstoplot, color = colors[alg], marker = markers[alg], linestyle = '.', markersize = 4)
+      
+      if len (mins) == 0:
+        raise RuntimeError ("No mins, is this an algorithm with no completions ? ")
+      
+      
+      mins = np.array(mins).repeat(2)
+      min_times = np.array(min_times).repeat(2)
+      min_times = min_times[1::].tolist()
+      min_times.append(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP)
+      min_times = np.array(min_times)/min_times[-1]
+      label = get_label(alg)
+      
+      yvalstoplot = np.log10(mins/MINS[dataset])/np.log10(1.01)
+        
+      line = pl.plot(min_times, yvalstoplot, linestyle = '-', linewidth = 2, label = label, color = colors[alg], alpha = 0.6)
+      lines.append(line[0])
     
-          print dataset, alg
-          print "times : ", min_times, "mins : ", mins
-          print "...."
-          
-          if logy:
-            yvalstoplot = np.log10(mins/MINS[dataset])/np.log10(1.01)
-          
-          else:
-            yvalstoplot = mins/MINS[dataset]
-            
-          line = pl.plot(min_times, yvalstoplot, marker = markers[algi], linestyle = '-', linewidth = 3, markersize = markersizes[algi], label = label, color = colors[algi], alpha = 0.5)
-          lines.append(line[0])
-          
-    #ylim = pl.ylim()
-    ydiff = MAXE - 1*(logy == False)
-    pl.ylim(1*(logy == False) - ydiff*0.05, MAXE + ydiff*0.02)
+      if 'pp' in alg:
+        kmeanspp_final_relative[dataset] = mins[-1]/MINS[dataset]
     
-    #log101_MAXE = np.log2(MAXE)/np.log2(1.01)
-    
-    #pl.ylim([1.01**(-0.1*log101_MAXE), MAXE*1.01**(+0.1*log101_MAXE)])
-    
-      #Tracer()()
+        
+    ydiff = MAXE
+    pl.ylim( - ydiff*0.05, MAXE + ydiff*0.15)
     
     pl.xlim([0,1])
     text = get_abridged(dataset)
     ax = pl.gca()
-    if text == 'mnist':
-      pl.text(0.03, 0.03, text, horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes)
-     
-    elif text == 'dim064':
-      pl.text(0.99, 0.3, text, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
- 
-    else:
-      pl.text(0.99, 0.95, text, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
 
-      
-    #pl.xticks([])
-    
-    #pl.yscale('log', basey = 1.01)
-    
+    pl.text(0.97, 0.94, text, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes, bbox=dict(edgecolor = 'w', facecolor='white', alpha=0.1))
+
     ab = pl.yticks()
     a_a = copy.copy(ab[0])
     b_b = copy.copy(ab[1])
       
       
     if a_a.size > 0:
-      
-      pl.yticks([0, a_a[-3]], [0, a_a[-3]])
+      if a_a[-3] == int(a_a[-3]):
+        pl.yticks([0, int(a_a[-3])], [0, int(a_a[-3])])
+      else:
+        pl.yticks([0, a_a[-3]], [0, a_a[-3]])
 
+
+  
   lines = [copy.copy(l) for l in lines]
   for l in lines:
     l.set_linewidth(2)
-
-  #print ALGS
-
-  ALGSused =  ['pp', 'cl_s1.0', 'cl_s2.5'] #   'un',  # ["BF"] #  ["BF"] # # ["BF"]# 'cl_s1.0', , 'cl_s4.0'
-
   
   labels = [get_label(alg) for alg in ALGSused]
-
+  print labels
     
   pl.subplot(7, 3, 21)  
-  leg = pl.legend(lines, labels, loc = (0.3,-0.3), frameon = False, fontsize = 'large')
+  
+  if len(labels) > 3:
+    nlegcols = 2
+  else:
+    nlegcols = 1
+    
+  leg = pl.legend(lines, labels, loc = (-0.05,-0.2), frameon = False, fontsize = 'large', ncol = nlegcols, columnspacing = 0.5)
+  
+  
   ax = pl.gca()
   ax.axis('off')
 
+  pl.subplots_adjust(wspace = 0.18, hspace = 0.1, bottom = 0.1, top = 0.98)
 
-  #pl.subplot(len(datasets)/2 + 1, 2, len(datasets) + 2)  
-  #pl.legend(lines[3::], labels[3::], loc = 'center', frameon = False, fontsize = 'medium')
-
-  pl.subplots_adjust(wspace = 0.2, hspace = 0.03, bottom = 0.1, top = 0.98)
-
-  ax = pl.gca()
-  ax.axis('off')
-
-  #pl.xlabel('fraction of time limit (TL) elapsed')
-
-  fname = os.path.join(hardpaths.clarans_paper_dir, 'mintracker2.pdf')
+  fname = os.path.join(hardpaths.clarans_paper_dir, figname)
   pl.savefig(fname)
   
   import commands
   commands.getstatusoutput('pdfcrop %s %s'%(fname, fname))
 
+
+  
+  sumofrels = 0
+  for k in datasets:
+    print '%s\t & %.4f \\\\'%(get_abridged(k), kmeanspp_final_relative[k])
+    sumofrels += kmeanspp_final_relative[k]
+  
+  
+  print "\nMEAN : ", sumofrels/len(kmeanspp_final_relative.keys())
+  
+
+  
   return leg
 
+
+def make_all_figures():
+  #mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp',"BF", "un"])
+  leg = mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp'])
+  #colorblob()
+  #colorblob_cheat()
+  #write_statistics()
+  #plot_all_experiments()
