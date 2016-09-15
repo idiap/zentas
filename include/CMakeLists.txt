@@ -1,0 +1,5 @@
+file(GLOB include_HPP . *hpp)
+
+message("CMAKE INSTALL PREFIX : ${CMAKE_INSTALL_PREFIX}")
+
+INSTALL(FILES ${include_HPP} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

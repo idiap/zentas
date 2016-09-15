@@ -1,0 +1,416 @@
+# Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
+# Written by James Newling <jnewling@idiap.ch>
+# zentas is a k-medoids library written in C++ and Python. This file is part of zentas.
+# zentas is free software: you can redistribute it and/or modify it under the terms of
+# the GNU General Public License version 3 as published by the Free Software Foundation.
+# zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE. See the GNU General Public License for more details. You should have received
+# a copy of the GNU General Public License along with zentas. If not, see
+# <http://www.gnu.org/licenses/>.
+
+import numpy as np
+import multiprocessing as mpr
+from libcpp.string cimport string
+from libcpp.vector cimport vector 
+from libcpp cimport bool
+cimport cython
+cimport cython.floating
+
+
+ctypedef fused char_or_int:
+  cython.int
+  cython.char
+
+cdef extern from "zentas.hpp" namespace "nszen":	
+  void hello() except +
+
+  void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
+
+
+  void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
+
+  void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff) except +;
+
+  void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
+
+
+def dangerwrap(f):
+  """
+  I assume f is a function which returns 
+  an object and takes no parameters
+  """
+  event  = mpr.Event()
+  q = mpr.Queue()
+  
+  def signalling_f():
+    try:
+      q.put(f())
+    
+    except Exception as e:
+      print "Caught exception in dangerwrap:"
+      print e
+      q.put(e)
+      event.set()
+      return None
+      
+    event.set()
+  
+  
+  
+  f_process = mpr.Process(target = signalling_f)
+  f_process.start()
+  try:
+    event.wait()
+  
+  except KeyboardInterrupt:
+    f_process.terminate()
+    f_process.join()
+    raise KeyboardInterrupt("Caught KeyboardInterrupt in dangerwrap")
+  
+  return q.get()
+
+
+def basehello():
+  hello()
+  return "goodbye ! :():"
+
+
+def pyhello():
+  """
+  Example function
+  """	
+  return dangerwrap(lambda : basehello)
+  
+
+#vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool isfasta, double critical_radius, double exponent_coeff
+
+
+def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s, cython.floating [:] X_v, K, size_t [:] indices_init, algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size,  c_indel,  c_switch, double [:] c_indel_arr, double [:] c_switches_arr, size_t [:] indices_s, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename):
+
+  cdef string astring  
+  
+  cdef vector[string] filenames_vec
+  
+  for fn in filenames_list:
+    filenames_vec.push_back(fn)
+  
+  cdef size_t [:] labels = np.empty((ndata,), dtype = np.uint64)
+  
+  cdef size_t [:] indices_final = np.empty((K,), dtype = np.uint64)
+  
+  cdef void (*cw_vzentas)(size_t, size_t, const cython.floating * const, size_t, const size_t * const, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+
+
+  cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const cython.floating * const, const size_t * const, size_t, const size_t * const, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+  
+    
+  cdef void (*cw_szentas)(size_t, const size_t * const, const char_or_int * const, size_t, const size_t * const, string, size_t, size_t, bool , string & , size_t, double, size_t * const , size_t * const, string, size_t, size_t, bool, string, bool, bool, size_t, double, double, const double * const, const double * const, double critical_radius, double exponent_coeff) except +
+
+
+  if datatype == "f":
+    textfilezentas(filenames_vec, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
+      
+  
+  elif datatype == "v":
+    
+    if cython.floating is double:
+      cw_vzentas=&vzentas[double]
+        
+    else:
+      cw_vzentas=&vzentas[float]
+      
+    cw_vzentas(ndata, dimension, &X_v[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
+  
+  elif datatype == "sv":
+    if cython.floating is double:
+      cw_sparse_vector_zentas=&sparse_vector_zentas[double]
+
+    else:
+      cw_sparse_vector_zentas=&sparse_vector_zentas[float]
+      
+    cw_sparse_vector_zentas(ndata, &sizes[0], &X_v[0], &indices_s[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
+    
+
+  
+  elif datatype == "s":
+    
+    if char_or_int is int:
+      cw_szentas = &szentas[int]
+    
+    elif char_or_int is char:
+      cw_szentas = &szentas[char]
+
+    else:
+      print " what type of sequence array ?  "
+            
+    cw_szentas(ndata, &sizes[0], &X_s[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, &c_indel_arr[0], &c_switches_arr[0], critical_radius, exponent_coeff)
+    
+   
+    
+  #st" : "goodbye ! :():"
+  
+  return {"output": astring, 'indices_final':np.array(indices_final), 'labels':np.array(labels)}
+
+
+def pyzentas(ndata = None, dimension = None, sizes = None, X = None, K = 10, indices_init = None, algorithm = "clarans", level = 3, max_proposals = 10**9, capture_output = False, seed = 1011, maxtime = 3.0, metric = "l2", nthreads = 1, maxrounds = 10**9, patient = True, energy = "identity", rooted = True, with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None, indices_s = None, critical_radius = 0, exponent_coeff = 0, filenames_list = None, outfilename = None, costfilename = None):
+  """  
+Description
+----------------------------
+Fast K-Medoids (CLARANS) for diverse datatypes and metrics, as described in (??).
+
+
+Input 
+----------------------------
+parameter (relevant when, * : always relevant) [type of input] {non-optional}
+description
+----------------------------
+numtype : np.float32, np.float64
+seqtype : np.int32, np.int8 ('|S1') 
+
+
+ndata (data not from file) {non-optional}
+  The number of data samples 
+  
+dimension (densevector) {non-optional}
+  The dimension of dense vectors  
+
+sizes (sparsevector, sequence) [np.array of np.uint64] {non-optional}
+  Vector of length ndata containing 
+  for sparsevectors : the number of non-zero elements
+  for sequences : their lengths
+
+X (*) {non-optional}
+  Vector containing,
+  for densevectors, ndata*dimension values, contiguous by vector [np.array of numtype]
+  for sparsevectors, the sizes.sum() non-zero values, contiguous by vector [np.array of numtype]
+  for sequences, the sizes.sum() seqtypes, contiguous by sequence [np.array of seqtype]
+
+K (*)
+  The number of clusters
+  
+indices_init (*) [np.array of np.uint64]
+  A vector of K distinct integers in [0, ndata), the starting centers
+
+algorithm (*) [string]
+  The algorithm to use. One of
+  "clarans" - essentially the algorithm of Ng et al. (1994), see Newling et al. (??) for details. 
+  "voronoi" - the algorithm of Park et al. (2009)
+  "clarans" provides superior clustering to "voronoi", and should be one's first choice. see reference for details
+
+level (*)
+  The level of optimisation to use. 
+  for "clarans", one of 0,1,2,3. 
+  for "voronoi", this must be 0.
+  We suggest that one uses "clarans" with level 3. see reference for details
+
+max_proposals (clarans)
+  The number of consecutively rejected proposals at which to halt
+
+capture_output (*)
+  if True: the statistics of the run are returned as a string (accesible through 'output' key is returned dict. 
+  See entry in Output section for details.
+  if False: the statistics of the run are output to terminal while the algorithm is running
+
+seed (clarans)
+  positive integer which determines the series of swap proposals in clarans
+
+maxtime (*)
+  a new round will not be started after maxtime seconds have passed
+
+metric (*)
+  consider vectors <2,2> and <5,6> for sparsevectors and densevectors, this can be one of
+  l0 :  a count of in how many dimensions two vectors differ (2.0)
+  l1 :  sum of absolute difference across dimensions (7.0)
+  l2 :  standard Euclidean norm (5.0)
+  li :  infinity-norm : the largest absolute difference across dimensions (4.0)
+  
+  for sequences, this can be one of
+  levenshtein : levenshtein distance between sequences, consider setting indel and mutation costs described below
+  normalised levenshtein: a transformed version of levenshtein so that distance is relative to sequennce lengths. See Yujian (2007)
+
+nthreads (*)
+  number of threads to use
+  see reference for details
+
+maxrounds (*)
+  the maximum number of rounds (center changes) the algorithm runs for.
+
+patient (clarans)
+  if False  a proposal is accepted as soon as it results in a decrease in total energy
+  if True   a proposal is accepted only when the time spent in center updating exceeds the time spent in assignment updating
+  For reproducibility with a fixed seed, patient should be False. However patient = True is generally a better choice, especially with threads > 1
+  see reference for details. 
+  
+
+energy (*)
+  Recall that we are trying to minimise : [sum over sample i] E (d(i)). where d(i) = min_k distance (x(i), x(c(k)))
+  energy can be one of 
+  identity :        E(d) = d. corresponds to vanilla k-medoids, minimise the sum of distances to nearest centers
+  quadratic :       E(d) = d*d. energy corresponds to the same loss function as k-means, a good choice for k-means initialisation
+  cubic :           E(d) = d*d*d.
+  squarepotential : E(d) = { 0 if d <= critical_radius and 1 otherwise }   
+  log :             E(d) = log (1 + d), logarithm base e.
+  exp :             E(d) = exp ( exponent_coeff * d)
+  critical_radius and exponent_coeff can be passed as parameters to this function
+
+
+rooted (*)
+  This parameter has no influence on final clustering. It relates to how algorithms are implemented. If
+  rooted = False, data (sequences, vectors etc.) are stored contiguously by cluster. 
+  This means moving data between clusters when there are reassignments, but has the advantage of better memory access.
+  rooted = True means data is not moved, only pointers to data are stored in clusters. 
+  rooted = False is generally faster but has a higher memory footprint.
+  Note : the memory assigned to each sample is the same. So for sparsevectors and sequences, if rooted = True, very sparse sparsevectors and short sequences will need as much memory as the least sparse sparsevector / longest sequence. 
+
+with_cost_matrices (normalised levenshtein, levenshtein)
+  if True: c_indel and c_switch may be set, these are global insertion/deletion and mutation parameters, independant of characters involved.
+  if False: the indel and switch costs are dependent on the seqtypes involved, and so c_indel_arr and c_switches_arr arrays should be provided.
+
+dict_size (normalised levenshtein, levenshtein)
+  only needs to be set if c_indel_arr and c_switches_arr are set : the largest seqtype in a sequence 
+
+c_indel (normalised levenshtein, levenshtein)
+  see with_cost_matrices
+  
+c_switch (normalised levenshtein, levenshtein)
+  see with_cost_matrices
+
+c_indel_arr (normalised levenshtein, levenshtein)
+  array of size dict_size, where c_indel_arr[i] is the cost of inserting / deleting an i.
+
+c_switches_arr (normalised levenshtein, levenshtein)
+  dict_size x dict_size array, where c_switches_arr[i,j] is the cost of transforming i into j. Of course, c_switches_arr[i,i] should be zero. see with_cost_matrices
+
+indices_s (sparsevector)
+  the indices of the sizes.sum() non-zero values, contiguous by vector [np.array of numtype]
+
+critical_radius (squarepotential)
+  see energy
+
+exponent_coeff (exp)
+  see energy
+
+filenames_list (normalised levenshtein, levenshtein)
+  (to be set with outfilename and costfilename)
+  a list of strings, names of files to read from. The files should either be
+  FASTA formatted or  : although not restricted to nucleotide (ACTG) or amino acids.
+  ordinary text files : each line is considered a sequence (could be ordinary words / sentences for example)
+  
+outfilename (normalised levenshtein, levenshtein)
+  (to be set with filenames_list and costfilename)
+  where to write the clustering results 
+  
+costfilename (normalised levenshtein, levenshtein)
+  (to be set with filenames_list and outfilename)
+  where to obtain the indel and switch costs. 
+  file format:
+  either - 
+  * * v1
+  * v2
+  for a global indel cost if v2 and swap cost of v1
+  or -
+  X Y vs1
+  .
+  .
+  .
+  Q W vsn
+  A vi1
+  .
+  .
+  .
+  S vin
+  where vs1 is the cost of swapping X and Y,  vi1 is the indel cost for A, etc.
+
+Output 
+----------------------------
+indices_final
+  a K-element array, the indices of the samples which are the final centers. Specifically, indices_final[k] is an integer in [0, ndata) for 0 <= k < K.
+labels
+  the assigned cluster of every sample. Specifically, for 0 <= i < ndata, 0 <= labels[i] < K is the cluster of sample i
+output
+  if capture_output is True, this is a string containing the run statistics:
+  first column  : round (where a round is defined by center change)
+  mE            : mean energy over samples
+  itime         : time [in milliseconds] taken for initialisation (first assignments)
+  ctime         : time spent in center update. For clarans, this is the time spent evaluating proposals. 
+                  For Voronoi, this is time in updating assignments
+  utime         : time spent in updating. For clarans, this is the time spent determining the nearest and second nearest 
+                  centers following a swap. For voronoi, this is time spent determining medoids.
+  rtime         : time spent implementing the center move. This cost is involves moving data between clusters while maintaining 
+                  it in an random order. If rooted = True, this can be expected be higher that when rooted = False,
+                  (with lower ctime for rooted = True)
+  ttime         : total time.
+  lg2 nc(c)     : log based 2 of the number of distance calculations made in center update (corresponding to ctime)
+  lg2 nc        : log based 2 of total number of distance calculations made.
+  pc            : distance calculations can be terminated early if it can be established that they are above some threshold. 
+                  This is particularly effective when the Levenshtein or normalised Levenshtein distance is used.
+                  pc measures how effective the early stopping in a distance computation is. For details see the appendix of our paper
+  nprops        : for clarans, the number of rejected proposals before one is accepted. 
+  
+
+
+Examples
+----------------------------
+see ./examples.py
+
+
+References
+----------------------------
+Newling et al (??)
+
+  """	
+  null_size_t = np.empty((1,), dtype = np.uint64)
+  null_int = np.empty((1,), dtype = np.int32)
+  null_float = np.empty((1,), dtype = np.float32)
+  null_double = np.empty((1,), dtype = np.float64)  
+  
+  
+  dimension_sizes_string = "Dimension should be set for dense vector data. Sizes should be set for string and sparse vector data."
+  if filenames_list != None and dimension != None and sizes != None:
+    raise RuntimeError("Both dimension and sizes have been set. Either one or the other should be set. " + dimension_sizes_string)
+
+  if filenames_list == None and dimension == None and sizes == None:
+    raise RuntimeError("Neither dimension nor sizes is set. Either one or the other should be set. " + dimension_sizes_string)
+
+  if (ndata == None and X != None):
+    raise RuntimeError("With X provided, ndata must be provided as well. The only time ndata should not be provided is when reading dequence data from file")
+  
+  if (ndata != None and X== None):
+    raise RuntimeError("With X non-provided, we assume that data should be read from file. In which case, ndata should be None")
+  
+  
+  #from textfiles
+  if filenames_list != None:
+    
+    if (sizes != None or c_indel != 1 or c_switch != 1 or c_indel_arr != None or c_switches_arr != None or indices_init != None or ndata != None):
+      raise RuntimeError("With filenames_list != None, it is expected that none of (sizes, c_indel, c_switch, c_indel_arr, c_switches_arr, indices_init, ndata) be set")
+    
+    if not (isinstance(filenames_list, list) and isinstance(outfilename, str) and isinstance(costfilename, str)):
+      raise RuntimeError("Expected : filenames_list : list of strings, outfilename : string, costfilename : string")
+    
+    indices_init = null_size_t
+    X = null_float
+    ndata = 0
+    return dangerwrap(lambda : basezentas("f", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename))
+
+  else:
+
+    # Dense vector data.
+    if dimension != None:        
+      return dangerwrap(lambda : basezentas("v", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, [], "", ""))
+    
+    # Sparse vector data or string data.
+    else:
+      # String data.
+      if indices_s == None:  
+        if c_indel_arr == None:
+          c_indel_arr = null_double
+          c_switches_arr = null_double
+        
+        return dangerwrap(lambda : basezentas("s", ndata, 0, sizes.ravel(), X.ravel(), null_float, K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr.ravel(), c_switches_arr.ravel(), null_size_t, critical_radius, exponent_coeff, [], "", ""))
+  
+      #Sparse vector data.
+      else:
+        return dangerwrap(lambda : basezentas("sv", ndata, 0, sizes.ravel(), null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, indices_s.ravel(), critical_radius, exponent_coeff, [], "", ""))
+  

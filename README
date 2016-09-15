@@ -1,0 +1,35 @@
+WHAT:
+-------------------------------------------
+Accelerated CLARANS as described at (link to arxiv)
+(1) Linked library with C++ headers
+(2) Python library
+
+REQUIREMENTS:
+-------------------------------------------
+Minimal installation requirements:
+-- clang++ compiler
+-- cmake version 3.3.0 or greater
+-- Python and Cython
+
+
+CONFIGURATION:
+-------------------------------------------
+nothing
+
+
+BUILDING:
+-------------------------------------------
+mkdir build
+cd ./build
+cmake ..
+make install
+
+
+USING: 
+-------------------------------------------
+See python/examples and src/main.cpp for examples
+
+
+DOESN'T WORK?
+-------------------------------------------
+Please contact me at jnewling@idiap.ch

@@ -1,0 +1,30 @@
+
+>Gene 9
+ACTGTCGTCC
+
+
+>Gene 1
+AAAAAAA
+>Gene 3
+AAAAAGG
+>Gene 4
+AAAAAGGA
+
+
+>Gene 5
+TCCTTCT
+>Gene 8
+TCCTC
+
+>Gene 10
+ACTGTGCGTTC
+
+>Gene 2
+AAAAAGA
+
+>Gene 7
+TCCTCC
+
+
+>Gene 6
+TCCTTC
