@@ -6,10 +6,5 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++14")
 add_library(${JLIB1_NAME} SHARED ${source_files})
 target_link_libraries (${JLIB1_NAME} ${CMAKE_THREAD_LIBS_INIT}) #pthread)
 
-
-
-#include_directories(${OPENBLAS_INCLUDE_DIR})
-#link_directories(${OPENBLAS_LINK_DIR})
-
 #how to install
 install(TARGETS ${JLIB1_NAME} DESTINATION ${JLIB_INSTALL_DIR})

@@ -18,7 +18,8 @@ the GNU General Public License along with zentas. If not, see
 #include "zentas.hpp"
 
 
-/* Test case : clustering dense vectors. */
+/* Test case : clustering dense vectors. 
+ * If in doubt as to want parameters to use, just copy these */
 template <typename TFloat>
 int cluster_dense(){
   //generating random data
@@ -40,10 +41,10 @@ int cluster_dense(){
   std::string algorithm = "clarans";
   size_t level = 3;
   
-  //only relevent for clarans : max number of consecutive rejected proposals before halting 
+  //only relevent for clarans : max number of consecutive rejected proposals before halting. Just make it large. 
   size_t max_proposals = 1000000;
   
-  //if capture_output = true, rather than sending run time info to terminal it is piped to string text
+  //if capture_output = true, rather than sending run time info to terminal it is piped to string text.
   size_t capture_output = false;
   std::string text;
   
@@ -182,10 +183,9 @@ int cluster_words(){
   nszen::textfilezentas(filenames, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, text, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
  
   return 0; 
-  
 }
 
 int main(){
-  //ad hoc testing
+  //Choose your test and put it here. 
   return cluster_sparse();
 }

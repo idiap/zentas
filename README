@@ -9,12 +9,15 @@ REQUIREMENTS:
 Minimal installation requirements:
 -- clang++ compiler
 -- cmake version 3.3.0 or greater
+
+In addition, for the python version:
 -- Python and Cython
 
 
 CONFIGURATION:
 -------------------------------------------
-nothing
+If you do NOT want the python version, comment out the final line in the topmost CMakeLists.txt file, so that it reads
+#add_subdirectory(python)
 
 
 BUILDING:
@@ -23,6 +26,7 @@ mkdir build
 cd ./build
 cmake ..
 make install
+All the relevent files will be installed in ./build/cleaninstall, this can be moved to wherever you prefer or changed in the top CMakeLists.txt 
 
 
 USING: 
