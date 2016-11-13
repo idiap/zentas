@@ -26,7 +26,7 @@ mkdir build
 cd ./build
 cmake ..
 make install
-All the relevent files will be installed in ./build/cleaninstall, this can be moved to wherever you prefer or changed in the top CMakeLists.txt 
+All the relevant files will be installed in ./build/cleaninstall, this can be moved to wherever you prefer or changed in the top CMakeLists.txt 
 
 
 USING: 
