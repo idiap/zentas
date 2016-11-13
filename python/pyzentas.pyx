@@ -346,8 +346,7 @@ see ./examples.py
 
 References
 ----------------------------
-Newling et al (??)
-
+https://arxiv.org/abs/1609.04723
   """	
   null_size_t = np.empty((1,), dtype = np.uint64)
   null_int = np.empty((1,), dtype = np.int32)

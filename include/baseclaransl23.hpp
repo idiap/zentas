@@ -125,18 +125,6 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
     
     
 
-    ///* *******************************************************************
-     //* **************** some core clarans functions **********************
-     //* *******************************************************************/    
-    
-    //virtual bool evaluate_proposal(size_t k1, size_t k2, size_t j2) override {
-      //return evaluate_proposal_l2(k1, k2, j2, d_min_cc[k1], cc);
-    //}
-
-    //virtual bool update_centers() override {
-      //return update_centers_greedy();
-    //}
-    
 
     
   private:

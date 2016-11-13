@@ -73,7 +73,7 @@ template <typename TData, typename TMetric>
 void zentas_base(
 const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, bool patient, std::string energy, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser){
 
-  /* used during experiments to see if openblas worth the effort 
+  /* used during experiments to see if openblas worth the effort. Decided not. 
   //openblas_set_num_threads(1);
   */
   

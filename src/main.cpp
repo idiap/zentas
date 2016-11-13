@@ -186,9 +186,6 @@ int cluster_words(){
 }
 
 int main(){
-  int nord = cluster_sparse();
-  //int est = cluster_words();
-  //int loeust = cluster_dense_single();
-  
-  return nord; // + est + loeust;
+  //ad hoc testing
+  return cluster_sparse();
 }

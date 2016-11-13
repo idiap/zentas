@@ -709,7 +709,7 @@ def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):#, "un", "
       mins = []
       min_times = []
       
-      #get the mimum curve data 
+      #get the mimumum curve data 
       for evi, evmse in enumerate(results[dataset][alg]['mses'].tolist()):
         if evi == 0 or evmse < mins[-1]:
           if results[dataset][alg]['times'][evi] < results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP:

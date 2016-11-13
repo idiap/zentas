@@ -23,7 +23,7 @@ the GNU General Public License along with zentas. If not, see
 namespace nszen{
 
 
-//TODO NOW : make this work for general text files.....
+//TODO(james) : make this work for general text files.
 
 void textfilezentas(std::vector<std::string> filenames, std::string outfilename, std::string costfilename, size_t K, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
   
