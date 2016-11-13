@@ -1,6 +1,6 @@
 WHAT:
 -------------------------------------------
-Accelerated CLARANS as described at (link to arxiv)
+Accelerated CLARANS as described at https://arxiv.org/abs/1609.04723
 (1) Linked library with C++ headers
 (2) Python library
 
