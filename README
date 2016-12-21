@@ -7,8 +7,7 @@ Accelerated CLARANS as described at https://arxiv.org/abs/1609.04723
 REQUIREMENTS:
 -------------------------------------------
 Minimal installation requirements:
--- clang++ compiler
--- cmake version 3.3.0 or greater
+-- cmake version 3.0 or greater
 
 In addition, for the python version:
 -- Python and Cython
@@ -25,15 +24,14 @@ BUILDING:
 mkdir build
 cd ./build
 cmake ..
-make install
-All the relevant files will be installed in ./build/cleaninstall, this can be moved to wherever you prefer or changed in the top CMakeLists.txt 
-
+make
+The shared library is then in ./build/zentas, and the python library is in ./build/python. 
 
 USING: 
 -------------------------------------------
-See python/examples and src/main.cpp for examples
+See python/examples and testsexamples (with executables in build/testsexamples).
 
 
 DOESN'T WORK?
 -------------------------------------------
-Please contact me at jnewling@idiap.ch
+Please contact me at jnewling@idiap.ch or raise an issue
