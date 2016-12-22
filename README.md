@@ -27,12 +27,11 @@ If you do NOT want the python version, comment out the final line in the topmost
 Building
 -------------------------------------------
 
-```
-mkdir build
+``` mkdir build
 cd build
 cmake ..
-make
-```
+make ```
+
 
 The shared library is then in ./build/zentas, and the python library (if built) is in ./build/python. These can be moved around.
 
