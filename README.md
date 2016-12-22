@@ -28,8 +28,11 @@ Building
 -------------------------------------------
 
 `mkdir build
+
 cd ./build
+
 cmake ..
+
 make`
 
 The shared library is then in ./build/zentas, and the python library (if built) is in ./build/python. These can be moved around.
