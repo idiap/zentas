@@ -1,15 +1,20 @@
 What
 -------------------------------------------
 Fast and versatile CLARANS, as described at https://arxiv.org/abs/1609.04723
+
 (1) Shared library with C++ headers
+
 (2) Python library
 
 Requirements
 -------------------------------------------
 Minimal installation requirements,
+
 -- Cmake version 3.0 or greater
 
+
 In addition, for the python version,
+
 -- Python and Cython
 
 
