@@ -1,37 +1,37 @@
-WHAT:
+what
 -------------------------------------------
-Accelerated CLARANS as described at https://arxiv.org/abs/1609.04723
-(1) Linked library with C++ headers
+Fast and versatile CLARANS, as described at https://arxiv.org/abs/1609.04723
+(1) Shared library with C++ headers
 (2) Python library
 
-REQUIREMENTS:
+requirements
 -------------------------------------------
-Minimal installation requirements:
--- cmake version 3.0 or greater
+Minimal installation requirements,
+-- Cmake version 3.0 or greater
 
-In addition, for the python version:
+In addition, for the python version,
 -- Python and Cython
 
 
-CONFIGURATION:
+configuring
 -------------------------------------------
 If you do NOT want the python version, comment out the final line in the topmost CMakeLists.txt file, so that it reads
-#add_subdirectory(python)
+`#add_subdirectory(python)`
 
 
-BUILDING:
+building
 -------------------------------------------
-mkdir build
-cd ./build
-cmake ..
-make
-The shared library is then in ./build/zentas, and the python library is in ./build/python. 
+`mkdir build`
+`cd ./build`
+`cmake ..`
+`make`
+The shared library is then in ./build/zentas, and the python library (if built) is in ./build/python. These can be moved around.
 
-USING: 
+using
 -------------------------------------------
-See python/examples and testsexamples (with executables in build/testsexamples).
+See testsexamples (with executables in build/testsexamples) python/examples and 
 
 
-DOESN'T WORK?
+doesn't work?
 -------------------------------------------
-Please contact me at jnewling@idiap.ch or raise an issue
+Please contact me at jnewling@idiap.ch or raise an issue.
