@@ -7,6 +7,11 @@ reload(hardpaths)
 
 import sys
 sys.path.append(hardpaths.zentas_lib_dir)
+
+sys.path.append("../../build/python")
+import pyzentas
+
+
 import pyzentas
 import kmedoids
 import kmeans
@@ -36,6 +41,7 @@ from IPython.core.debugger import Tracer
 pl.ion()
 
 
+
 import load_joensuu_data
 reload(load_joensuu_data)
 
@@ -44,7 +50,7 @@ NRUNS_KMEANSPP = 40
 ALGS =  ["un", 'pp', "BF", 'cl_s1.0', 'cl_s3.0']
 
 
-colors ={"un":"#dab595",'pp':"#48464a","BF":"#008b50",'cl_s1.0':"#f19e34",'cl_s3.0':"#cc252a", "none":'w'}
+colors ={"un":"#dab595",'pp':"#48464a","BF":"#008b50",'cl_s1.0':"#f19e34",'cl_s3.0':"#cc252a", "none":'w', 'cl_s3.0-mc2':'k', 'cl_s1.0-mc2':'k'}
 
 def get_alg_color(alg):
   if alg == 'none':
@@ -78,6 +84,12 @@ def get_label(alg):
     label = r'\texttt{cl-3.0}'
   elif k == 'BF':
     label = r'\texttt{bf}'
+  elif k == 'cl_s1.0-mc2':
+    label = r'\texttt{cl-1.0-mc2}'
+  elif k == 'cl_s3.0-mc2':
+    label = r'\texttt{cl-3.0-mc2}'
+
+
 
   return label
 
@@ -105,7 +117,9 @@ markers = {
 "pp":"+",
 "BF":"+",
 "cl_s1.0":"x",
-"cl_s3.0":"x"
+"cl_s3.0":"x",
+"cl_s3.0-mc2":"+",
+"cl_s1.0-mc2":"+"
 }
 
 
@@ -114,7 +128,9 @@ markersizes = {
 "pp":5,
 "BF":5,
 "cl_s1.0":5,
-"cl_s3.0":5
+"cl_s3.0":5,
+"cl_s1.0-mc2":5,
+"cl_s3.0-mc2":5
 }
 
 
@@ -123,7 +139,9 @@ fullalgname = {
 "pp":r'\texttt{k-means}++',
 "BF":r'\texttt{bf}',
 "cl_s1.0":r'\texttt{cl-1.0}',
-"cl_s3.0":r'\texttt{cl-3.0}'
+"cl_s3.0":r'\texttt{cl-3.0}',
+"cl_s1.0-mc2":r'\texttt{cl-1.0-mc2}',
+"cl_s3.0-mc2":r'\texttt{cl-3.0-mc2}'
 }
 
 
@@ -143,7 +161,7 @@ trueks['a3']  = 50
 trueks['dim032']  = 16
 trueks['dim064']  = 16
 trueks['dim1024'] = 16
-trueks['yeast'] =  20
+#trueks['yeast'] =  20
 trueks['housec8'] = 200 #-1
 trueks['MopsiLocationsUntil2012-Finland'] =  50 #100#-1
 trueks['mnist'] = 150 #10
@@ -274,7 +292,7 @@ def joensuu_experiment(dataset = "MopsiLocationsUntil2012-Finland", K = 15, writ
     
   filly = open(os.path.join(resultsdir, "%s.txt"%(dataset,)), "w")
   value = scores['t_elapsed_1_kmeanspp']
-  print value
+  #print value
   filly.write("%.5f"%(value))
   filly.close()
   
@@ -427,7 +445,7 @@ def write_statistics():
 
 
 
-def plot_all_experiments(save = True, filename = "initplots.pdf"):
+def plot_all_experiments(save = False, filename = "initplots.pdf"):
   resultsdir = hardpaths.initialisation_result_pickles
   pl.figure(num = 8, figsize = (6, 13))
   pl.clf()
@@ -658,9 +676,38 @@ def colorblob_cheat(dataset = 'yeast', threshold = 1.01, filename = 'colorblob_e
 
 
 
+def clean_table(ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):
 
-def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):#, "un", "BF"]):
+  datasets = trueks.keys()
+  datasets.sort(key = str.lower)
+  resultsdir = hardpaths.initialisation_result_pickles
+  results = {}
   
+  #Get the mimumum of ALGSused
+  MINS = {}
+  for ikop, dataset in enumerate(datasets):
+    filly = open(os.path.join(resultsdir, "%s.pkl"%(dataset,)), "r")
+    scores = cPickle.load(filly)
+    #print dataset, scores
+    filly.close()
+    results[dataset] = scores
+
+  for ikop, dataset in enumerate(datasets):
+    print dataset
+    nfactor = results[dataset]['pp']['mses'].mean()
+    for alg in ALGSused:
+      print alg,
+      print results[dataset][alg]['mses'].size, 
+      print results[dataset][alg]['mses'].mean()/nfactor
+      #print results[dataset][alg]['mses'].std()/nfactor,
+      #print results[dataset][alg]['mses'].min()/nfactor
+      
+  Tracer()()
+
+#def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp'], savefig = False):#, "un", "BF"]):
+
+def mintracker(logy = True, ALGSused =  ['cl_s1.0-mc2', 'cl_s1.0', 'cl_s3.0', 'pp'], savefig = False):#, "un", "BF"]):
+    
   figname = 'mintracker_%dalgs.pdf'%(len(ALGSused),)
  
  
@@ -672,7 +719,13 @@ def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):#, "un", "
   xibob = 1.5
   datasets = trueks.keys()
   datasets.sort(key = str.lower)
-  resultsdir = hardpaths.initialisation_result_pickles
+  
+  resultsdir = "/idiap/user/jnewling/zentasoutput/icml/pickles"
+  #elapsed_dir = os.path.join(resultsdir, "elapsed_times_pp")
+  #pickles_dir = os.path.join(resultsdir, "pickles")
+
+
+  #resultsdir = #hardpaths.initialisation_result_pickles
   results = {}
   
   #Get the mimumum of ALGSused
@@ -680,6 +733,8 @@ def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):#, "un", "
   for ikop, dataset in enumerate(datasets):
     filly = open(os.path.join(resultsdir, "%s.pkl"%(dataset,)), "r")
     scores = cPickle.load(filly)
+    #print dataset, scores
+    #Tracer()()
     filly.close()
     results[dataset] = scores
     MINS[dataset] = 10**30
@@ -710,39 +765,44 @@ def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):#, "un", "
       min_times = []
       
       #get the mimumum curve data 
-      for evi, evmse in enumerate(results[dataset][alg]['mses'].tolist()):
-        if evi == 0 or evmse < mins[-1]:
-          if results[dataset][alg]['times'][evi] < results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP:
-            mins.append(evmse)
-            min_times.append(results[dataset][alg]['times'][evi])
+      if True: #len(results[dataset][alg]['mses'].tolist()) > 2:
+      #######################  
       
-      
-      yvalstoplot = np.log10(results[dataset][alg]['mses']/MINS[dataset])/np.log10(1.01)
-      
-      if alg in ALGSused: #   'un',  # ["BF"] #  ["BF"] # # ["BF"]# 'cl_s1.0', , 'cl_s4.0'
-        MAXE = max(MAXE, yvalstoplot.max())
+        print "---",len(results[dataset][alg]['mses'].tolist()), len(mins)
+        for evi, evmse in enumerate(results[dataset][alg]['mses'].tolist()):
+          if evi == 0 or evmse < mins[-1]:
+            if results[dataset][alg]['times'][evi] < results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP:
+              mins.append(evmse)
+              min_times.append(results[dataset][alg]['times'][evi])
         
-      pl.plot(results[dataset][alg]['times']/(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP), yvalstoplot, color = colors[alg], marker = markers[alg], linestyle = '.', markersize = 4)
-      
-      if len (mins) == 0:
-        raise RuntimeError ("No mins, is this an algorithm with no completions ? ")
-      
-      
-      mins = np.array(mins).repeat(2)
-      min_times = np.array(min_times).repeat(2)
-      min_times = min_times[1::].tolist()
-      min_times.append(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP)
-      min_times = np.array(min_times)/min_times[-1]
-      label = get_label(alg)
-      
-      yvalstoplot = np.log10(mins/MINS[dataset])/np.log10(1.01)
         
-      line = pl.plot(min_times, yvalstoplot, linestyle = '-', linewidth = 2, label = label, color = colors[alg], alpha = 0.6)
-      lines.append(line[0])
-    
-      if 'pp' in alg:
-        kmeanspp_final_relative[dataset] = mins[-1]/MINS[dataset]
-    
+        yvalstoplot = np.log10(results[dataset][alg]['mses']/MINS[dataset])/np.log10(1.01)
+        
+        if alg in ALGSused: #   'un',  # ["BF"] #  ["BF"] # # ["BF"]# 'cl_s1.0', , 'cl_s4.0'
+          MAXE = max(MAXE, yvalstoplot.max())
+          
+        pl.plot(results[dataset][alg]['times']/(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP), yvalstoplot, color = colors[alg], marker = markers[alg], linestyle = '.', markersize = 4)
+        
+        if len (mins) == 0:
+          raise RuntimeError ("No mins, is this an algorithm with no completions ? ")
+        
+        
+        mins = np.array(mins).repeat(2)
+        min_times = np.array(min_times).repeat(2)
+        min_times = min_times[1::].tolist()
+        min_times.append(results[dataset]['t_elapsed_1_kmeanspp']*NRUNS_KMEANSPP)
+        min_times = np.array(min_times)/min_times[-1]
+        label = get_label(alg)
+        
+        yvalstoplot = np.log10(mins/MINS[dataset])/np.log10(1.01)
+          
+        line = pl.plot(min_times, yvalstoplot, linestyle = '-', linewidth = 2, label = label, color = colors[alg], alpha = 0.6)
+        lines.append(line[0])
+      
+        if 'pp' in alg:
+          kmeanspp_final_relative[dataset] = mins[-1]/MINS[dataset]
+      
+      #######################
         
     ydiff = MAXE
     pl.ylim( - ydiff*0.05, MAXE + ydiff*0.15)
@@ -788,11 +848,12 @@ def mintracker(logy = True, ALGSused =  ['cl_s1.0', 'cl_s3.0', 'pp']):#, "un", "
 
   pl.subplots_adjust(wspace = 0.18, hspace = 0.1, bottom = 0.1, top = 0.98)
 
-  fname = os.path.join(hardpaths.clarans_paper_dir, figname)
-  pl.savefig(fname)
-  
-  import commands
-  commands.getstatusoutput('pdfcrop %s %s'%(fname, fname))
+  if savefig == True:
+    fname = os.path.join(hardpaths.clarans_paper_dir, figname)
+    pl.savefig(fname)
+    
+    import commands
+    commands.getstatusoutput('pdfcrop %s %s'%(fname, fname))
 
 
   

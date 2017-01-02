@@ -32,8 +32,11 @@ class TData{
 
 */
 
+//#include "outputwriter.hpp"
 
-namespace nszen{
+#include <sstream>
+
+namespace nszen{  
 
 
 template <typename TDinz>
@@ -90,8 +93,8 @@ class VData{
       }
     }
     
-    void print(){
-      std::cout << "print not implemented for vdata";
+    std::string get_string(){
+      return "get_string not implemented for vdata";
     }
 };
 
@@ -105,6 +108,9 @@ class SData{
     typedef typename TSDataIn::AtomicType AtomicType;
     typedef TSDataIn DataIn;
     typedef typename TSDataIn::InitBundle InitBundle;
+    
+    
+    
 
    private: 
     size_t ndata;   
@@ -112,10 +118,14 @@ class SData{
     std::vector<AtomicType> data;
     std::vector<size_t> sizes;
 
+
+    
+    //zentas::outputwriting::OutputWriter amowri; //(true, false, "");
+  
    public: 
 
     
-    SData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){
+    SData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){//, mowri(true, false, ""){
       if (as_empty == false){
         throw std::logic_error("Currently, there is no implementation for constructing SData from SDataIn with data, due to the lack of any apparent need");
       }
@@ -156,15 +166,18 @@ class SData{
       sizes[j] = s.size;
     }
     
-    void print(){
+    std::string get_string(){
+      std::stringstream ss;
       for (size_t j = 0; j < ndata; ++j){
-        std::cout << j << "   ";
+        ss << j << "   ";
         for (size_t d = 0; d < sizes[j]; ++d){
-          std::cout << data[j*dimension + d];
+          ss << data[j*dimension + d];
         }
-        std::cout << std::endl;
+        ss << "\n";
       }
+      return ss.str();
     }
+
 };
 
 
@@ -231,14 +244,17 @@ class SparseVectorData{
       sizes[j] = s.size;
     }
     
-    void print(){
+    std::string get_string(){
+      std::stringstream ss;
       for (size_t j = 0; j < ndata; ++j){
-        std::cout << j << "   ";
+        ss << j << "   ";
         for (size_t d = 0; d < sizes[j]; ++d){
-          std::cout << "(" << data[j*dimension + d] << ")" << data[j*dimension + d];
+          ss << "(" << data[j*dimension + d] << ")" << data[j*dimension + d];
         }
-        std::cout << std::endl;
+        ss << "\n";
       }
+      
+      return ss.str();
     }
 };
 
@@ -300,8 +316,8 @@ class BaseDataRooted{
     void replace_with(size_t j, size_t i){
       IDs[j] = i;
     }
-    void print(){
-      std::cout << "print not implemented for vdatarooted";
+    std::string get_string(){
+      return "get_string not implemented for vdatarooted";
     }
 };
 

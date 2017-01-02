@@ -30,6 +30,6 @@ initialisation_experiments_runtimes_dir = os.path.join(zentas_output_dir, "initi
 initialisation_result_pickles = os.path.join(zentas_output_dir, "initialisation_result_pickles")
 elapsed_time_kmeanspp = os.path.join(initialisation_result_pickles, "elapsed_time_kmeanspp")
 clarans_paper_dir = os.path.join(homedir, "colftex/clarans/")
-zentas_lib_dir = "../build/cleaninstall/lib"
+zentas_lib_dir = "../build/python"
 trainandtestdir = os.path.join(tempdir, "data/densedata/trainandtest")
 joensuudata = os.path.join(userdir, "joensuudata")

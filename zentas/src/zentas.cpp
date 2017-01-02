@@ -19,12 +19,13 @@ the GNU General Public License along with zentas. If not, see
 #include "voronoil0.hpp"
 
 
+#include "outputwriter.hpp"
 
 
 namespace nszen{
 
 void hello(){
-  std::cout << "hello!" <<std::endl;
+  
 }
 
 
@@ -77,20 +78,15 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
   //openblas_set_num_threads(1);
   */
   
-  //typedef typename TData::DataIn DataIn;
-    
-  srand(seed);  
   
+  #ifndef COMPILE_FOR_R
   std::stringstream buffer;
   auto cout_buff = std::cout.rdbuf();
   if (capture_output == true){
     std::cout.rdbuf(buffer.rdbuf());
   }
   std::ofstream nowhere;
-
-  //if (metric.compare("levenshtein") == 0 || metric.compare("normalised levenshtein")){
-    
-  //}
+  #endif
 
   if (energy_initialiser.get_critical_radius() <= 0 && energy.compare("squarepotential") == 0){
     throw std::runtime_error("critical radius <= 0 is not allowed for squarepotential energy");
@@ -136,6 +132,8 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
   
   dispatch <TData, TMetric> (algorithm, level, datain_ib, K, indices_init, max_proposals, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
   
+  
+  #ifndef COMPILE_FOR_R
   if (capture_output == true){
     text = buffer.str();
     std::cout.rdbuf(cout_buff);
@@ -144,6 +142,7 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
   else{
     text = "capture_output was false, so nothing here";
   }
+  #endif
 }
 
 /* dense vectors */

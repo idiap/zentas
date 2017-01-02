@@ -26,6 +26,7 @@ int cluster_dense(){
   size_t ndata = 100000;
   size_t dimension = 4;
   std::vector<TFloat> data (ndata*dimension);
+  srand(1011);
   for (size_t i = 0; i < data.size(); ++i){
     data[i] = (static_cast<float> (rand()%1000000)) / 1000000.  ;
   }
@@ -39,10 +40,11 @@ int cluster_dense(){
   
   //set algorithm and level of acceleration. This should *always* be clarans at level 3.
   std::string algorithm = "clarans";
-  size_t level = 3;
+  size_t level = 1;
   
   //only relevent for clarans : max number of consecutive rejected proposals before halting. Just make it large. 
-  size_t max_proposals = 1000000;
+  //note that if patient is true, this is not used (see python string for details) 
+  size_t max_proposals = 20000;
   
   //if capture_output = true, rather than sending run time info to terminal it is piped to string text.
   size_t capture_output = false;
@@ -61,14 +63,14 @@ int cluster_dense(){
   //what metric to use. For metric data, this is one of l0, l1, l2 and li (infinity norm)
   std::string metric = "l1"; 
   
-  //number of threads to use
-  size_t nthreads = 4;
+  //number of threads to use. Note for deterministic results this should be 1, otherwise order of thread operations can change redistriubtion etc.
+  size_t nthreads = 1;
   
   //max number of rounds. For clarans, this is number of successful swaps
-  size_t maxrounds = 1000000;
+  size_t maxrounds = 13;
 
   //relevent for clarans : if false, implement a good swap as soon as found. If true (recommended), if the time spent evaluating proposals is less than the time spent implementing swaps, then keep searching for good swaps, only implement a swap when you've spent as much time looking as implementing. Motivation for this is that it doesn't make sense to spend the majority of time implementing swaps, should spend at least half the time looking for good swaps. 
-  bool patient = true;
+  bool patient = false;
   
   //energy can be log, identity, quadratic, cubic, exp, squarepotential.
   std::string energy = "cubic";
@@ -102,5 +104,5 @@ int cluster_dense_double(){
 
 int main(){
   //Choose your test and put it here. 
-  return cluster_dense_single();
+  return cluster_dense_double();
 }

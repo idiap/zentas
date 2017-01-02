@@ -36,11 +36,11 @@ int cluster_words(){
   size_t max_proposals = 10000;
   size_t capture_output = false;
   std::string text;
-  size_t seed = 1011;
+  size_t seed = 1012;
   double maxtime = 10000.;
   std::string metric("normalised levenshtein");
-  size_t nthreads = 4;
-  size_t maxrounds = 1000;
+  size_t nthreads = 1;
+  size_t maxrounds = 100;
   bool patient = false;
   std::string energy("identity");
   bool rooted = true;

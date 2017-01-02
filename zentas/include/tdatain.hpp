@@ -259,8 +259,10 @@ class StringDataUnrootedIn : public BaseStringDataIn<TAtomic>{
   
     StringDataUnrootedIn(const InitBundle & ib): BaseStringDataIn<TAtomic>(ib) {
       if (static_cast<double>(max_size) > 5.*mean_size){
-        std::cout << "mean size : " << mean_size << "  max size : " << max_size << std::endl;
-        throw std::runtime_error("The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true).");
+        
+        std::stringstream ss;
+        ss << "mean size : " << mean_size << "  max size : " << max_size << "\n" << "The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true).";
+        throw std::runtime_error(ss.str());
       }
     }
     
@@ -329,10 +331,11 @@ class SparseVectorDataUnrootedIn : public SparseVectorDataUnrootedInBase<TAtomic
   
     SparseVectorDataUnrootedIn(const InitBundle & ib): SparseVectorDataUnrootedInBase<TAtomic>(ib) {
       if (static_cast<double>(max_size) > 5.*mean_size){
-        std::cout << "mean size : " << mean_size << "  max size : " << max_size << std::endl;
-        throw std::runtime_error("The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true) if implemented.");
+        std::stringstream ss;
+        ss << "mean size : " << mean_size << "  max size : " << max_size << "\n" << "The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true) if implemented.";
+        throw std::runtime_error(ss.str());
       }
-    }  
+    }
 
     const Sample at_for_move(size_t i) const{
       return Sample(sizes[i], data + c_sizes[i], indices_s + c_sizes[i]);

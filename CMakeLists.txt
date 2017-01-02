@@ -27,3 +27,6 @@ add_subdirectory(testsexamples)
 
 # python code. It requires cython (and only builds with certain versions). You might want to comment this out.
 add_subdirectory(python)
+
+#R code. You might want to comment this out.
+#add_subdirectory(R)

@@ -637,10 +637,6 @@ double * A_prev, double *  A_acti, int nrows, int ncols, size_t & n_cells_visite
  
       }
       
-      //for (size_t c = 0; c < ncols; ++c){
-        //std::cout << " " << scores[c];
-      //}
-      //std::cout << std::endl;
       
       n_cells_visited_local += j_end - j_start;
     }
@@ -697,6 +693,7 @@ class LevenshteinMetric{
     std::vector<size_t> v_ncalcs;
    
    
+   
     const size_t dict_size; 
     bool normalised;
     
@@ -721,6 +718,11 @@ class LevenshteinMetric{
     double min_c_indel;
     double max_c_indel;
 
+  
+
+  protected:  
+    std::mt19937_64 gen;
+    std::uniform_int_distribution<unsigned> dis;
   
   public:
     typedef typename TSDataIn::Sample Sample;
@@ -780,8 +782,7 @@ class LevenshteinMetric{
 
     inline void set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance) {
       
-      //std::cout << "<" << std::flush;
-
+ 
       /* numerical issues */
       threshold *= 1.00001;
 
@@ -804,8 +805,9 @@ class LevenshteinMetric{
       size_t n_cells_visited_local = 0;
 
       
-      //get a mutex and prend garde
-      size_t mutex_i = rand()%nthreads;
+      //get a mutex and keep
+      size_t mutex_i = dis(gen)%nthreads;
+      
       while (v_mutex0[mutex_i].try_lock() == false){
         ++mutex_i;
         mutex_i %= nthreads;
@@ -844,8 +846,7 @@ class LevenshteinMetric{
       v_n_cells_visitable[mutex_i] += nrows*ncols;
       v_n_cells_visited[mutex_i] += n_cells_visited_local;
       
-      //std::cout << ">" << std::flush;
-
+  
       
     }
           

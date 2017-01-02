@@ -178,7 +178,7 @@ X (*) {non-optional}
 K (*)
   The number of clusters
   
-indices_init (*) [np.array of np.uint64]
+indices_init (if not from files, so when filenames_list = None) [np.array of np.uint64]
   A vector of K distinct integers in [0, ndata), the starting centers
 
 algorithm (*) [string]

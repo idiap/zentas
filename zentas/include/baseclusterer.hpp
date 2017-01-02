@@ -18,6 +18,8 @@ the GNU General Public License along with zentas. If not, see
 #include "tmetric.hpp"
 #include "tenergyfunc.hpp"
 
+#include "outputwriter.hpp"
+
 #include <algorithm>
 #include <type_traits>
 #include <chrono>
@@ -123,6 +125,8 @@ class BaseClusterer{
   
   public:
   
+    zentas::outputwriting::OutputWriter mowri; //(true, false, "");
+
     typedef typename TMetric::Initializer TMetricInitializer;
     typedef typename TData::DataIn DataIn;
     const size_t K;
@@ -164,9 +168,11 @@ class BaseClusterer{
     size_t ncalcs_total = 0;
 
 
+  protected:
     std::uniform_int_distribution<size_t> dis;
     std::default_random_engine gen;
-    
+  
+  private:  
     size_t maxtime_micros;
 
     size_t * const labels;
@@ -196,6 +202,7 @@ class BaseClusterer{
      const TMetricInitializer & metric_initializer, 
      const EnergyInitialiser & energy_initialiser): 
     
+    mowri(true, false, ""),
     K(K), ndata(datain.get_ndata()), //f_E_rock(),
     centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain),
     metric(datain, nthreads, metric_initializer), 
@@ -203,6 +210,8 @@ class BaseClusterer{
     round(0), center_indices_init(center_indices_init), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy)
 
      {
+       
+       
        
       if (energy.compare("identity") == 0){
         f_energy = nszen::Identity(); //std::function<double(double)> ( [](double x){ return x*x; } );
@@ -269,7 +278,7 @@ class BaseClusterer{
         
       
       if (maxtime_micros > time_total){
-        //std::cout << maxtime_micros - time_total << std::endl;
+        //mowri << maxtime_micros - time_total << zentas::Endl;
         return maxtime_micros - time_total;
       }
       else{
@@ -426,7 +435,11 @@ class BaseClusterer{
     
     inline void swap_center_with_sample(size_t k, size_t j){
       cluster_has_changed[k] = true;
+      center_IDs[k] = sample_IDs[k][j]; //just added.
+      
       nszen::swap<TData>(centers_data, k, cluster_datas[k], j);
+      
+      
       reset_sample_infos_basic(k, j);
     }
         
@@ -483,7 +496,7 @@ class BaseClusterer{
         up_cum_ndatas[k] = cum_ndata;
       }
       if (up_cum_ndatas[K-1] != (ndata - K)){
-        std::cout << "Weird : cum_ndatas[K-1] != ndata : up_cum_ndatas[K-1] = " << up_cum_ndatas[K-1] << " and ndata = " << ndata << std::endl;
+        mowri << "Weird : cum_ndatas[K-1] != ndata : up_cum_ndatas[K-1] = " << up_cum_ndatas[K-1] << " and ndata = " << ndata << zentas::Endl;
         throw std::logic_error("(see above)");
       }
       size_t i = dis(gen)%(ndata - K);
@@ -543,15 +556,15 @@ class BaseClusterer{
 
     
     void print_centers(){
-      centers_data.print();
+      mowri << centers_data.get_string() << zentas::Flush;
     }
 
     
     void print_ndatas(){
       for (size_t k = 0; k < K; ++k){
-        std::cout << get_ndata(k) << " ";
+        mowri << get_ndata(k) << " ";
       }
-      std::cout << std::endl;
+      mowri << zentas::Endl;
     }
     
     /* for inter-center distances etc. if relevant, otherwise just make {}. */
@@ -563,7 +576,7 @@ class BaseClusterer{
       
       bool with_tests = false;
       if (with_tests == true){
-        std::cout << "\n\nCOMPILED WITH TESTS ENABLED : WILL BE SLOW" <<std::endl;
+        mowri << "\n\nCOMPILED WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
       
       std::chrono::time_point<std::chrono::high_resolution_clock> t0;
@@ -587,7 +600,7 @@ class BaseClusterer{
         post_initialisation_test();
       }
 
-      //std::cout << "round :" << -1 << "\t tenergy : " <<  E_total << " \t itime : " << time_initialising << " \t ctime : " << time_in_update_centers << " \t utime : " << time_in_update_sample_info << " \t rtime : " << time_in_redistribute << " \t ttime : " << time_total << std::endl;        
+      //mowri << "round :" << -1 << "\t tenergy : " <<  E_total << " \t itime : " << time_initialising << " \t ctime : " << time_in_update_centers << " \t utime : " << time_in_update_sample_info << " \t rtime : " << time_in_redistribute << " \t ttime : " << time_total << zentas::Endl;        
   
       t1 = std::chrono::high_resolution_clock::now();
       time_initialising = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
@@ -596,7 +609,7 @@ class BaseClusterer{
       
       round_summary();
       
-      //std::cout << time_total << "   " << maxtime MM std::endl;
+      //mowri << time_total << "   " << maxtime MM zentas::Endl;
       while ((time_total < maxtime_micros) && (round < maxrounds)){ // (E_total != old_E_total) && 
 
         t0 = std::chrono::high_resolution_clock::now();
@@ -618,11 +631,18 @@ class BaseClusterer{
         time_in_update_centers += std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
         ncalcs_in_update_centers += ncalcs1 - ncalcs0;
 
+          
+        for (size_t koo = 0; koo < 20; ++koo){
+          std::cout << center_IDs[koo] << "  ";
+        }
+        std::cout << std::endl;
+
         
         if (modified_centers == false){
           time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
           ncalcs_total = metric.get_ncalcs();
           round_summary();
+          
           break;
         }
         
@@ -686,7 +706,7 @@ class BaseClusterer{
 
     
 
-    /* basic because has no effect on to_leave_cluster */
+    /* basic, because has no effect on to_leave_cluster */
     void reset_sample_infos_basic(size_t k, size_t j){
       
       std::unique_ptr<double []> up_distances (new double [K]);
@@ -712,7 +732,7 @@ class BaseClusterer{
     }
     
     void reset_sample_infos(size_t k, size_t j){
-      //std::cout << k << "--" << j << " " << std::flush;
+      //mowri << k << "--" << j << " " << zentas::Flush;
       reset_sample_infos_basic(k,j);
       if (k != nearest_1_infos[k][j].a_x){
         std::lock_guard<std::mutex> lock (mutex0);
@@ -865,19 +885,19 @@ class BaseClusterer{
           cluster_has_changed[k] = false;
         }
         
-        //std::cout << k << " ----- ( " << center_IDs[k] << " )  ---- energy : "  << cluster_energies[k] << std::endl;
+        //mowri << k << " ----- ( " << center_IDs[k] << " )  ---- energy : "  << cluster_energies[k] << zentas::Endl;
         
         //for (size_t j = 0; j < get_ndata(k); ++j){
-          //std::cout << sample_IDs[k][j] << "  (" <<nearest_1_infos[k][j].e_x << ")  " << std::flush;
+          //mowri << sample_IDs[k][j] << "  (" <<nearest_1_infos[k][j].e_x << ")  " << zentas::Flush;
         //}
-        //std::cout << std::endl;
+        //mowri << zentas::Endl;
         
 
 
         E_total += cluster_energies[k];
       }
       
-      //std::cout << "\n";
+      //mowri << "\n";
     }
     
 
@@ -939,7 +959,7 @@ class BaseClusterer{
             }
             
             //if (insert_attempts == 10){
-              //std::cout << "from : "  << k <<  " k_to " << redistribute_order[0] << " k_new : " << k_new << " j_new : " << j_new << std::endl;
+              //mowri << "from : "  << k <<  " k_to " << redistribute_order[0] << " k_new : " << k_new << " j_new : " << j_new << zentas::Endl;
               ////throw std::runtime_error("insert attempts is 10. Wow");
             //}
             
@@ -1000,41 +1020,41 @@ class BaseClusterer{
     
     
     void post_initialisation_test(){
-      std::cout << " post initialisation test... " << std::flush;
-      std::cout << " (injective) " << std::flush;
+      mowri << " post initialisation test... " << zentas::Flush;
+      mowri << " (injective) " << zentas::Flush;
       injective_ID_test();
-      std::cout << " (ndata) " << std::flush;
+      mowri << " (ndata) " << zentas::Flush;
       ndata_tests();
-      std::cout << " (info) " << std::flush;
+      mowri << " (info) " << zentas::Flush;
       info_tests();
-      std::cout << " (statistics) " << std::flush;
+      mowri << " (statistics) " << zentas::Flush;
       cluster_statistics_test();
-      std::cout << "initialised object looks ok." << std::endl;
+      mowri << "initialised object looks ok." << zentas::Endl;
     }
     
     virtual void center_center_info_test(){}
     
     
     void post_center_update_test(){
-      std::cout << " post center update test... " << std::flush;
+      mowri << " post center update test... " << zentas::Flush;
       ndata_tests();
       center_center_info_test();
-      std::cout << "done." << std::flush;
+      mowri << "done." << zentas::Flush;
     }
     
     void post_sample_update_test(){
-      std::cout << " post sample update test... " << std::flush;
+      mowri << " post sample update test... " << zentas::Flush;
       ndata_tests();
       info_tests();
       to_leave_cluster_test();
-      std::cout << "done." << std::flush;
+      mowri << "done." << zentas::Flush;
     }
     
     void post_redistribute_test(){
-      std::cout << " post redistribute test... " << std::flush;
+      mowri << " post redistribute test... " << zentas::Flush;
       ndata_tests();
       as_assigned_test();  
-        std::cout << "done." << std::flush;
+        mowri << "done." << zentas::Flush;
 
     }
     
@@ -1055,7 +1075,7 @@ class BaseClusterer{
               }
             }
             if (is_listed == false){
-              std::cout << "\nis_listed == false" << std::endl;
+              mowri << "\nis_listed == false" << zentas::Endl;
               throw std::logic_error(errm);
             }
           }
@@ -1071,19 +1091,19 @@ class BaseClusterer{
             }
           }
           if (nappears != 1){
-            std::cout << std::to_string(x) << " appears " << nappears << " times in the to leave list of cluster " << k << std::endl;
+            mowri << std::to_string(x) << " appears " << nappears << " times in the to leave list of cluster " << k << zentas::Endl;
           }
           
           if (nearest_1_infos[k][x].a_x == k){
-            std::cout << "\ncluster and size ( " << k << " : " << get_ndata(k) << ") " << std::endl;
-            std::cout << "j : " << x << std::endl;
-            std::cout << "size of to_leave_cluster[k] " << to_leave_cluster[k].size() << std::endl;
-            std::cout << "members of to_leave_cluster[k]" << std::endl;
+            mowri << "\ncluster and size ( " << k << " : " << get_ndata(k) << ") " << zentas::Endl;
+            mowri << "j : " << x << zentas::Endl;
+            mowri << "size of to_leave_cluster[k] " << to_leave_cluster[k].size() << zentas::Endl;
+            mowri << "members of to_leave_cluster[k]" << zentas::Endl;
             for (auto & x : to_leave_cluster[k]){
-              std::cout << x << " " << std::flush;
+              mowri << x << " " << zentas::Flush;
             }
-            std::cout <<  "\n(a,d,e) : " << nearest_1_infos[k][x].get_string() << std::endl;
-            std::cout << "\nto leave cluster but k is 'k'" << std::endl;
+            mowri <<  "\n(a,d,e) : " << nearest_1_infos[k][x].get_string() << zentas::Endl;
+            mowri << "\nto leave cluster but k is 'k'" << zentas::Endl;
             throw std::logic_error(errm);
           }
         }
@@ -1135,14 +1155,14 @@ class BaseClusterer{
           double e_first_nearest = f_energy(d_first_nearest);
           
           //if (k_first_nearest != nearest_1_infos[k][j].a_x){
-            //std::cout << "\n" << k_first_nearest << "  " << nearest_1_infos[k][j].a_x << std::endl;
-            //std::cout << d_first_nearest << "  " << nearest_1_infos[k][j].d_x << std::endl;
+            //mowri << "\n" << k_first_nearest << "  " << nearest_1_infos[k][j].a_x << zentas::Endl;
+            //mowri << d_first_nearest << "  " << nearest_1_infos[k][j].d_x << zentas::Endl;
             //throw std::logic_error(errm + " k_first_nearest != nearest_1_infos[k][j].a_x");
           //}
   
           if (d_first_nearest != nearest_1_infos[k][j].d_x){
-            std::cout << "\n" << k_first_nearest << "  " << nearest_1_infos[k][j].a_x << std::endl;
-            std::cout << std::setprecision(20) <<  d_first_nearest << "  " << nearest_1_infos[k][j].d_x << std::endl;
+            mowri << "\n" << k_first_nearest << "  " << nearest_1_infos[k][j].a_x << zentas::Endl;
+            mowri << std::setprecision(20) <<  d_first_nearest << "  " << nearest_1_infos[k][j].d_x << zentas::Endl;
             throw std::logic_error(errm + "d_first_nearest != nearest_1_infos[k][j].d_x");
           }
   

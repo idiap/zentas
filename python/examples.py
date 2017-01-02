@@ -12,8 +12,11 @@ import numpy as np
 import numpy.random as npr
 
 #where is pyzentas .so ??
-import hardpaths
-sys.path.append(hardpaths.zentas_lib_dir)
+
+#import hardpaths
+#sys.path.append(hardpaths.zentas_lib_dir)
+
+sys.path.append("../build/python")
 import pyzentas
 
 def from_file_example():
@@ -27,6 +30,9 @@ def from_file_example():
   maxtime = 100.0
   K = 3
   maxrounds = 10
+  
+  
+  # (cannot set indices if from files) indices_init = np.array([1,2,3], dtype = np.uint64), 
   
   print "string settings (1)"
   root = "../data/"
@@ -61,8 +67,10 @@ def generated_sequence_example():
   data = np.array(data, dtype = 'c')
   #data.dtype = np.int8 #or keep it as |s1 (c). 
   
+  
   indices_init = np.array(random.sample(xrange(ndata), K), dtype = np.uint64)
   indices_init.sort()
+  
     
   print "string settings (1)"
   cl1 = pyzentas.pyzentas(ndata, dimension = None, sizes = sizes, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 1, max_proposals = max_proposals, capture_output = False, seed = 1011, maxtime = maxtime, nthreads = 1, maxrounds = maxrounds, patient = False, metric = "normalised levenshtein", rooted = False, energy = 'identity', with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None)
@@ -71,18 +79,16 @@ def generated_sequence_example():
 
 
 def dense_vector_example():
-
-  seed =  1011
+  seed =  1012
   random.seed(seed)
   npr.seed(seed)
-  max_proposals = 10000000
+  max_proposals = 100#000000
   maxtime = 30.0
   ndata = 1000
   K = 25
   maxrounds = 80
   dimension = 1000
   basedata = 1*npr.rand(ndata, dimension)
-  #basedata = npr.randint(0,100, dimension*ndata).reshape(ndata, dimension)  #+ npr.rand(dimension*ndata).reshape(ndata, dimension)
   data = np.array(basedata, dtype = np.float64)
   indices_init = np.array(random.sample(xrange(ndata), K), dtype = np.uint64)
   indices_init.sort()
@@ -93,7 +99,6 @@ def dense_vector_example():
 
 
 def sparse_data_example():
-
   seed =  1011 #npr.randint(1000)
   print "seed :", seed
   random.seed(seed)
@@ -101,28 +106,17 @@ def sparse_data_example():
   max_proposals = 1000
   maxtime = 100.0
   maxrounds = 100
-
- 
   ndata = 5
   K = 2
-  
   sizes = np.array([2,3,2,1,2], dtype = np.uint64)
-  
-  
   indices_s = np.array([1,2,
   1,2,3,
   8,9,
   8,
   8,9000], dtype = np.uint64)
-  
- 
   data = np.ones(sizes.sum()) #npr.randn(sizes.size)  
-  
-  
   indices_init = np.array([0,1], dtype = np.uint64)
-  
-  indices_init.sort()
-  
+  indices_init.sort()  
   cl1 = pyzentas.pyzentas(ndata = ndata, sizes = sizes, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 3, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, metric = "l0", nthreads = 1, maxrounds = maxrounds, patient = False, energy = "identity", rooted = False, indices_s = indices_s)
   
   

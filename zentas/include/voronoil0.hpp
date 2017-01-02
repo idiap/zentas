@@ -25,6 +25,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     VoronoiL0(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer<TMetric, TData> (ib) {}
   
   public:
+    using BaseClusterer<TMetric, TData>::mowri;
     using BaseClusterer<TMetric, TData>::K;
     using BaseClusterer<TMetric, TData>::ndata;
     using BaseClusterer<TMetric, TData>::f_energy;
@@ -65,7 +66,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     }
         
     virtual void round_summary() final override {
-      std::cout << get_base_summary_string() << std::endl;
+      mowri << get_base_summary_string() << zentas::Endl;
     }
     
     virtual void update_sample_info() override final{
@@ -118,6 +119,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
         if (E_old > E_prop_best){
           modified = true;
           swap_center_with_sample(k, j_prop_best);
+          //zzzzzzzzzzzzzzzz
         }
       }
       

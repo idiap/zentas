@@ -18,6 +18,7 @@ the GNU General Public License along with zentas. If not, see
 
 
 
+
 struct ClaransStatistics{
   public:
     // max_{j in k} (energy_margins)
@@ -88,11 +89,14 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     static constexpr double small_delta_E = 0.000001242354239862345234859234653745923847564657893459827645235;
     std::vector<std::vector<XNearestInfo>> nearest_2_infos;
     
+  
+  
 
   public:
     std::vector<std::vector<double>> energy_margins;
     std::vector<ClaransStatistics> cluster_statistics;
     
+ 
   protected: //TODO : privatise these.
     size_t k_to;
     size_t k_from;
@@ -103,11 +107,25 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     const size_t max_proposals;
     bool patient;
   
+  
+    //std::random_device rd;
+    //std::mt19937_64 gen;
+    //std::uniform_int_distribution<unsigned> dis;
+  
+  
+   
+
+
   public:
     
     BaseClarans(const BaseClustererInitBundle<DataIn, TMetric> & ib, size_t max_proposals, bool patient): 
     BaseClusterer<TMetric, TData>(ib),
-    nearest_2_infos(ib.K), energy_margins(ib.K), cluster_statistics(ib.K), n_proposals(0), max_proposals(max_proposals), patient(patient)  {}
+    nearest_2_infos(ib.K), energy_margins(ib.K), cluster_statistics(ib.K), n_proposals(0), max_proposals(max_proposals), patient(patient) {//gen(rd()) {
+      
+       //gen(1011)
+    //mowri << max_proposals << zentas::Endl;
+    //std::abort();
+    }
     
 
     BaseClarans(const BaseClustererInitBundle<DataIn, TMetric> & ib, const BaseClaransInitBundle & clib): BaseClarans(ib, clib.max_proposals, clib.patient) {} 
@@ -147,6 +165,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
 
       double delta_E;
       while (accept == false && n_proposals < max_proposals && get_time_remaining() > 0){
+        
         set_proposal(k1, k2, j2);
         ++n_proposals;
         delta_E = get_delta_E(k1, k2, j2, false);
@@ -610,7 +629,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
 
     virtual void round_summary() override final{
-      std::cout << get_base_summary_string() << "\t nprops : " <<  n_proposals << std::endl;
+      mowri << get_base_summary_string() << "\t nprops : " <<  n_proposals << zentas::Endl;
     }
 
     inline void reset_second_nearest_info(size_t k, size_t j, size_t k_second_nearest, double d_second_nearest, double e_second_nearest){
@@ -672,10 +691,10 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     virtual void custom_ndata_test() override final{
       for (size_t k = 0; k < K; ++k){
         if (energy_margins[k].size() != get_ndata(k)){
-          std::cout << "k = " << k <<std::endl;
-          std::cout << "size of energy_margins[k] " << energy_margins[k].size() << std::endl;
-          std::cout << "size of cluster_datas[k] " << get_ndata(k) << std::endl;
-          std::cout << "size of nearest_2_infos[k] " << nearest_2_infos[k].size() << std::endl;
+          mowri << "k = " << k <<zentas::Endl;
+          mowri << "size of energy_margins[k] " << energy_margins[k].size() << zentas::Endl;
+          mowri << "size of cluster_datas[k] " << get_ndata(k) << zentas::Endl;
+          mowri << "size of nearest_2_infos[k] " << nearest_2_infos[k].size() << zentas::Endl;
           
           throw std::logic_error("custom ndata test failed");
         }
@@ -710,15 +729,15 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
                             (m == cluster_statistics[k].m) &&
                             (m_star == cluster_statistics[k].m_star));
         if (test_passed == false){
-          std::cout << "\nk = " << k << std::endl;
-          std::cout << "ndata = " << get_ndata(k) << std::endl;
-          std::cout << "k_to and k_from : " << k_to << " " << k_from << std::endl;
-          std::cout << "M \t" << M << "\t" << cluster_statistics[k].M << std::endl;
-          std::cout << "M_star \t " << M_star << "\t" << cluster_statistics[k].M_star << std::endl;
-          std::cout << "R1 \t " << R1 << "\t" << cluster_statistics[k].R1 << std::endl;
-          std::cout << "R2  \t "<< R2 << "\t" << cluster_statistics[k].R2 << std::endl;
-          std::cout << "m  \t "<< m << "\t" << cluster_statistics[k].m << std::endl;
-          std::cout << "m_star \t " << m_star << "\t" << cluster_statistics[k].m_star << std::endl;
+          mowri << "\nk = " << k << zentas::Endl;
+          mowri << "ndata = " << get_ndata(k) << zentas::Endl;
+          mowri << "k_to and k_from : " << k_to << " " << k_from << zentas::Endl;
+          mowri << "M \t" << M << "\t" << cluster_statistics[k].M << zentas::Endl;
+          mowri << "M_star \t " << M_star << "\t" << cluster_statistics[k].M_star << zentas::Endl;
+          mowri << "R1 \t " << R1 << "\t" << cluster_statistics[k].R1 << zentas::Endl;
+          mowri << "R2  \t "<< R2 << "\t" << cluster_statistics[k].R2 << zentas::Endl;
+          mowri << "m  \t "<< m << "\t" << cluster_statistics[k].m << zentas::Endl;
+          mowri << "m_star \t " << m_star << "\t" << cluster_statistics[k].m_star << zentas::Endl;
           throw std::logic_error(errm);
         }
       }
@@ -936,10 +955,10 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
           
           if (d_second_nearest != nearest_2_infos[k][j].d_x){
             
-            std::cout << "\n";
+            mowri << "\n";
             print_centers();
-            std::cout << "\n" << k_second_nearest << "  " << nearest_2_infos[k][j].a_x << std::endl;
-            std::cout << std::setprecision(20) <<  d_second_nearest << "  " << nearest_2_infos[k][j].d_x << std::endl;
+            mowri << "\n" << k_second_nearest << "  " << nearest_2_infos[k][j].a_x << zentas::Endl;
+            mowri << std::setprecision(20) <<  d_second_nearest << "  " << nearest_2_infos[k][j].d_x << zentas::Endl;
             throw std::logic_error("d_second_nearest != d_second_nearest");
           }
           
@@ -949,8 +968,8 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
           
           double m_v = nearest_2_infos[k][j].e_x - get_e1(k,j);
           if (m_v != energy_margins[k][j]){
-            std::cout << "\nk : " << k << " \t j : " << j << std::endl;
-            std::cout << "\nm_v : " << m_v << " \t energy_margins[k][j] : " << energy_margins[k][j] << std::endl;
+            mowri << "\nk : " << k << " \t j : " << j << zentas::Endl;
+            mowri << "\nm_v : " << m_v << " \t energy_margins[k][j] : " << energy_margins[k][j] << zentas::Endl;
             throw std::logic_error("m_v != energy_margin");
           }
         }
@@ -1243,6 +1262,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
 
   public:
   
+    using BaseClusterer<TMetric, TData>::mowri;
     using BaseClusterer<TMetric, TData>::get_time_in_update_centers;  
     using BaseClusterer<TMetric, TData>::get_time_in_update_sample_info;  
     using BaseClusterer<TMetric, TData>::K;
@@ -1278,7 +1298,8 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::get_end;
     using BaseClusterer<TMetric, TData>::print_centers;
     using BaseClusterer<TMetric, TData>::get_time_remaining;
-            
+    using BaseClusterer<TMetric, TData>::gen;
+    using BaseClusterer<TMetric, TData>::dis;
 };
 
 
@@ -1386,10 +1407,10 @@ double BaseClarans<TMetric, TData>::get_delta_hat_l3(size_t k1, size_t k2, size_
   /* populating the stats vectors */
   n_full_knowledge = 0;
   //cluster_Z = 0;
-  for (auto & k : ndet_k){        
+  for (auto & k : ndet_k){       
     ndet_ndatas.push_back(get_ndata(k));
     n_full_knowledge += get_ndata(k);        
-    random_index = rand()%get_ndata(k);
+    random_index = dis(gen)%get_ndata(k);
     ndet_random_phase_inds.push_back(random_index);
     ndet_starting_inds.push_back(random_index);
     ndet_final_inds.push_back(random_index);
@@ -1612,7 +1633,7 @@ double BaseClarans<TMetric, TData>::get_delta_E_hoeffding_l3(size_t k1, size_t k
   for (auto & k : ndet_k){        
     ndet_ndatas.push_back(get_ndata(k));
     n_full_knowledge += get_ndata(k);        
-    random_index = rand()%get_ndata(k);
+    random_index = dis(gen)%get_ndata(k);
     ndet_random_phase_inds.push_back(random_index);
     ndet_starting_inds.push_back(random_index);
     ndet_final_inds.push_back(random_index);
