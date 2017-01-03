@@ -632,10 +632,6 @@ class BaseClusterer{
         ncalcs_in_update_centers += ncalcs1 - ncalcs0;
 
           
-        for (size_t koo = 0; koo < 20; ++koo){
-          std::cout << center_IDs[koo] << "  ";
-        }
-        std::cout << std::endl;
 
         
         if (modified_centers == false){

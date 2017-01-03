@@ -139,7 +139,7 @@ def plot_sim_experiments(maxtime = 64.0):
   pl.text(x = bottom_left[0], y = bottom_left[1], s = "syn-2", transform=ax.transAxes)
   
   pl.subplot(2,2,3)
-  ax = pl.gca()  
+  ax = pl.gca()
   plot_experiment("dense_vector_1")
   pl.xlim(def_xlim)
   pl.ylabel('energy')
