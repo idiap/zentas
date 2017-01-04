@@ -178,7 +178,7 @@ X (*) {non-optional}
 K (*)
   The number of clusters
   
-indices_init (if not from files, so when filenames_list = None) [np.array of np.uint64]
+indices_init (if not from files, so when filenames_list = None) [np.array of np.uint64] {non-optional}
   A vector of K distinct integers in [0, ndata), the starting centers
 
 algorithm (*) [string]
@@ -383,6 +383,9 @@ https://arxiv.org/abs/1609.04723
     return dangerwrap(lambda : basezentas("f", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename))
 
   else:
+    
+    if not indices_init.ravel():
+      raise RuntimeError("indices_init is not optional in this situation") 
 
     # Dense vector data.
     if dimension != None:        
