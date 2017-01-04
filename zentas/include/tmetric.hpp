@@ -152,7 +152,7 @@ class L2Distance : public LpDistance<TNumber>{
           break;
         }
       }
-      calccosts += d;
+      calccosts += (d == dimension ? d : 1 + d);
       distance = std::sqrt(distance);
 
 
@@ -239,7 +239,7 @@ class L1Distance : public LpDistance<TNumber>{
           break;
         }
       }
-      calccosts += d;
+      calccosts += (d == dimension ? d : 1 + d);
     }
 
     inline void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance){
@@ -315,7 +315,7 @@ class L0Distance : public LpDistance<TNumber>{
           break;
         }
       }
-      calccosts += d;
+      calccosts += (d == dimension ? d : 1 + d);
     }
 
     inline void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance){
@@ -385,7 +385,7 @@ class L_oo_Distance : public LpDistance<TNumber>{
           break;
         }
       }
-      calccosts += d;
+      calccosts += (d == dimension ? d : 1 + d);
     }
 
     inline void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance){
