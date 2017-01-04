@@ -384,9 +384,11 @@ https://arxiv.org/abs/1609.04723
 
   else:
     
-    if not indices_init.ravel():
+    if not indices_init:
       raise RuntimeError("indices_init is not optional in this situation") 
 
+    print "indices_init : ", indices_init 
+    
     # Dense vector data.
     if dimension != None:        
       return dangerwrap(lambda : basezentas("v", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, [], "", ""))
