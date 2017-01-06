@@ -383,11 +383,11 @@ https://arxiv.org/abs/1609.04723
     return dangerwrap(lambda : basezentas("f", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename))
 
   else:
+
     
-    if not indices_init:
+    if indices_init == None:
       raise RuntimeError("indices_init is not optional in this situation") 
 
-    print "indices_init : ", indices_init 
     
     # Dense vector data.
     if dimension != None:        
