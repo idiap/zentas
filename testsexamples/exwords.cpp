@@ -38,6 +38,7 @@ int cluster_words(){
   std::string text;
   size_t seed = 1012;
   double maxtime = 10000.;
+  double minmE = 0.;
   std::string metric("normalised levenshtein");
   size_t nthreads = 1;
   size_t maxrounds = 100;
@@ -46,7 +47,7 @@ int cluster_words(){
   bool rooted = true;
   double critical_radius = 0;
   double exponent_coeff = 0;
-  nszen::textfilezentas(filenames, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, text, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  nszen::textfilezentas(filenames, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
  
   return 0; 
 }

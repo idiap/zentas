@@ -30,13 +30,13 @@ void hello(){
 
 
 template <typename TData, typename TMetric>
-void dispatch(std::string algorithm, size_t level, const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, size_t max_proposals, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, bool patient, std::string energy, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser){
+void dispatch(std::string algorithm, size_t level, const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, size_t max_proposals, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, bool patient, std::string energy, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser){
   
   typedef typename TData::DataIn DataIn;  
   
   DataIn datain(datain_ib);
 
-  BaseClustererInitBundle<DataIn, TMetric> ib(K, &datain, indices_init, seed, maxtime, indices_final, labels, nthreads, maxrounds, energy, metric_initializer, energy_initialiser);
+  BaseClustererInitBundle<DataIn, TMetric> ib(K, &datain, indices_init, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, energy, metric_initializer, energy_initialiser);
   
   BaseClaransInitBundle clib(max_proposals, patient);
   
@@ -72,7 +72,7 @@ void dispatch(std::string algorithm, size_t level, const typename TData::InitBun
 /* This is the place to do all kinds of tests on the input: all user calls (R/Python/Terminal) will pass through this function */
 template <typename TData, typename TMetric>
 void zentas_base(
-const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, bool patient, std::string energy, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser){
+const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, bool patient, std::string energy, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser){
 
   /* used during experiments to see if openblas worth the effort. Decided not. 
   //openblas_set_num_threads(1);
@@ -130,7 +130,7 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
     throw std::runtime_error("Something wrong with algorithm : " + algorithm + "  level : " + std::to_string(level));
   }  
   
-  dispatch <TData, TMetric> (algorithm, level, datain_ib, K, indices_init, max_proposals, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
+  dispatch <TData, TMetric> (algorithm, level, datain_ib, K, indices_init, max_proposals, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
   
   
   #ifndef COMPILE_FOR_R
@@ -149,7 +149,7 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
 
 // like 10% -> 80% faster if unrooted (!) :)
 template <typename T>
-void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
+void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
   
 
   LpMetricInitializer metric_initializer;
@@ -160,25 +160,25 @@ void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t 
   if (rooted == true){
     typedef typename VDataRooted<DenseVectorDataRootedIn < T > >::InitBundle InitBundle;
     InitBundle datain_ib(ndata, dimension, ptr_datain);
-    zentas_base  <VDataRooted <DenseVectorDataRootedIn < T > >, LpMetric<DenseVectorDataRootedIn < T >  > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
+    zentas_base  <VDataRooted <DenseVectorDataRootedIn < T > >, LpMetric<DenseVectorDataRootedIn < T >  > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
   }
   
   else{
     typedef typename VData<DenseVectorDataUnrootedIn < T > >::InitBundle InitBundle;
     InitBundle datain_ib(ndata, dimension, ptr_datain);
-    zentas_base  <VData <DenseVectorDataUnrootedIn < T> >, LpMetric<DenseVectorDataUnrootedIn < T > > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
+    zentas_base  <VData <DenseVectorDataUnrootedIn < T> >, LpMetric<DenseVectorDataUnrootedIn < T > > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
   }
 }
 
-template void vzentas(size_t ndata, size_t dimension, const double * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);
+template void vzentas(size_t ndata, size_t dimension, const double * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);
 
-template void vzentas(size_t ndata, size_t dimension, const float * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);  
+template void vzentas(size_t ndata, size_t dimension, const float * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);  
 
 
 /* sparse vectors */
 
 template <typename T>
-void sparse_vector_zentas(size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
+void sparse_vector_zentas(size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
   
   LpMetricInitializer metric_initializer;
   metric_initializer.reset(metric);
@@ -189,29 +189,29 @@ void sparse_vector_zentas(size_t ndata, const size_t * const sizes, const T * co
 
     typedef typename SparseVectorDataRooted<SparseVectorDataRootedIn < T > >::InitBundle InitBundle;
     InitBundle datain_ib(ndata, sizes, ptr_datain, ptr_indices_s);
-    zentas_base  <SparseVectorDataRooted <SparseVectorDataRootedIn < T> >, LpMetric<SparseVectorDataRootedIn < T > > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
+    zentas_base  <SparseVectorDataRooted <SparseVectorDataRootedIn < T> >, LpMetric<SparseVectorDataRootedIn < T > > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
   }
   
   else{
     typedef typename SparseVectorData<SparseVectorDataUnrootedIn < T > >::InitBundle InitBundle;
     InitBundle datain_ib(ndata, sizes, ptr_datain, ptr_indices_s);
-    zentas_base  <SparseVectorData <SparseVectorDataUnrootedIn < T> >, LpMetric<SparseVectorDataUnrootedIn < T > > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
+    zentas_base  <SparseVectorData <SparseVectorDataUnrootedIn < T> >, LpMetric<SparseVectorDataUnrootedIn < T > > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
   }
     
 
 }
 
 
-template void sparse_vector_zentas(size_t ndata, const size_t * const  sizes, const double * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);
+template void sparse_vector_zentas(size_t ndata, const size_t * const  sizes, const double * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);
 
-template void sparse_vector_zentas(size_t ndata, const size_t * const  sizes, const float * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);  
+template void sparse_vector_zentas(size_t ndata, const size_t * const  sizes, const float * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff);  
 
 
 
 /* strings */
 
 template <typename T>
-void szentas(size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff){
+void szentas(size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff){
 
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
 
@@ -266,13 +266,13 @@ void szentas(size_t ndata, const size_t * const sizes, const T * const ptr_datai
     if (rooted == true){
       typedef typename SDataRooted<StringDataRootedIn < T > >::InitBundle InitBundle;
       InitBundle datain_ib(ndata, sizes, ptr_datain);
-      zentas_base  <SDataRooted <StringDataRootedIn < T> >, LevenshteinMetric < StringDataRootedIn <T> > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);      
+      zentas_base  <SDataRooted <StringDataRootedIn < T> >, LevenshteinMetric < StringDataRootedIn <T> > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);      
     }
     
     else{
       typedef typename SData<StringDataUnrootedIn< T > >::InitBundle InitBundle;
       InitBundle datain_ib(ndata, sizes, ptr_datain);
-      zentas_base  <SData <StringDataUnrootedIn< T> >, LevenshteinMetric < StringDataUnrootedIn<T> > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
+      zentas_base  <SData <StringDataUnrootedIn< T> >, LevenshteinMetric < StringDataUnrootedIn<T> > > (datain_ib, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, nthreads, maxrounds, patient, energy, metric_initializer, energy_initialiser);
     }
   }
   
@@ -287,10 +287,10 @@ void szentas(size_t ndata, const size_t * const sizes, const T * const ptr_datai
 
 
 
-template void szentas(size_t ndata, const size_t * const sizes, const int * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff);
+template void szentas(size_t ndata, const size_t * const sizes, const int * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff);
 
 
-template void szentas(size_t ndata, const size_t * const sizes, const char * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff);
+template void szentas(size_t ndata, const size_t * const sizes, const char * const ptr_datain, size_t K, const size_t * const indices_init, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff);
 
 
 

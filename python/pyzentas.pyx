@@ -14,14 +14,14 @@ ctypedef fused char_or_int:
 cdef extern from "zentas.hpp" namespace "nszen":	
   void hello() except +
 
-  void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
+  void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
 
 
-  void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
+  void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
 
-  void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff) except +;
+  void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff) except +;
 
-  void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
+  void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
 
 
 def dangerwrap(f):
@@ -72,10 +72,10 @@ def pyhello():
   return dangerwrap(lambda : basehello)
   
 
-#vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool isfasta, double critical_radius, double exponent_coeff
+#vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool isfasta, double critical_radius, double exponent_coeff
 
 
-def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s, cython.floating [:] X_v, K, size_t [:] indices_init, algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size,  c_indel,  c_switch, double [:] c_indel_arr, double [:] c_switches_arr, size_t [:] indices_s, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename):
+def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s, cython.floating [:] X_v, K, size_t [:] indices_init, algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size,  c_indel,  c_switch, double [:] c_indel_arr, double [:] c_switches_arr, size_t [:] indices_s, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename):
 
   cdef string astring  
   
@@ -88,17 +88,17 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
   
   cdef size_t [:] indices_final = np.empty((K,), dtype = np.uint64)
   
-  cdef void (*cw_vzentas)(size_t, size_t, const cython.floating * const, size_t, const size_t * const, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+  cdef void (*cw_vzentas)(size_t, size_t, const cython.floating * const, size_t, const size_t * const, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
 
 
-  cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const cython.floating * const, const size_t * const, size_t, const size_t * const, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+  cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const cython.floating * const, const size_t * const, size_t, const size_t * const, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
   
     
-  cdef void (*cw_szentas)(size_t, const size_t * const, const char_or_int * const, size_t, const size_t * const, string, size_t, size_t, bool , string & , size_t, double, size_t * const , size_t * const, string, size_t, size_t, bool, string, bool, bool, size_t, double, double, const double * const, const double * const, double critical_radius, double exponent_coeff) except +
+  cdef void (*cw_szentas)(size_t, const size_t * const, const char_or_int * const, size_t, const size_t * const, string, size_t, size_t, bool , string & , size_t, double, double minmE, size_t * const , size_t * const, string, size_t, size_t, bool, string, bool, bool, size_t, double, double, const double * const, const double * const, double critical_radius, double exponent_coeff) except +
 
 
   if datatype == "f":
-    textfilezentas(filenames_vec, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
+    textfilezentas(filenames_vec, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
       
   
   elif datatype == "v":
@@ -109,7 +109,7 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
     else:
       cw_vzentas=&vzentas[float]
       
-    cw_vzentas(ndata, dimension, &X_v[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
+    cw_vzentas(ndata, dimension, &X_v[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
   
   elif datatype == "sv":
     if cython.floating is double:
@@ -118,7 +118,7 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
     else:
       cw_sparse_vector_zentas=&sparse_vector_zentas[float]
       
-    cw_sparse_vector_zentas(ndata, &sizes[0], &X_v[0], &indices_s[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
+    cw_sparse_vector_zentas(ndata, &sizes[0], &X_v[0], &indices_s[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
     
 
   
@@ -133,7 +133,7 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
     else:
       print " what type of sequence array ?  "
             
-    cw_szentas(ndata, &sizes[0], &X_s[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, &c_indel_arr[0], &c_switches_arr[0], critical_radius, exponent_coeff)
+    cw_szentas(ndata, &sizes[0], &X_s[0], K, &indices_init[0], algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, &c_indel_arr[0], &c_switches_arr[0], critical_radius, exponent_coeff)
     
    
     
@@ -142,7 +142,7 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
   return {"output": astring, 'indices_final':np.array(indices_final), 'labels':np.array(labels)}
 
 
-def pyzentas(ndata = None, dimension = None, sizes = None, X = None, K = 10, indices_init = None, algorithm = "clarans", level = 3, max_proposals = 10**9, capture_output = False, seed = 1011, maxtime = 3.0, metric = "l2", nthreads = 1, maxrounds = 10**9, patient = True, energy = "identity", rooted = True, with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None, indices_s = None, critical_radius = 0, exponent_coeff = 0, filenames_list = None, outfilename = None, costfilename = None):
+def pyzentas(ndata = None, dimension = None, sizes = None, X = None, K = 10, indices_init = None, algorithm = "clarans", level = 3, max_proposals = 10**9, capture_output = False, seed = 1011, maxtime = 3.0, minmE = 0.0, metric = "l2", nthreads = 1, maxrounds = 10**9, patient = True, energy = "identity", rooted = True, with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None, indices_s = None, critical_radius = 0, exponent_coeff = 0, filenames_list = None, outfilename = None, costfilename = None):
   """  
 Description
 ----------------------------
@@ -206,6 +206,9 @@ seed (clarans)
 
 maxtime (*)
   a new round will not be started after maxtime seconds have passed
+
+minmE (*)
+  a new round will not be started if mE is less than minmE
 
 metric (*)
   consider vectors <2,2> and <5,6> for sparsevectors and densevectors, this can be one of
@@ -380,7 +383,7 @@ https://arxiv.org/abs/1609.04723
     indices_init = null_size_t
     X = null_float
     ndata = 0
-    return dangerwrap(lambda : basezentas("f", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename))
+    return dangerwrap(lambda : basezentas("f", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename))
 
   else:
 
@@ -388,10 +391,16 @@ https://arxiv.org/abs/1609.04723
     if indices_init == None:
       raise RuntimeError("indices_init is not optional in this situation") 
 
+    if indices_init.size != K:
+      raise RuntimeError("indices_init should be of size K")
+    
+    if indices_init.max() > ndata -1:
+      raise RuntimeError("max in indices_init should not exceed ndata - 1")
+    
     
     # Dense vector data.
     if dimension != None:        
-      return dangerwrap(lambda : basezentas("v", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, [], "", ""))
+      return dangerwrap(lambda : basezentas("v", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, [], "", ""))
     
     # Sparse vector data or string data.
     else:
@@ -401,9 +410,9 @@ https://arxiv.org/abs/1609.04723
           c_indel_arr = null_double
           c_switches_arr = null_double
         
-        return dangerwrap(lambda : basezentas("s", ndata, 0, sizes.ravel(), X.ravel(), null_float, K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr.ravel(), c_switches_arr.ravel(), null_size_t, critical_radius, exponent_coeff, [], "", ""))
+        return dangerwrap(lambda : basezentas("s", ndata, 0, sizes.ravel(), X.ravel(), null_float, K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr.ravel(), c_switches_arr.ravel(), null_size_t, critical_radius, exponent_coeff, [], "", ""))
   
       #Sparse vector data.
       else:
-        return dangerwrap(lambda : basezentas("sv", ndata, 0, sizes.ravel(), null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, indices_s.ravel(), critical_radius, exponent_coeff, [], "", ""))
+        return dangerwrap(lambda : basezentas("sv", ndata, 0, sizes.ravel(), null_int, X.ravel(), K, indices_init.ravel(), algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, indices_s.ravel(), critical_radius, exponent_coeff, [], "", ""))
   

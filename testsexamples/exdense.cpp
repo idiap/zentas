@@ -56,6 +56,9 @@ int cluster_dense(){
   //maximum allowed time in seconds
   double maxtime = 2.;
   
+  //if the mean energy drops below this, stop and return
+  double minmE = 0.;
+  
   //save the final results (center indices and assignments) to these
   std::vector<size_t> indices_final (K);
   std::vector<size_t> labels (ndata);
@@ -85,7 +88,7 @@ int cluster_dense(){
   double exponent_coeff = 0; 
   
   
-  nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, indices_init.data(), algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, indices_init.data(), algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
 
   return 0;
   

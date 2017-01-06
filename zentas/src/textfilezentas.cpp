@@ -25,7 +25,7 @@ namespace nszen{
 
 //TODO(james) : make this work for general text files.
 
-void textfilezentas(std::vector<std::string> filenames, std::string outfilename, std::string costfilename, size_t K, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
+void textfilezentas(std::vector<std::string> filenames, std::string outfilename, std::string costfilename, size_t K, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
   
   
 /* Input : filenames, outfilename,  costfilename 
@@ -234,7 +234,7 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
   
   
   /* (5) call szentas */
-  szentas(ndata, sizes, ptr_datain, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, indices_final, labels, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr, critical_radius, exponent_coeff);
+  szentas(ndata, sizes, ptr_datain, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr, critical_radius, exponent_coeff);
   
   
   

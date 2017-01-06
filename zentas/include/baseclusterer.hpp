@@ -99,6 +99,7 @@ struct BaseClustererInitBundle{
   const size_t * const center_indices_init;
   size_t seed;
   double maxtime;
+  double minmE;
   size_t * const indices_final;
   size_t * const labels;
   size_t nthreads;
@@ -108,9 +109,9 @@ struct BaseClustererInitBundle{
   const EnergyInitialiser * ptr_energy_initialiser;
 
   
-  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, size_t seed, double maxtime, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, std::string energy, const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser): 
+  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, std::string energy, const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser): 
   
-  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), seed(seed), maxtime(maxtime), indices_final(indices_final), labels(labels), nthreads(nthreads), maxrounds(maxrounds), energy(energy), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser) {}
+  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), seed(seed), maxtime(maxtime), minmE(minmE), indices_final(indices_final), labels(labels), nthreads(nthreads), maxrounds(maxrounds), energy(energy), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser) {}
 
 };
 
@@ -174,7 +175,8 @@ class BaseClusterer{
   
   private:  
     size_t maxtime_micros;
-
+    double minmE;
+    
     size_t * const labels;
     
     std::mutex mutex0;
@@ -194,6 +196,7 @@ class BaseClusterer{
      const size_t * const center_indices_init, /* The K sample indices to initialise with */
      size_t seed, /* starting seed for generating random numbers, uses a custom "std::default_random_engine"  */
      double maxtime, /* will stop in go ( ) at first opportunity after maxtime */
+     double minmE, /* will stop in go ( ) at first opportunity if mE is less than minmE */
      size_t * const indices_final, /* the K final indices (to populate) */
      size_t * const labels, /* the assigned cluster of the datain.ndata samples */
      size_t nthreads,
@@ -207,7 +210,7 @@ class BaseClusterer{
     centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain),
     metric(datain, nthreads, metric_initializer), 
     cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0),
-    round(0), center_indices_init(center_indices_init), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy)
+    round(0), center_indices_init(center_indices_init), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), minmE(minmE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy)
 
      {
        
@@ -262,7 +265,7 @@ class BaseClusterer{
 
 
   
-    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.seed, ib.maxtime, ib.indices_final, ib.labels, ib.nthreads, ib.maxrounds, ib.energy, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
+    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.seed, ib.maxtime, ib.minmE, ib.indices_final, ib.labels, ib.nthreads, ib.maxrounds, ib.energy, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
 
     size_t get_time_in_update_centers(){
       return time_in_update_centers;
@@ -610,7 +613,7 @@ class BaseClusterer{
       round_summary();
       
       //mowri << time_total << "   " << maxtime MM zentas::Endl;
-      while ((time_total < maxtime_micros) && (round < maxrounds)){ // (E_total != old_E_total) && 
+      while ((time_total < maxtime_micros) && (round < maxrounds) && (E_total / static_cast<double>(ndata)) >= minmE){ // (E_total != old_E_total) && 
 
         t0 = std::chrono::high_resolution_clock::now();
         ncalcs0 = metric.get_ncalcs();
