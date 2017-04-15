@@ -42,7 +42,7 @@ Using
 -------------------------------------------
 Example use cases of the C++ library and headers are in testsexamples, with the corresponding executables in build/testsexamples. There is an example of clustering dense vectors (exdense.cpp), sparse vectors (exsparse.cpp), and strings (exwords.cpp).
 
-To use the Python library, make sure pyzentas.so is on PYTHONPATH, for example you can use `sys.path.append(/path/to/pyzentas.so)`. There is only one clustering function for all data types, metrics etc. To use it pyzentas interactively (using iPython for example), try
+To use the Python library, make sure pyzentas.so is on PYTHONPATH, for example you can use `sys.path.append(/path/to/pyzentas.so)`. There is only one clustering function for all data types, metrics, energies and optimisation levels. To use pyzentas interactively (using iPython for example), try
 
 ```
 import pyzentas
