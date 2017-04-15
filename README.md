@@ -1,8 +1,9 @@
 What
 -------------------------------------------
-Fast and versatile CLARANS, as described at ?? containing
+Fast and versatile CLARANS, as described at xx-xx-xx containing
 
 (1) Shared library with C++ headers
+
 (2) Python library
 
 Requirements
