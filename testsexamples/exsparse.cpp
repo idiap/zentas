@@ -20,6 +20,7 @@ the GNU General Public License along with zentas. If not, see
 
 
 /* Test case : clustering sparse vectors. */
+/* many of the parameters used here are the same as in exdense.cpp, if in doubt look there*/
 int cluster_sparse(){
   
   //generating random data

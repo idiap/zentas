@@ -19,6 +19,7 @@ the GNU General Public License along with zentas. If not, see
 
 
 /* Test case : word clustering. */
+/* many of the parameters used here are the same as in exdense.cpp, if in doubt look there*/
 int cluster_words(){
   
   std::vector<std::string> filenames; 

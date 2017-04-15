@@ -144,12 +144,39 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
 
 def pyzentas(ndata = None, dimension = None, sizes = None, X = None, K = 10, indices_init = None, algorithm = "clarans", level = 3, max_proposals = 10**9, capture_output = False, seed = 1011, maxtime = 3.0, minmE = 0.0, metric = "l2", nthreads = 1, maxrounds = 10**9, patient = True, energy = "identity", rooted = True, with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None, indices_s = None, critical_radius = 0, exponent_coeff = 0, filenames_list = None, outfilename = None, costfilename = None):
   """  
+.
+The function, as defined in python/pyzentas.pyx
+----------------------------
+def pyzentas(ndata = None, dimension = None, sizes = None, X = None, K = 10, indices_init = None, algorithm = "clarans", level = 3, max_proposals = 10**9, capture_output = False, seed = 1011, maxtime = 3.0, minmE = 0.0, metric = "l2", nthreads = 1, maxrounds = 10**9, patient = True, energy = "identity", rooted = True, with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None, indices_s = None, critical_radius = 0, exponent_coeff = 0, filenames_list = None, outfilename = None, costfilename = None):
+
+
+
 Description
 ----------------------------
-Fast K-Medoids (CLARANS) for diverse datatypes and metrics, as described in (??).
+Fast K-Medoids (CLARANS) for diverse datatypes and metrics, as described in xx-xx-xx.
 
 
-Input 
+Quick example (dense data)
+----------------------------
+>> import numpy as np
+>> import numpy.random as npr
+>> ndata = 10000
+>> dimension = 4
+>> X = npr.randn(ndata, dimension)
+>> K = 100
+>> indices_init = range(K)
+>> results = pyzentas.pyzentas(X = X, K = K, indices_init = indices_init, maxrounds = 150, maxtime = 10, capture_output = True)
+>> results.keys()
+      ['output', 'labels', 'indices_final']
+      where:     
+          'labels'        : cluster identities (vector of size ndata)
+          'indices_final' : the indices of the final medoids (vector of size K)
+          'output'        : a string containing analysis of times in each component of the algorithm, iteration-by-iteration (see below for details)
+
+
+
+
+All the Input Options  
 ----------------------------
 parameter (relevant when, * : always relevant) [type of input] {non-optional}
 description
@@ -329,9 +356,9 @@ output
                   For Voronoi, this is time in updating assignments
   utime         : time spent in updating. For clarans, this is the time spent determining the nearest and second nearest 
                   centers following a swap. For voronoi, this is time spent determining medoids.
-  rtime         : time spent implementing the center move. This cost is involves moving data between clusters while maintaining 
-                  it in an random order. If rooted = True, this can be expected be higher that when rooted = False,
-                  (with lower ctime for rooted = True)
+  rtime         : time spent implementing the center move. This cost involves moving data between clusters while maintaining 
+                  it in a random order. If rooted = True, this can be expected be higher that when rooted = False,
+                  (with a correspondlingly lower ctime for rooted = True)
   ttime         : total time.
   lg2 nc(c)     : log based 2 of the number of distance calculations made in center update (corresponding to ctime)
   lg2 nc        : log based 2 of total number of distance calculations made.
@@ -349,26 +376,36 @@ see ./examples.py
 
 References
 ----------------------------
-https://arxiv.org/abs/1609.04723
+xx-xx-xx
   """	
   null_size_t = np.empty((1,), dtype = np.uint64)
   null_int = np.empty((1,), dtype = np.int32)
   null_float = np.empty((1,), dtype = np.float32)
   null_double = np.empty((1,), dtype = np.float64)  
   
+  if isinstance(X, np.ndarray) and len(X.shape) == 2:
+
+    if ndata != None and ndata != X.shape[0]:
+      raise RuntimeError("X is a 2-D array (hence assumed to be dense vector data), with shape[0] = " + str(X.shape[0]) + ". This is in disagreement with parameter `ndata', which is " + str(ndata) + ".")
+      
+    if dimension != None and dimension != X.shape[1]:
+      raise RuntimeError("X is a 2-D array (hence assumed to be dense vector data), with shape[1] = " + str(X.shape[1]) + ". This is in disagreement with parameter `dimension', which is " + str(dimension) + ".")
+
+    ndata, dimension = X.shape
+
   
   dimension_sizes_string = "Dimension should be set for dense vector data. Sizes should be set for string and sparse vector data."
   if filenames_list != None and dimension != None and sizes != None:
     raise RuntimeError("Both dimension and sizes have been set. Either one or the other should be set. " + dimension_sizes_string)
 
-  if filenames_list == None and dimension == None and sizes == None:
+  if filenames_list == None and dimension == None and sizes == None:      
     raise RuntimeError("Neither dimension nor sizes is set. Either one or the other should be set. " + dimension_sizes_string)
 
   if (ndata == None and X != None):
-    raise RuntimeError("With X provided, ndata must be provided as well. The only time ndata should not be provided is when reading dequence data from file")
+    raise RuntimeError("With X provided, ndata must be provided as well. The only time ndata should not be provided is when reading sequence data from file")
   
   if (ndata != None and X== None):
-    raise RuntimeError("With X non-provided, we assume that data should be read from file. In which case, ndata should be None")
+    raise RuntimeError("With X not provided, we assume that data should be read from file. In which case, ndata should be None")
   
   
   #from textfiles
@@ -391,12 +428,17 @@ https://arxiv.org/abs/1609.04723
     if indices_init == None:
       raise RuntimeError("indices_init is not optional in this situation") 
 
+    if isinstance(indices_init, list):
+      indices_init = np.array(indices_init)
+      
     if indices_init.size != K:
       raise RuntimeError("indices_init should be of size K")
     
     if indices_init.max() > ndata -1:
       raise RuntimeError("max in indices_init should not exceed ndata - 1")
     
+    if (indices_init.dtype != np.uint64):
+      indices_init = np.array(indices_init, dtype =  np.uint64)
     
     # Dense vector data.
     if dimension != None:        

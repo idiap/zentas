@@ -11,11 +11,7 @@ import random
 import numpy as np
 import numpy.random as npr
 
-#where is pyzentas .so ??
-
-#import hardpaths
-#sys.path.append(hardpaths.zentas_lib_dir)
-
+#where is pyzentas.so ? Make sure this is correct.
 sys.path.append("../build/python")
 import pyzentas
 
@@ -31,9 +27,7 @@ def from_file_example():
   K = 3
   maxrounds = 10
   
-  
-  # (cannot set indices if from files) indices_init = np.array([1,2,3], dtype = np.uint64), 
-  
+    
   print "string settings (1)"
   root = "../data/"
   cl1 = pyzentas.pyzentas(filenames_list = [root + "words1.txt", root + "words2.txt"], outfilename = root + "output1.txt", costfilename = root + "costs.txt", K = K, algorithm = "clarans", level = 1, max_proposals = 100, capture_output = False, maxtime = 10, metric = "levenshtein", nthreads = 1, maxrounds = 10, patient = False, energy = "identity", rooted = True, seed = seed)
@@ -120,19 +114,23 @@ def sparse_data_example():
   cl1 = pyzentas.pyzentas(ndata = ndata, sizes = sizes, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 3, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, metric = "l0", nthreads = 1, maxrounds = maxrounds, patient = False, energy = "identity", rooted = False, indices_s = indices_s)
   
   
-  print cl1
+  return cl1
   
   
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+def function_string_example():
+  """
+  Thus is the example in the function string
+  """
+  import numpy as np
+  import numpy.random as npr
+  ndata = 10000
+  dimension = 4
+  X = npr.randn(ndata, dimension)
+  K = 100
+  indices_init = range(K)
+  results = pyzentas.pyzentas(X = X, K = K, indices_init = indices_init, maxrounds = 200, maxtime = 10, capture_output = True)
+
+

@@ -694,6 +694,19 @@ class BaseClusterer{
         }
       }
       
+      if (time_total >= maxtime_micros){
+        mowri << "exceeded maxtime (" << maxtime_micros/1000. << ")" << zentas::Endl;
+      }
+      
+      if (round >= maxrounds){
+        mowri << "exceeded maxrounds (" << maxrounds << ")" << zentas::Endl;
+      }
+      
+      if (E_total / static_cast<double>(ndata) < minmE){
+        mowri << "mE below termination minmE (" << minmE << ")" << zentas::Endl;        
+      }
+      
+      
       //populate labels : 
       for (size_t k = 0; k < K; ++k){
         labels[center_IDs[k]] = k;
