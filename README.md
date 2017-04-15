@@ -49,9 +49,9 @@ import pyzentas
 pyzentas.pyzentas?
 ```
 
-At the bottom of the function string are example uses. More examples are in python/examples.py
+At the bottom of the function string are example uses. More examples using pyzentas are in python/examples.py
 
 
-Doesn't work or missing a feature?
+Doesn't work, or missing a feature?
 -------------------------------------------
 Please raise an issue in the zentas repository
