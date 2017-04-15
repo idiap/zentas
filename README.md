@@ -27,7 +27,7 @@ If you do NOT want the Python library, comment out the final line in the topmost
 Building
 -------------------------------------------
 
-```cmake 
+```
 mkdir build
 cd build
 cmake ..
@@ -44,7 +44,8 @@ Example use cases of the C++ library and headers are in testsexamples, with the 
 
 To use the Python library, make sure pyzentas.so is on PYTHONPATH, for example you can use `sys.path.append(/path/to/pyzentas.so)`. There is only one clustering function for all data types, metrics etc. To use it pyzentas interactively (using iPython for example), try
 
-```import pyzentas
+```
+import pyzentas
 pyzentas.pyzentas?
 ```
 
