@@ -13,7 +13,7 @@ Minimal installation requirements:
 -- Cmake version 3.0 or greater
 
 
-In addition, for the python library:
+In addition, for the Python library you will need:
 
 -- Python and Cython
 
@@ -35,7 +35,7 @@ make
 ``` 
 
 
-The shared library is in ./build/zentas (libzentas.so in Linux) and the Python shared library is in ./build/python (pyzentas.so in Linux). These can be moved/copied elsewhere manually. 
+The shared library should now be in ./build/zentas (libzentas.so in Linux) and the Python shared library in ./build/python (pyzentas.so in Linux). These can be moved/copied elsewhere manually. 
 
 
 Using
