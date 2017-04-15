@@ -35,15 +35,20 @@ make
 ``` 
 
 
-The shared library is in ./build/zentas (libzentas.so in Linux) and the Python shared library (pyzentas.so in Linux) is in ./build/python. These can be moved manually. 
+The shared library is in ./build/zentas (libzentas.so in Linux) and the Python shared library is in ./build/python (pyzentas.so in Linux). These can be moved/copied elsewhere manually. 
 
 
 Using
 -------------------------------------------
-Example use cases of the library in C++ are in testsexamples, with the corresponding executables in build/testsexamples. There are examples of clustering dense vectors, sparse vectors, and strings using the Levenshtein distance.
+Example use cases of the C++ library and headers are in testsexamples, with the corresponding executables in build/testsexamples. There is an example of clustering dense vectors (exdense.cpp), sparse vectors (exsparse.cpp), and strings (exwords.cpp).
 
-Example use cases of the library in Python are in python/examples.py. To use the Python library, make sure pyzentas.so is on PYTHONPATH, for example you can use `sys.path.append(/path/to/pyzentas.so)`
+To use the Python library, make sure pyzentas.so is on PYTHONPATH, for example you can use `sys.path.append(/path/to/pyzentas.so)`. There is only one clustering function for all data types, metrics etc. To use it pyzentas interactively (using iPython for example), try
 
+```import pyzentas
+pyzentas.pyzentas?
+```
+
+At the bottom of the function string are example uses. More examples are in python/examples.py
 
 
 Doesn't work or missing a feature?
