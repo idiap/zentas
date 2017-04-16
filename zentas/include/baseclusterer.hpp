@@ -602,6 +602,33 @@ class BaseClusterer{
       if (with_tests == true){
         post_initialisation_test();
       }
+      
+      
+      mowri << 
+R"(
+(The prevent output to terminal, set capture_output to false)
+
+The output below contains the following round-by-round statistics
+------------------------------------------------------------------------------------------------------------------------------------
+first column  : round (where a round is defined by center change)
+mE            : mean energy over samples
+itime         : time [in milliseconds] taken for initialisation (first assignments)
+ctime         : time spent in center update. For clarans, this is the time spent evaluating proposals. 
+                For Voronoi, this is time in updating assignments
+utime         : time spent in updating. For clarans, this is the time spent determining the nearest and second nearest 
+                centers following a swap. For voronoi, this is time spent determining medoids.
+rtime         : time spent implementing the center move. This cost involves moving data between clusters while maintaining 
+                it in a random order. If rooted = True, this can be expected be higher that when rooted = False,
+                (with a correspondlingly lower ctime for rooted = True)
+ttime         : total time.
+lg2 nc(c)     : log based 2 of the number of distance calculations made in center update (corresponding to ctime)
+lg2 nc        : log based 2 of total number of distance calculations made.
+pc            : distance calculations can be terminated early if it can be established that they are above some threshold. 
+                This is particularly effective when the Levenshtein or normalised Levenshtein distance is used.
+                pc measures how effective the early stopping in a distance computation is. For details see the appendix of our paper
+nprops        : for clarans, the number of rejected proposals before one is accepted.       
+------------------------------------------------------------------------------------------------------------------------------------
+)";
 
       //mowri << "round :" << -1 << "\t tenergy : " <<  E_total << " \t itime : " << time_initialising << " \t ctime : " << time_in_update_centers << " \t utime : " << time_in_update_sample_info << " \t rtime : " << time_in_redistribute << " \t ttime : " << time_total << zentas::Endl;        
   
