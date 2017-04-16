@@ -603,7 +603,7 @@ class BaseClusterer{
         post_initialisation_test();
       }
       
-      
+      /*TODO: prevent code duplication of this string (in pyzentas.pyx and here) */      
       mowri << 
 R"(
 (The prevent output to terminal, set capture_output to false)
