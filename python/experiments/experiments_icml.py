@@ -301,12 +301,14 @@ def get_energy_time(output_string):
   ttime = []
   nprops = []
   #lg2_nc = []
+  
   for l in output_string.split("\n")[0:-1]:
-    E.append(float(l.split("E: ")[1].split("\t")[0]))
-    ctime.append(int(l.split("ctime: ")[1].split("\t")[0]))
-    ttime.append(int(l.split("ttime: ")[1].split("\t")[0]))
-    ncalcs.append(float(l.split("lg2 nc: ")[1].split("\t")[0]))
-    nprops.append(int(l.split("nprops : ")[1].split("\t")[0]))
+    if "mE:" in l:
+      E.append(float(l.split("E: ")[1].split("\t")[0]))
+      ctime.append(int(l.split("ctime: ")[1].split("\t")[0]))
+      ttime.append(int(l.split("ttime: ")[1].split("\t")[0]))
+      ncalcs.append(float(l.split("lg2 nc: ")[1].split("\t")[0]))
+      nprops.append(int(l.split("nprops : ")[1].split("\t")[0]))
     #lg2_nc.append(float(l.split("lg2 nc: ")[1].split("\t")[0]))
   
   return {'ttime' : np.array(ttime), 'ctime' : np.array(ctime), 'E': np.array(E), 'ncalcs' :np.array(ncalcs), 'nprops':np.array(nprops)} #, 'lg2_nc':lg2_nc}
@@ -346,64 +348,49 @@ def get_grid_speed_table(zentas_dicts):
   return en_tim 
   
   
+
+if False:
+  zentas_dict = pyzentas.pyzentas(X = X, K = 400, indices_init = range(400), algorithm = "clarans", level = 3, max_proposals = 400*400, capture_output = True, seed = 1011, maxtime = 2000, nthreads = 3, maxrounds = 1000000, patient = False, metric = 'l2', rooted = False, energy = 'quadratic')
   
-def plot_runtime_clarans(zentas_dict, fnsave = "/idiap/home/jnewling/colftex/initclarans/eval_vs_impl.pdf"):
-  pl.figure(figsize = (6,1.2), num = 1011)
+def plot_runtime_clarans(zentas_dict, fnsave = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/eval_vs_impl.pdf"):
+
+  pl.figure(figsize = (10,1.2), num = 1011)
   pl.clf()
   
-  pl.subplots_adjust(top = 0.85, bottom = 0.33, left = 0.32)
+  pl.subplots_adjust(top = 0.85, bottom = 0.4, left = 0.32)
   energies_times = {}
 
   en_tim = get_energy_time(zentas_dict['output'])
+  npoints = en_tim['nprops'][1::].size + 100
   pl.plot(en_tim['nprops'][1::], marker = '.', linestyle = 'none', color = 'k', markersize = 1)
   
-  pl.ylabel("evaluations")
-  pl.xlabel("implementations")
+  #pl.ylabel(, horizontalalignment = 'center')
+  ax = pl.gca()
+  pl.text(x = -0.04, y = -0.3, s ="evaluations", rotation = 90, transform=ax.transAxes, horizontalalignment = 'right', verticalalignment = 'bottom' )
+  pl.xlabel("accepted swaps (implementations)", labelpad = 0)
   pl.yscale('log', basey = 2)
-  lymax = np.log2(400**2/4.)
-  ytocks = np.array([0, 5, 10, lymax])
+  lymax = np.log2(400.**2)
+  ytocks = np.array([0, 10, lymax])
 
 
   pl.yticks((2.**ytocks).tolist(), ["$2^{%d}$"%(e,) for e in ytocks[0:-1]] + ["$N_r$"])
 
-  pl.ylim(ymin = 2**(-0.5), ymax = 2**lymax*4)
-  pl.plot([0, 1240], 2*[2**lymax], linestyle = '-', color = (0.5, 0.5, 0.5))
+  pl.ylim(ymin = 2**(-0.8), ymax = 2**lymax*4)
+  pl.plot([0, npoints], 2*[2**lymax], linestyle = '-', color = 'r')#(0.5, 0.5, 0.5))
   
   
-  xtocks = np.array([0, 200, 400, 600, 800, 1000, 1200])
-  pl.xticks((xtocks).tolist(), ["$%d$"%(e,) for e in xtocks[0:-1]] + ["$N_s$"])
-  pl.xlim(xmin = 0, xmax = 1240)
-  pl.plot([1200, 1200], [2**-5, 2**20], linestyle = '-', color = (0.5, 0.5, 0.5))
+  #xtocks = np.array([0, 200, 400, 600, 800, 1000, 1200])
+  #pl.xticks((xtocks).tolist(), ["$%d$"%(e,) for e in xtocks[0:-1]] + ["$N_s$"])
+  pl.xlim(xmin = 0, xmax = npoints)
+  #pl.plot([1200, 1200], [2**-5, 2**20], linestyle = '-', color = (0.5, 0.5, 0.5))
   
+  #Tracer()()
   if fnsave:
     pl.savefig(fnsave)
     import commands 
     commands.getstatusoutput("pdfcrop %s %s"%(fnsave, fnsave))
     
   
-def plot_grid_data(fnsave = "/idiap/home/jnewling/colftex/initclarans/gridplots.pdf"):
-  pl.figure(figsize = (7.1,2.6), num = 1443)
-  pl.clf()
-  for ai, lsigma in enumerate([-6, -4, -2]):
-    data = get_grid_data(lsigma, nperc = 10)*2.**lsigma
-    pl.subplot(1,3,ai+1)
-    pl.plot(data[:,0], data[:,1], marker = '.', color = 'k', linestyle = 'none', markersize = 1.2)
-    pl.xlim([-2, 21])
-    pl.ylim([-2, 21])
-    pl.xticks([])
-    pl.yticks([])
-    if ai == 0:
-      pl.yticks([0,19])
-      #pl.gca().xaxis.tick_top()
-      #pl.xticks([0,19])
-      
-    pl.xlabel("$\sigma = 2^{%d}$"%(lsigma,), fontsize = 17)
-  
-  pl.subplots_adjust(bottom = 0.25, top = 0.89)
-  if fnsave:
-    pl.savefig(fnsave)
-    import commands 
-    commands.getstatusoutput("pdfcrop %s %s"%(fnsave, fnsave))
 
 
   
@@ -453,11 +440,38 @@ def write_grid_kmeans_results():
   
   
 def get_label(alg):
-  return r"\texttt{%s}"%(alg.replace("_", "-").replace("-s","").replace(".0","").replace("un", "uni").replace("pp", "++"))
+  label = r"\texttt{%s}"%(alg.replace("_", "-").replace("-s","").replace(".0","").replace("un", "uni").replace("pp", "++"))
+  if "3" in label:
+    label = r"\texttt{clarans}"
+  return label
 
 
+def plot_grid_data(fnsave = "/idiap/home/jnewling/colftex/gridplots.pdf"):
+  pl.figure(figsize = (7.1,2.6), num = 1443)
+  pl.clf()
+  for ai, lsigma in enumerate([-6, -4, -2]):
+    data = get_grid_data(lsigma, nperc = 10)*2.**lsigma
+    pl.subplot(1,3,ai+1)
+    pl.plot(data[:,0], data[:,1], marker = '.', color = 'k', linestyle = 'none', markersize = 1.2)
+    pl.xlim([-2, 21])
+    pl.ylim([-2, 21])
+    pl.xticks([])
+    pl.yticks([])
+    if ai == 0:
+      pl.yticks([0,19])
+      #pl.gca().xaxis.tick_top()
+      #pl.xticks([0,19])
+      
+    pl.xlabel("$\sigma = 2^{%d}$"%(lsigma,), fontsize = 17)
+  
+  pl.subplots_adjust(bottom = 0.25, top = 0.89)
+  if fnsave:
+    pl.savefig(fnsave)
+    import commands 
+    commands.getstatusoutput("pdfcrop %s %s"%(fnsave, fnsave))
 
-def initial_grid_locations(fnsave = "/idiap/home/jnewling/colftex/initclarans/gridinits.pdf"):
+
+def initial_grid_locations(fnsave = "/idiap/home/jnewling/colftex/gridinits.pdf"):
   
   import copy
   pl.figure(figsize = (7,6), num = 31209)
@@ -480,7 +494,7 @@ def initial_grid_locations(fnsave = "/idiap/home/jnewling/colftex/initclarans/gr
   #l_grid_lsigmas = grid_lsigmas.tolist()[13:21]
   for lsigmai, lsigma in enumerate(lsigmas):
     orders = [0,3,2,1]
-    for algi, alg in enumerate(grid_algorithms):
+    for algi, alg in enumerate([grid_algorithms[i] for i in orders]):
       pl.subplot(3, 4, 4*lsigmai+ orders[algi] + 1)  #len(l_grid_lsigmas) lsigmai*4
       data = scores[lsigma][alg]['init'].T*2**lsigma
       baseargs = copy.copy(grid_alg_plot_parms[alg])
@@ -508,17 +522,73 @@ def initial_grid_locations(fnsave = "/idiap/home/jnewling/colftex/initclarans/gr
     commands.getstatusoutput('pdfcrop %s %s'%(fnsave, fnsave))
   
   
-  #return scores  
+def plot_grid_init_final(fnsave = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/gridexperi.pdf"):
+
+  orders = [0,3,2,1]  
+  # data 
+
+  gs1 = gridspec.GridSpec(4,6)
+  gs1.update(left=0.1, right=0.99, top = 0.9, bottom = 0.23, wspace=0.05, hspace = 0.05)
+  pl.figure(figsize = (7, 6), num = 1443)
+  pl.clf()
+  for ai, lsigma in enumerate([-6, -4, -2]):
+    data = get_grid_data(lsigma, nperc = 10)*2.**lsigma
+    print ai
+    ax1 = pl.subplot(gs1[ai:ai+1, 0:1])
+    pl.plot(data[:,0], data[:,1], marker = '.', color = 'k', linestyle = 'none', markersize = 1.2)
+    pl.xlim([-2, 21])
+    pl.ylim([-2, 21])
+    pl.xticks([])
+    pl.yticks([])
+    if ai == 2:
+      pl.xticks([0,19])
+    #if ai == 2:
+      #pl.xlabel('data')
+    pl.ylabel("$\sigma = 2^{%d}$"%(lsigma,), fontsize = 15)
+
+  #initialisations
+  import copy
+  filly = open(grid_kmeans_results_pickle_fn, "r")
+  scores = cPickle.load(filly)
+  filly.close()
+  lsigmas = [-6.0, -4.0, -2.0]
+  for lsigmai, lsigma in enumerate(lsigmas):
+    for algi, alg in enumerate([grid_algorithms[i] for i in orders]):
+      ax1 = pl.subplot(gs1[lsigmai:lsigmai+1, algi+2:algi+3])
+      data = scores[lsigma][alg]['init'].T*2**lsigma
+      baseargs = copy.copy(grid_alg_plot_parms[alg])
+      pl.plot(data[0], data[1], linestyle = 'none',  **baseargs)  
+      
+      if lsigmai == 2:
+        pl.xlabel(get_label(alg))
+  
+      pl.xlim([-2, 21])
+      pl.ylim([-2, 21])
+      
+      
+      pl.xticks([])
+      pl.yticks([])
+      
+  import commands
+  if fnsave:
+
+    pl.savefig(fnsave)
+    commands.getstatusoutput('pdfcrop %s %s'%(fnsave, fnsave))
   
 
-def plot_grid_kmeans_results(fnsave = "/idiap/home/jnewling/colftex/initclarans/gridres.pdf"):
+
+  
+  
+
+def plot_grid_kmeans_results(fnsave = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/gridres.pdf"):
   
   filly = open(grid_kmeans_results_pickle_fn, "r")
   scores = cPickle.load(filly)
   filly.close()
 
+
   #pl.figure(figsize = (5,2.5), num = 312)
-  pl.figure(figsize = (4,4), num = 312)
+  pl.figure(figsize = (7,1.9), num = 312)
   pl.clf()
   lines = []
   for algi, alg in enumerate(grid_algorithms):
@@ -529,23 +599,23 @@ def plot_grid_kmeans_results(fnsave = "/idiap/home/jnewling/colftex/initclarans/
  
     
     baseargs = copy.copy(grid_alg_plot_parms[alg])
-    baseargs['markersize'] = 1.0
+    baseargs['markersize'] = 1.8
 
-    pl.subplot(2,1,1)
+    pl.subplot(1,2,1)
     #pl.title("initialisation", fontsize = 'small')
-    pl.plot(2.**grid_lsigmas, algseries['start_mse'],  linestyle = "none",  alpha = 0.6, **baseargs) #[0]
+    pl.plot(2.**grid_lsigmas, algseries['start_mse'],  linestyle = "None",  alpha = 0.6, **baseargs) #[0]
     
-    pl.subplot(2,1,2)
+    pl.subplot(1,2,2)
     #pl.title(r"after  $\texttt{lloyd}$", fontsize = 'small')
     lines.append(pl.plot(2.**grid_lsigmas, algseries['mse'], label = get_label(alg),  linestyle = "none", alpha = 0.6, **baseargs)[0])
     
 
   #pl.legend(handles = [lines[i] for i in [0,3,2,1]], numpoints = 1, frameon = False, labelspacing = 0.1)  
   pl.legend(handles = [lines[i] for i in [3,0,2,1]], numpoints = 1, frameon = False, labelspacing = 0.00, handletextpad = -0.45, fontsize = 'small', loc = 'upper right')# loc = (0.35 , 0.48))
-  pl.subplots_adjust(bottom = 0.25, top = 0.75, left = 0.25, wspace = 0.06, hspace = 0.2)
+  pl.subplots_adjust(bottom = 0.25, top = 0.75, left = 0.12, wspace = 0.32, hspace = 0.32)
   
   for spi in [1,2]:
-    pl.subplot(2,1,spi)
+    pl.subplot(1,2,spi)
     pl.xscale('log', basex = 2)  
     pl.yscale('log', basey = 2) 
     
@@ -554,12 +624,13 @@ def plot_grid_kmeans_results(fnsave = "/idiap/home/jnewling/colftex/initclarans/
     ytocks = np.array([-4, 0, 4, 8, 12,16])
     pl.yticks((2.**ytocks).tolist(), ["$2^{%d}$"%(e,) for e in ytocks])
     
-  pl.subplot(2,1,1)
-  pl.xticks([])
+  pl.subplot(1,2,1)
+  #pl.xticks([])
+  pl.xlabel("$\sigma$")
   pl.ylabel(r"init $mse/\sigma^2$")
     
   
-  pl.subplot(2,1,2)
+  pl.subplot(1,2,2)
   pl.xlabel("$\sigma$")
   pl.ylabel("final $mse/\sigma^2$")
   #
@@ -874,10 +945,10 @@ def experiplot():
     
     pl.subplots_adjust(left = 0.3, wspace = 0.3, hspace = 0.4)
   
-  fnsave = "/idiap/home/jnewling/colftex/initclarans/boxplots.pdf"
-  pl.savefig(fnsave)
-  import commands 
-  commands.getstatusoutput("pdfcrop %s %s"%(fnsave, fnsave))
+  #fnsave = "/idiap/home/jnewling/colftex/initclarans/boxplots.pdf"
+  #pl.savefig(fnsave)
+  #import commands 
+  #commands.getstatusoutput("pdfcrop %s %s"%(fnsave, fnsave))
 
     #pl.yscale('log', basey = 2)
 

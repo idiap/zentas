@@ -126,11 +126,48 @@ def function_string_example():
   """
   import numpy as np
   import numpy.random as npr
-  ndata = 10000
-  dimension = 4
+  ndata = 100000
+  dimension = 10
   X = npr.randn(ndata, dimension)
-  K = 100
+  K = 500
   indices_init = range(K)
-  results = pyzentas.pyzentas(X = X, K = K, indices_init = indices_init, maxrounds = 200, maxtime = 10, capture_output = True)
+  results = pyzentas.pyzentas(X = X, K = K, indices_init = indices_init, maxrounds = 200000, maxtime = 180, capture_output = True)
 
+  times = []
+  mEs = []
+  for l in results['output'].split("\n"):
+    if "mE" in l and "nprops" in l:
+      mE = l.split("mE: ")[1].split()[0]
+      ttime = l.split("ttime: ")[1].split()[0]
+      mEs.append(mE)
+      times.append(ttime)
+  
+  import matplotlib.pyplot as pl
+  pl.plot(times, mEs)
+  
+  return times, mEs, results 
+  
+def kmeanspp(X, K):
+  d2_nearest = 1e55*np.ones(X.shape[0])
 
+  Cs = [X[0]]
+  
+  for i in range(1, K):
+    d2_new = np.sum((X - Cs[-1])**2, axis = 1)
+    new_is_nearer = d2_new < d2_nearest
+    d2_nearest = d2_nearest*(1 - new_is_nearer) + d2_new*new_is_nearer
+    
+    d2_cum = np.cumsum(d2_nearest)
+    rind = npr.rand()*d2_cum[-1]
+    
+    #Cs.append(X[i])
+    #print np.where(rind < d2_cum)[0][0]
+    Cs.append(X[np.where(rind < d2_cum)[0][0]])
+  
+  print np.mean(d2_nearest)
+    
+  #print Cs
+    
+  
+  
+  
