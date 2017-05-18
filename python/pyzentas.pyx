@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import multiprocessing as mpr
 from libcpp.string cimport string
 from libcpp.vector cimport vector 
@@ -424,10 +425,12 @@ xx-xx-xx
 
   else:
 
+    if indices_init == "random":
+      indices_init = random.sample(xrange(ndata), K)
     
     if indices_init == None:
-      raise RuntimeError("indices_init is not optional in this situation") 
-
+      raise RuntimeError("indices_init is not optional in this situation, it should either be the string \"random\" or an array of K indices") 
+    
     if isinstance(indices_init, list):
       indices_init = np.array(indices_init)
       

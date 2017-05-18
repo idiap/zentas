@@ -441,7 +441,7 @@ def write_grid_kmeans_results():
   
 def get_label(alg):
   label = r"\texttt{%s}"%(alg.replace("_", "-").replace("-s","").replace(".0","").replace("un", "uni").replace("pp", "++"))
-  if "3" in label:
+  if "3" in label or "cl" in label:
     label = r"\texttt{clarans}"
   return label
 
@@ -529,7 +529,7 @@ def plot_grid_init_final(fnsave = "/idiap/home/jnewling/ftex/papers/arxiv/claran
 
   gs1 = gridspec.GridSpec(4,6)
   gs1.update(left=0.1, right=0.99, top = 0.9, bottom = 0.23, wspace=0.05, hspace = 0.05)
-  pl.figure(figsize = (7, 6), num = 1443)
+  pl.figure(figsize = (7, 7), num = 1443)
   pl.clf()
   for ai, lsigma in enumerate([-6, -4, -2]):
     data = get_grid_data(lsigma, nperc = 10)*2.**lsigma
@@ -554,13 +554,13 @@ def plot_grid_init_final(fnsave = "/idiap/home/jnewling/ftex/papers/arxiv/claran
   lsigmas = [-6.0, -4.0, -2.0]
   for lsigmai, lsigma in enumerate(lsigmas):
     for algi, alg in enumerate([grid_algorithms[i] for i in orders]):
-      ax1 = pl.subplot(gs1[lsigmai:lsigmai+1, algi+2:algi+3])
+      ax1 = pl.subplot(gs1[lsigmai:lsigmai+1, algi+1:algi+2])
       data = scores[lsigma][alg]['init'].T*2**lsigma
       baseargs = copy.copy(grid_alg_plot_parms[alg])
       pl.plot(data[0], data[1], linestyle = 'none',  **baseargs)  
       
       if lsigmai == 2:
-        pl.xlabel(get_label(alg))
+        pl.xlabel(get_label(alg), size = 'large')
   
       pl.xlim([-2, 21])
       pl.ylim([-2, 21])
@@ -626,13 +626,14 @@ def plot_grid_kmeans_results(fnsave = "/idiap/home/jnewling/ftex/papers/arxiv/cl
     
   pl.subplot(1,2,1)
   #pl.xticks([])
-  pl.xlabel("$\sigma$")
-  pl.ylabel(r"init $mse/\sigma^2$")
-    
+  pl.xlabel("$\sigma$", labelpad = -3)
+  ax = pl.gca()
+  #pl.text(x = 0, y = 0, s = r"initial $MSE/\sigma^2$", rotation = 90, transform=ax.transAxes, verticalalignment = 'left')
+  pl.ylabel(r"init $MSE/\sigma^2$")#, horizontalalignment = 'center') 
   
   pl.subplot(1,2,2)
-  pl.xlabel("$\sigma$")
-  pl.ylabel("final $mse/\sigma^2$")
+  pl.xlabel("$\sigma$", labelpad = -3)
+  pl.ylabel("final $MSE/\sigma^2$")
   #
     
   
@@ -736,6 +737,24 @@ trueks["song"] = 500
 trueks["susy"] = 500
 
 
+def load_all_rna():
+  data = {}
+  for fn in ["cod-rna",  "cod-rna.r",  "cod-rna.t"]:
+    filly = open("/idiap/user/jnewling/bachemetaldata/" + fn, "r")
+    lines = filly.readlines()
+    filly.close()
+    alldata = []
+    for l in lines:
+      subl = []
+      for fr in l.split()[1::]:
+        subl.append(float(fr.split(":")[1]))
+      alldata.append(subl)
+    data[fn] = np.array(alldata)
+    print fn
+
+  all_data = np.vstack(data.values())
+  return all_data
+    
 def load_bachem_data(dataset):
   data = None
   if dataset == "rna":
@@ -788,7 +807,7 @@ def joensuu_bachem_experiment(dataset = "MopsiLocationsUntil2012-Finland", K = 1
   scores = get_kmeans_results(X, K, algs = ALGS, holdout_error = dataset in holdout_datasets)
   
   if writedata : 
-    resultsdir = "/idiap/user/jnewling/zentasoutput/icml2"
+    resultsdir = "/idiap/user/jnewling/zentasoutput/nips"
     elapsed_dir = os.path.join(resultsdir, "elapsed_times_pp")
     pickles_dir = os.path.join(resultsdir, "pickles")
     
@@ -878,11 +897,12 @@ dataset & $\#$ & N & dim & K & TL $[s]$\\
   print taboo
 
 
-def load_joensuu_results():
+
+
+def load_results(datasets):
   resultsdir = "/idiap/user/jnewling/zentasoutput/icml2"
   elapsed_dir = os.path.join(resultsdir, "elapsed_times_pp")
   pickles_dir = os.path.join(resultsdir, "pickles")
-  datasets = joensuu_datasets
   datasets.sort(key = str.lower)
   results = {}  
   for ikop, dataset in enumerate(datasets):
@@ -896,63 +916,128 @@ def load_joensuu_results():
   return results
 
 
-def experiplot():
-  results = load_joensuu_results()
+all_datasets = joensuu_datasets + bachem_datasets
 
+def load_all_results():
+  return  load_results(all_datasets)
+
+
+
+
+colors = ["#2faced" , '#fd1f58', 'g']
+def experiplot(sfn = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/bars.pdf"):
+  results = load_all_results()
+
+
+  pl.figure(figsize = (9,4.2))
   pl.clf()
   ds = 's3'
 
-  
+  ndatasets = len(results.keys())
 
-  xylophone = False
-  if xylophone :
-    for algi, alg in enumerate(ALGS):
-      sortindices = results[ds][alg]['start_mses'].argsort()
-      nbobs = results[ds][alg]['mses'].size
-  
-      for i, xi in enumerate(np.linspace(algi,algi + 1,nbobs)):
-        y0, y1 = [results[ds][alg][msetau][sortindices[i]] for msetau in ['start_mses', 'mses']]
-        print y0,y1
-        pl.plot([xi, xi], [y0, y1],linestyle = '-', color = 'k')
-    pl.yscale('log', basey = 2)
+  ylabs = ["initialisation MSE", "final MSE"]
+
+  for mse_key_i, mse_key in enumerate(['start_mses', 'mses']):
     
-  
-  ndatasets = len(joensuu_datasets)
-  algs = ["pp", "mc2", "cl_u"]
-  for dsi, ds in enumerate(joensuu_datasets):
     
+    pl.subplot(2,1,1 + mse_key_i)
+    pl.ylabel(ylabs[mse_key_i], size = 'large')
 
-    pl.subplot(ndatasets, 2, 2*dsi + 1)
-    pl.boxplot([results[ds][alg]['start_mses'] for alg in algs])
-
-    pl.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    pl.xticks([])
-    yto = pl.yticks()[0]
-    pl.yticks([yto[1], yto[-2]])
-
-
-    pl.subplot(ndatasets, 2, 2*dsi + 2)
-    pl.boxplot([results[ds][alg]['mses'] for alg in algs])
-    pl.text(0.95,0.9, ds, horizontalalignment = 'right', verticalalignment = 'top', transform=pl.gca().transAxes)
-    for algi, alg in enumerate(algs):
-      pl.text((algi + 0.92)/(len(algs) + 0.), 0.0, '%d'%(results[ds][alg]['mses'].size), transform=pl.gca().transAxes, verticalalignment = 'bottom', horizontalalignment = 'right', size = 'small')
+    pl.xlim([-1.6, 23])
     
-    pl.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    pl.xticks([])
-    yto = pl.yticks()[0]
-    pl.yticks([yto[1], yto[-2]])
+    for dsi, ds in enumerate(all_datasets):
+      bar_width = 0.33
+          
+      valuesx = results[ds]["pp"]['start_mses']
+      nfactor = valuesx.mean() 
 
     
-    pl.subplots_adjust(left = 0.3, wspace = 0.3, hspace = 0.4)
+    
+    
+      algs = ["pp","cl_u"]
+      
+      for algi, alg in enumerate(algs):
   
-  #fnsave = "/idiap/home/jnewling/colftex/initclarans/boxplots.pdf"
-  #pl.savefig(fnsave)
-  #import commands 
-  #commands.getstatusoutput("pdfcrop %s %s"%(fnsave, fnsave))
 
-    #pl.yscale('log', basey = 2)
+        values = results[ds][alg][mse_key].copy()
+        x0 = dsi + bar_width*(algi) # + 2.5*mse_key_i)
+        values /= nfactor
+        
+        mean = values.mean()
+        std = values.std()
+        maxval = values.max()
+        minval = values.min()
+        
+        if mse_key_i == 0 and dsi == 0 and algi == 0:
+          pl.text(-0.36, mean, '(2)', horizontalalignment = 'right', verticalalignment = 'center')
+          pl.text(-0.36, minval, '(1)', horizontalalignment = 'right', verticalalignment = 'center')
+          pl.text(-0.36, mean + std, '(3)', horizontalalignment = 'right', verticalalignment = 'center')
+        
+        #pl.plot([x0 - bar_width, x0], [mean, mean], color = colors[algi], linewidth = 2)
+        
+        if (dsi == 0 and mse_key_i == 1):
+          label = get_label(alg)
+          if "+" in label:
+            label = r"$\texttt{km++}$"
+        else:
+          label = None
+        
+        pl.plot([x0 - bar_width, x0], [minval, minval], color = colors[algi], linewidth = 1, label = label)
+        pl.fill_between([x0 - bar_width, x0], [0, 0], [minval, minval], edgecolor = colors[algi], facecolor = colors[algi],  alpha = 0.5)
+        pl.fill_between([x0 - bar_width, x0], [minval, minval], [mean, mean], edgecolor = colors[algi], facecolor = colors[algi],  alpha = 0.15)
+        
+        pl.plot([x0 - bar_width/2., x0 - bar_width/2.], [mean + std, mean], color = colors[algi], linewidth = 1, linestyle = '-')       
+        pl.plot([x0 - bar_width, x0], [mean, mean], color = colors[algi], linewidth = 1, linestyle = '-')
+        pl.plot([x0 - bar_width, x0], [mean + std, mean + std], color = colors[algi], linewidth = 1, linestyle = '-')
+      
+    pl.xticks(range(23))
+    
 
-    #pl.ylim(ymin = 0)
+      
+    if mse_key_i == 1:
+      pl.legend(loc = 'upper left')
+      pl.ylim([0.5, 0.84])
+      
+    else:
+      pl.ylim([0.5, 1.13])
+      pl.xticks([])
+        
+
+        #pl.plot([x0 - bar_width/2., x0 + bar_width/2.], [mean - std, mean - std], color = colors[algi], linewidth = 1, linestyle = '-')
+        
+        #pl.plot([x0, x0], [minval, minval], markerfacecolor = colors[algi], markeredgecolor = colors[algi], linewidth = 3, marker = "o", markersize = 2)
+    
+  pl.subplots_adjust(wspace = 0.06, hspace = 0.06)
+  pl.xlabel('dataset', size = 'large')
+  
+  
+  pl.savefig(sfn)
+  import commands
+  commands.getstatusoutput('pdfcrop %s %s'%(sfn, sfn))
+
+    #pl.subplot(ndatasets, 2, 2*dsi + 1)
+    #pl.boxplot([results[ds][alg]['start_mses'] for alg in algs])
+
+    #pl.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    #pl.xticks([])
+    #yto = pl.yticks()[0]
+    #pl.yticks([yto[1], yto[-2]])
+
+
+    #pl.subplot(ndatasets, 2, 2*dsi + 2)
+    
+    #pl.text(0.95,0.9, ds, horizontalalignment = 'right', verticalalignment = 'top', transform=pl.gca().transAxes)
+    #for algi, alg in enumerate(algs):
+      #pl.text((algi + 0.92)/(len(algs) + 0.), 0.0, '%d'%(results[ds][alg]['mses'].size), transform=pl.gca().transAxes, verticalalignment = 'bottom', horizontalalignment = 'right', size = 'small')
+    
+    #pl.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    #pl.xticks([])
+    #yto = pl.yticks()[0]
+    #pl.yticks([yto[1], yto[-2]])
+
+    
+    #pl.subplots_adjust(left = 0.3, wspace = 0.3, hspace = 0.4, bottom = 0.3)
+  
     
   
 
@@ -1060,6 +1145,117 @@ def bachem_experiment(X, K):
   return results
 
 
+
+def get_kmeans_energy_time(kmo):
+  
+  energies = []
+  times = []
+  
+  good_zone = False
+  for l in kmo.split("\n"):
+    if "roundchanges" in l:
+      good_zone = True
+      continue
+      
+    
+    if good_zone:
+      frags = l.split()
+      if len(frags) != 7:
+        good_zone = False
+        break
+
+      times.append(float(frags[4]))
+      energies.append(float(frags[5]))
+  
+  return {"E":np.array(energies), "T":np.array(times)/1000.}
+
+if False:
+  all_data = load_all_rna()
+
+K = 2000
+n_runs = 1
+maxtime = 18
+  
+def big_experiment():
+  
+  results = []
+  for runi in range(n_runs):
+
+    print "run ", runi    
+    
+    #indices_init = kmeans.get_clustering(X = all_data, n_clusters = K, init = "kmeans++", seed = seed, verbose = 2, capture_verbose = True, n_threads = n_threads, max_iter = 0)['I']
+    
+    
+    alg = 'ham' #'selk-ns'
+
+    print "in kmeans ++..."    
+    kmeans_out_kmeanspp = kmeans.get_clustering(X = all_data, n_clusters = K, algorithm = alg, init = 'kmeans++', verbose = 2, capture_verbose = True, seed = None, n_threads = 3)
+    kmok = get_kmeans_energy_time(kmeans_out_kmeanspp['output'])
+
+    print "in zentas..."
+    zentas_dict = pyzentas.pyzentas(X = all_data, indices_init = kmeans_out_kmeanspp["I"], K = K, algorithm = "clarans", level = 3, max_proposals = K*K, capture_output = True, seed = 1011, maxtime = maxtime, nthreads = 3, maxrounds = 1000000, patient = False, metric = 'l2', rooted = False, energy = 'quadratic')      
+    zentas_series = get_energy_time(zentas_dict['output'])
+
+    print "in kmeans z..."    
+    kmeans_out_zentas = kmeans.get_clustering(X = all_data, n_clusters = K, algorithm = alg, init = zentas_dict['indices_final'], verbose = 2, capture_verbose = True, seed = None, n_threads = 3)    
+    kmoz = get_kmeans_energy_time(kmeans_out_zentas['output'])
+
+
+    #print "in kmeans u..."    
+    #kmeans_out_uniform = kmeans.get_clustering(X = all_data, n_clusters = K, algorithm = alg, init = 'uniform', verbose = 2, capture_verbose = True, seed = None, n_threads = 3)
+    #kmou = get_kmeans_energy_time(kmeans_out_uniform['output'])
+
+  
+  
+    results.append({'zentas_series':zentas_series, 'kmok':kmok, 'kmoz':kmoz}) #, 'kmou':kmou})
+    
+  return results
+  
+
+def plot_big_experiment(be_all, fn = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/precede.pdf"):
+  
+
+  pl.figure(figsize = (4.5,3))
+  pl.subplots_adjust(bottom = 0.3, left = 0.3)
+
+  mio = 0
+  for bei, be in enumerate(be_all):
+  
+    label = None
+    label2 = None
+    if bei == 0:
+      label = r"\texttt{clarans}+\texttt{lloyd}"
+      label2 = r"\texttt{lloyd}"
+    
+    pl.plot((be['zentas_series']['ttime'] - be['zentas_series']['ttime'][0])/1000., be['zentas_series']['E'], color = colors[1], linestyle = '-', alpha = 1.0, label = label)    
+    pl.plot(be['kmoz']['T'] - be['kmoz']['T'][0] + (be['zentas_series']['ttime'][-1] - be['zentas_series']['ttime'][0])/1000., be['kmoz']['E'], color = colors[1], label = None)
+
+    #pl.plot((be['kmoz']['T'] + be['zentas_series']['ttime'][-1]/1000.), be['kmoz']['E'] - mio, color = 'b')
+    pl.plot(be['kmok']['T'] - be['kmok']['T'][0], be['kmok']['E'], color = colors[0], label = label2)
+    
+    #pl.plot(be['kmou']['T'], be['kmou']['E'] - mio, color = 'g')
+    
+    print be['kmoz']['E'].min(),
+    print be['kmok']['E'].min()
+    #print be['kmou']['E'].min()
+    
+  pl.xlabel("time [s]", size = 'large')
+  pl.ylabel("$MSE$")
+  pl.xlim(xmin = -0.4)
+  pl.legend(borderpad = 0.5, labelspacing = 0.09, handlelength = 0.07, borderaxespad = 0.2)
+  pl.savefig(fn)
+  import commands
+  commands.getstatusoutput("pdfcrop %s %s"%(fn, fn))
+
+  #p1 = pl.Line2D([1,1], [1,1])
+  #p2 = pl.Line2D([1,1], [1,1])
+  #pl.legend([p2, p1], ["line 2", "line 1"])
+
+    
+  #pl.xscale('log', xscale = 2)
+  #pl.yscale('log', yscale = 2)
+  #pl.ylim(ymin = 1)
+  
 #def expkdd04():  
   #"""
   #done by joensuu
