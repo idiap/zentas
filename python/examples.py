@@ -76,19 +76,19 @@ def dense_vector_example():
   seed =  1012
   random.seed(seed)
   npr.seed(seed)
-  max_proposals = 100#000000
-  maxtime = 30.0
-  ndata = 1000
-  K = 25
-  maxrounds = 80
-  dimension = 1000
-  basedata = 1*npr.rand(ndata, dimension)
+  max_proposals = 1000#000000
+  maxtime = 60.0
+  ndata = 500000
+  K = 500
+  maxrounds = 100000
+  dimension = 4
+  basedata = 1*npr.randn(ndata, dimension)
   data = np.array(basedata, dtype = np.float64)
   indices_init = np.array(random.sample(xrange(ndata), K), dtype = np.uint64)
   indices_init.sort()
   
   print " settings (1) "
-  pyzentas.pyzentas(ndata = ndata, dimension = dimension, sizes = None, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 3, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, nthreads = 1, maxrounds = maxrounds, patient = False, metric = "l2", rooted = False, energy = 'identity') #, energy = 'squarepotential', critical_radius = 5.) #, energy = 'exp', exponent_coeff = 0.1)#
+  pyzentas.pyzentas(ndata = ndata, dimension = dimension, sizes = None, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 0, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, nthreads = 3, maxrounds = maxrounds, patient = True, metric = "l2", rooted = False, energy = 'quadratic') #, energy = 'squarepotential', critical_radius = 5.) #, energy = 'exp', exponent_coeff = 0.1)#
   
 
 
@@ -171,3 +171,5 @@ def kmeanspp(X, K):
   
   
   
+
+
