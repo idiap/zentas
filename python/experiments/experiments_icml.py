@@ -929,7 +929,7 @@ def experiplot(sfn = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/bars
   results = load_all_results()
 
 
-  pl.figure(figsize = (9,4.2))
+  pl.figure(figsize = (9,4.7))
   pl.clf()
   ds = 's3'
 
@@ -937,10 +937,20 @@ def experiplot(sfn = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/bars
 
   ylabs = ["initialisation MSE", "final MSE"]
 
+
+  gs1 = gridspec.GridSpec(4,1)
+  gs1.update(left=0.1, right=0.99, top = 0.9, bottom = 0.23, wspace=0.05, hspace = 0.05)
+
+
   for mse_key_i, mse_key in enumerate(['start_mses', 'mses']):
     
-    
-    pl.subplot(2,1,1 + mse_key_i)
+    if mse_key_i == 0:
+      ax1 = pl.subplot(gs1[0:2, 0:1])
+  
+    else:
+      ax1 = pl.subplot(gs1[2:4, 0:1])
+  
+    #pl.subplot(2,1,1 + mse_key_i)
     pl.ylabel(ylabs[mse_key_i], size = 'large')
 
     pl.xlim([-1.6, 23])
@@ -984,22 +994,29 @@ def experiplot(sfn = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/bars
         
         pl.plot([x0 - bar_width, x0], [minval, minval], color = colors[algi], linewidth = 1, label = label)
         pl.fill_between([x0 - bar_width, x0], [0, 0], [minval, minval], edgecolor = colors[algi], facecolor = colors[algi],  alpha = 0.5)
-        pl.fill_between([x0 - bar_width, x0], [minval, minval], [mean, mean], edgecolor = colors[algi], facecolor = colors[algi],  alpha = 0.15)
+        
+        if algi == 0:
+          alpha = 0.25
+        else:
+          alpha = 0.1
+          
+        pl.fill_between([x0 - bar_width, x0], [minval, minval], [mean, mean], edgecolor = colors[algi], facecolor = colors[algi],  alpha = alpha)
         
         pl.plot([x0 - bar_width/2., x0 - bar_width/2.], [mean + std, mean], color = colors[algi], linewidth = 1, linestyle = '-')       
         pl.plot([x0 - bar_width, x0], [mean, mean], color = colors[algi], linewidth = 1, linestyle = '-')
         pl.plot([x0 - bar_width, x0], [mean + std, mean + std], color = colors[algi], linewidth = 1, linestyle = '-')
       
-    pl.xticks(range(23))
+    pl.xticks(range(23), [x + 1  for x in  range(23)])
     
 
       
     if mse_key_i == 1:
-      pl.legend(loc = 'upper left')
-      pl.ylim([0.5, 0.84])
+      pl.legend(loc = 'upper left', labelspacing = 0.06)
+      pl.ylim([0.5, 1.16])
+      #pl.yticks([0.5, 0.6, 0.7, 0.8, 0.9])
       
     else:
-      pl.ylim([0.5, 1.13])
+      pl.ylim([0.5, 1.16])
       pl.xticks([])
         
 
@@ -1173,7 +1190,7 @@ if False:
   all_data = load_all_rna()
 
 K = 2000
-n_runs = 1
+n_runs = 5
 maxtime = 18
   
 def big_experiment():
@@ -1215,7 +1232,7 @@ def big_experiment():
 def plot_big_experiment(be_all, fn = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/precede.pdf"):
   
 
-  pl.figure(figsize = (4.5,3))
+  pl.figure(figsize = (5.2,3))
   pl.subplots_adjust(bottom = 0.3, left = 0.3)
 
   mio = 0
@@ -1224,8 +1241,8 @@ def plot_big_experiment(be_all, fn = "/idiap/home/jnewling/ftex/papers/arxiv/cla
     label = None
     label2 = None
     if bei == 0:
-      label = r"\texttt{clarans}+\texttt{lloyd}"
-      label2 = r"\texttt{lloyd}"
+      label = r"\texttt{km++}+\texttt{clarans}+\texttt{lloyd}"
+      label2 = r"\texttt{km++}+\texttt{lloyd}"
     
     pl.plot((be['zentas_series']['ttime'] - be['zentas_series']['ttime'][0])/1000., be['zentas_series']['E'], color = colors[1], linestyle = '-', alpha = 1.0, label = label)    
     pl.plot(be['kmoz']['T'] - be['kmoz']['T'][0] + (be['zentas_series']['ttime'][-1] - be['zentas_series']['ttime'][0])/1000., be['kmoz']['E'], color = colors[1], label = None)
@@ -1306,3 +1323,73 @@ def plot_big_experiment(be_all, fn = "/idiap/home/jnewling/ftex/papers/arxiv/cla
   #for k2 in ["init", "final"]:
     #print k, "-", k2, ' \t mean sse over 10 runs : %.2e'%(np.mean(results[k][k2])) #, '\t std : %.2e'%(np.std(results[k][k2]))
     
+
+
+
+
+def all_levels():
+  seed =  1012
+  random.seed(seed)
+  npr.seed(seed)
+  max_proposals = 1000000#000000
+  maxtime = 200.0
+  ndata = 500000
+  K = 500
+  maxrounds = 10000000
+  dimension = 4
+  basedata = 1*npr.randn(ndata, dimension)
+  data = np.array(basedata, dtype = np.float64)
+  indices_init = np.array(random.sample(xrange(ndata), K), dtype = np.uint64)
+  indices_init.sort()
+  
+  results = {}
+  for level in [0,1,2,3]:
+    results[level] = pyzentas.pyzentas(ndata = ndata, dimension = dimension, sizes = None, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = level, max_proposals = max_proposals, capture_output = True, seed = seed, maxtime = maxtime, nthreads = 3, maxrounds = maxrounds, patient = True, metric = "l2", rooted = False, energy = 'quadratic') #, energy = 'squarepotential', critical_radius = 5.) #, energy = 'exp', exponent_coeff = 0.1)#
+
+  return results
+
+
+def series_plots_app(all_level_results):
+  
+  pl.figure(figsize = (9,3))
+  pl.subplots_adjust(bottom = 0.2, left = 0.2, wspace = 0.3, hspace = 0.3)
+  fn = "/idiap/home/jnewling/kmlocal/kmlocal-1.7.2/bin/out.txt"
+  filly = open(fn)
+  lines = filly.readlines()
+  mses = []
+  times = []
+  for l in lines:
+    if "<stage:" in l:
+      mses.append(float(l.split("best: ")[1].split()[0]))
+      times.append(float(l.split("time: ")[1].split()[0]))
+  
+  times = np.array(times)
+  times += 0.4
+
+  for k in range(2):
+    pl.subplot(1,2,k+1)
+    pl.plot(times, mses, label = "kmlocal")
+    
+    
+  
+    for l in [0,1,2,3]:
+      X = get_energy_time(all_level_results[l]['output'])
+      pl.plot(X['ttime']/1000., X['E'], label = 'level %s'%(l,))
+      
+    pl.xlabel("time [s]")
+    pl.ylabel("MSE")
+    pl.ylim(ymax = 0.4)
+    pl.xlim(xmax = 180)
+      #Tracer()()
+      #pl.plot
+    if k == 1:
+      pl.xscale('log', basex = 10)
+      pl.xlim(0.2, 180)
+    
+    else:
+      pl.legend(labelspacing = 0.05)
+
+  fn = "/idiap/home/jnewling/ftex/papers/arxiv/clarans/v_nips/comparem.pdf"
+  pl.savefig(fn)
+  import commands
+  commands.getstatusoutput("pdfcrop %s %s"%(fn,fn))
