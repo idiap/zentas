@@ -117,26 +117,28 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
     throw std::runtime_error("Request for " + std::to_string(K) + " clusters with " + std::to_string(ndata) + " samples rejected. Select a smaller K ( less than " + std::to_string(ndata/2) + " ).");
   }
  
-  bool accepted;
-  size_t proposed_i;
-  for (size_t k = 0; k < K; ++k){
-    accepted = false;
-    while (accepted == false){
-      accepted = true;
-      proposed_i = dis(gen)%ndata;
+  ///* TODO : this is premature, delay til down stream */
+  //std::string initialisation_method = "from_indices_init";
+  //bool accepted;
+  //size_t proposed_i;
+  //for (size_t k = 0; k < K; ++k){
+    //accepted = false;
+    //while (accepted == false){
+      //accepted = true;
+      //proposed_i = dis(gen)%ndata;
       
-      for (size_t k_m = 0; k_m < k; ++k_m){
-        if (v_indices_init[k_m] == proposed_i){
-          accepted = false;
-        }
-      }
-    }
-    if (accepted == true){
-      v_indices_init[k] = proposed_i;
-    }
-  }
-  std::sort(v_indices_init.begin(), v_indices_init.end());
-  const size_t * const indices_init = v_indices_init.data();
+      //for (size_t k_m = 0; k_m < k; ++k_m){
+        //if (v_indices_init[k_m] == proposed_i){
+          //accepted = false;
+        //}
+      //}
+    //}
+    //if (accepted == true){
+      //v_indices_init[k] = proposed_i;
+    //}
+  //}
+  //std::sort(v_indices_init.begin(), v_indices_init.end());
+  //const size_t * const indices_init = v_indices_init.data();
   
   
   
@@ -234,7 +236,9 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
   
   
   /* (5) call szentas */
-  szentas(ndata, sizes, ptr_datain, K, indices_init, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr, critical_radius, exponent_coeff);
+  const size_t * const indices_init = nullptr;
+  std::string initialisation_method = "uniform";
+  szentas(ndata, sizes, ptr_datain, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr, critical_radius, exponent_coeff);
   
   
   

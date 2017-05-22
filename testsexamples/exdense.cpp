@@ -39,6 +39,8 @@ int cluster_dense(){
     indices_init[i] = i;
   }
   
+  std::string initialisation_method = "from_indices_init";
+  
   //set algorithm and level of acceleration. For best performance (speed), this should *always* be clarans at level 3.
   std::string algorithm = "clarans";
   size_t level = 3;
@@ -89,7 +91,7 @@ int cluster_dense(){
   double exponent_coeff = 0; 
   
   //and finally, we cluster. 
-  nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, indices_init.data(), algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, indices_init.data(), initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
 
   //labels and indices_final have now been set, and can now used for the next step in your application. 
   

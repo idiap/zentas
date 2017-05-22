@@ -33,7 +33,6 @@ the GNU General Public License along with zentas. If not, see
 
 
 
-
 namespace nszen{
  
  
@@ -97,6 +96,7 @@ struct BaseClustererInitBundle{
   size_t K;
   const TDataIn * const ptr_datain;
   const size_t * const center_indices_init;
+  std::string initialisation_method;
   size_t seed;
   double maxtime;
   double minmE;
@@ -109,9 +109,9 @@ struct BaseClustererInitBundle{
   const EnergyInitialiser * ptr_energy_initialiser;
 
   
-  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, std::string energy, const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser): 
+  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, std::string initialisation_method_, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, std::string energy, const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser): 
   
-  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), seed(seed), maxtime(maxtime), minmE(minmE), indices_final(indices_final), labels(labels), nthreads(nthreads), maxrounds(maxrounds), energy(energy), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser) {}
+  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), initialisation_method(initialisation_method_), seed(seed), maxtime(maxtime), minmE(minmE), indices_final(indices_final), labels(labels), nthreads(nthreads), maxrounds(maxrounds), energy(energy), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser) {}
 
 };
 
@@ -151,7 +151,9 @@ class BaseClusterer{
     double E_total;
     double old_E_total;
     size_t round;
-    const size_t * const center_indices_init;    
+    
+    std::vector<size_t> v_center_indices_init;
+    size_t * const center_indices_init;    
     
     
     size_t time_in_update_centers = 0;
@@ -193,7 +195,8 @@ class BaseClusterer{
   public:
     BaseClusterer(size_t K, /* number of clusters */
      const DataIn & datain, /* initialisating data */
-     const size_t * const center_indices_init, /* The K sample indices to initialise with */
+     const size_t * const center_indices_init_, /* The K sample indices to initialise with (if initialisation_method is from_indices_init)*/
+     std::string initialisation_method, /* */
      size_t seed, /* starting seed for generating random numbers, uses a custom "std::default_random_engine"  */
      double maxtime, /* will stop in go ( ) at first opportunity after maxtime */
      double minmE, /* will stop in go ( ) at first opportunity if mE is less than minmE */
@@ -210,9 +213,13 @@ class BaseClusterer{
     centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain),
     metric(datain, nthreads, metric_initializer), 
     cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0),
-    round(0), center_indices_init(center_indices_init), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), minmE(minmE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy)
+    round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), minmE(minmE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy)
 
      {
+       
+       
+      
+
        
        
        
@@ -249,6 +256,148 @@ class BaseClusterer{
         throw std::runtime_error(std::string("Unrecognised energy function, ") + energy);
       }
       
+      
+      /* initialisation from indices. */
+      if (initialisation_method == "from_indices_init"){
+        for (size_t k = 0; k < K; ++k){
+          /* confirm uniqueness and range. TODO : do I want to do this? performance? */
+          if (center_indices_init_[k] >= ndata){
+            throw std::runtime_error("initialising center index out of bounds in BaseClusterer constructor");
+          }
+          for (unsigned j = 0; j < k; ++j){
+            if (center_indices_init_[k] == center_indices_init_[j]){
+              throw std::runtime_error("initialising center index at j and k are the same in BaseClusterer constructor");
+            }
+          }
+          
+          v_center_indices_init[k] = center_indices_init_[k];
+        }
+      }
+      
+      
+      /* initialisation from indices. */
+      else if (initialisation_method == "uniform"){
+
+        bool accepted;
+        size_t proposed_i;
+        for (size_t k = 0; k < K; ++k){
+          accepted = false;
+          while (accepted == false){
+            accepted = true;
+            proposed_i = dis(gen)%ndata;
+            
+            for (size_t k_m = 0; k_m < k; ++k_m){
+              if (v_center_indices_init[k_m] == proposed_i){
+                accepted = false;
+              }
+            }
+          }
+          if (accepted == true){
+            v_center_indices_init[k] = proposed_i;
+          }
+        }
+  
+        std::sort(v_center_indices_init.begin(), v_center_indices_init.end());
+
+      }
+      
+      else if (initialisation_method == "afk-mc2"){
+        
+        /* number of attempted moves before sampling */
+        size_t chain_length = 100;
+        
+        
+
+        double adistance;
+        size_t index0 = dis(gen)%ndata;
+        v_center_indices_init[0] = index0;
+
+        /* energies */
+        std::vector<double> e0 (ndata);
+        /* total unnormalised energy */
+        double e0_sum = 0;        
+        /* cumulative normalised energies */
+        std::vector<double> E0 (ndata);        
+        
+        
+        /* set raw energies and Z (E0_sum) */
+        for (size_t i = 0; i < ndata; ++i){
+          metric.set_distance(datain.at_for_metric(index0), datain.at_for_metric(i), adistance);
+          e0[i] = f_energy(adistance);
+          e0_sum += e0[i];
+        }
+        
+        E0[0] = e0[0] / e0_sum;
+        for (size_t i = 1; i < ndata; ++i){
+          E0[i]  = E0[i-1] + e0[i] / e0_sum;
+        }
+        
+        /* sample 2*ndata samples from (almost) q of Bachem et al. */ 
+        size_t n_pseudo_samples = 2*ndata;
+        std::vector<size_t> pseudo_sample (n_pseudo_samples);
+        
+        std::uniform_real_distribution<double> dis_uni01(0.0, 1.0);
+        double rand_offset = dis_uni01(gen);
+        
+        double d_ndata = static_cast<double>(ndata);
+        unsigned running_index = 0;
+        for (size_t i = 0; i < ndata; ++i){
+          /* the uniform distribution component (with replacement, not what Bachem et al do but should be fine) */
+          pseudo_sample[i] = i;
+          /* the non-uniform distribution component. Again, the sampling is not independent as in Bachem et al, but should be fine  */
+          while (E0[running_index] < (static_cast<double>(i) + rand_offset)/d_ndata){
+            ++ running_index;
+          }
+          pseudo_sample[i+1] = running_index; 
+        }
+        
+        /* shuffle the samples */
+        size_t swap_i;
+        for (size_t i = 0; i < ndata; ++i){
+          swap_i = dis(gen)%(ndata - i);
+          std::swap(pseudo_sample[swap_i], pseudo_sample[ndata - 1 - i]);
+        }
+        
+
+        size_t q_index = 0;
+        size_t sample_index_current;
+        size_t sample_index_proposal;
+        double e_current;
+        double e_proposal;
+        
+        
+        for (size_t k = 1; k < K; ++k){
+          
+          q_index += 1;
+          q_index %= (n_pseudo_samples);
+          sample_index_current = pseudo_sample[q_index];
+          metric.set_distance(datain.at_for_metric(sample_index_current), 
+                              datain.at_for_metric(v_center_indices_init[k-1]), 
+                              adistance);
+          e_current = f_energy(adistance);
+          
+          
+          for (size_t m = 1; m < chain_length; ++m){
+
+            q_index += 1;
+            q_index %= (n_pseudo_samples);
+            sample_index_proposal = pseudo_sample[q_index];
+            metric.set_distance(datain.at_for_metric(sample_index_proposal), 
+                                datain.at_for_metric(v_center_indices_init[k-1]), 
+                                adistance);
+            e_proposal = f_energy(adistance);
+            
+            if ((e_proposal/e_current)*((e0[sample_index_current]*2*ndata + e0_sum)/(e0[sample_index_proposal]*2*ndata + e0_sum))  >  dis_uni01(gen)){
+              e_current = e_proposal;
+              sample_index_current = sample_index_proposal;
+            }
+          }
+          
+          v_center_indices_init[k] = sample_index_current;          
+        }          
+      }
+      
+      
       center_IDs = indices_final;
       std::copy(center_indices_init, center_indices_init + K, center_IDs);
 
@@ -265,7 +414,7 @@ class BaseClusterer{
 
 
   
-    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.seed, ib.maxtime, ib.minmE, ib.indices_final, ib.labels, ib.nthreads, ib.maxrounds, ib.energy, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
+    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.maxtime, ib.minmE, ib.indices_final, ib.labels, ib.nthreads, ib.maxrounds, ib.energy, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
 
     size_t get_time_in_update_centers(){
       return time_in_update_centers;

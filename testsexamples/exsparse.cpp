@@ -18,7 +18,6 @@ the GNU General Public License along with zentas. If not, see
 #include "zentas.hpp"
 
 
-
 /* Test case : clustering sparse vectors. */
 /* many of the parameters used here are the same as in exdense.cpp, if in doubt look there*/
 int cluster_sparse(){
@@ -42,6 +41,7 @@ int cluster_sparse(){
   
   size_t K = 2;
   std::vector<size_t> indices_init = {0,1};
+  std::string initialisation_method = "from_indices_init";
   std::string algorithm = "clarans";
   size_t level = 0;
   size_t max_proposals = 100;
@@ -62,7 +62,7 @@ int cluster_sparse(){
   double exponent_coeff = 0;
  
 
-  nszen::sparse_vector_zentas(ndata, sizes.data(), data_in.data(), indices.data(), K, indices_init.data(), algorithm, level, max_proposals,  capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  nszen::sparse_vector_zentas(ndata, sizes.data(), data_in.data(), indices.data(), K, indices_init.data(), initialisation_method, algorithm, level, max_proposals,  capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
   
   std::cout << std::endl;
   for (size_t i = 0; i < ndata; ++i){
