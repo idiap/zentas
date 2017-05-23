@@ -130,22 +130,7 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
   }  
   
   
-  /* checking for initialisation_method validity */
-  std::vector<std::string> valid_initialisation_methods  {"from_indices_init", "uniform"};
-  bool is_valid_initialisation_method = false;
-  std::stringstream vims_ss;
-  vims_ss << "The valid strings for initialisation_method are [";
-  for (auto & x : valid_initialisation_methods){
-    if (x == initialisation_method){
-      is_valid_initialisation_method = true;
-      break;
-    }
-    vims_ss << " `" << x << "' ";
-  }
-  if (is_valid_initialisation_method == false){
-    vims_ss << "]. The string passed was `" << initialisation_method << "'.";
-    throw std::runtime_error(vims_ss.str());
-  }
+
   
   if (initialisation_method == "from_init_indices" && indices_init == nullptr){
     throw std::runtime_error(R"(initialisation_method == "from_init_indices" && indices_init == nullptr) is true)");
