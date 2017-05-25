@@ -668,6 +668,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
    void pll_update_sample_info_l1(size_t k, size_t j_a, size_t j_z, double dists_centers_min_pr_k){
       double adistance;
       for (size_t j = j_a; j < j_z; ++j){
+        /* a TEST74 (grep) */
         if (dists_centers_min_pr_k <= get_d1(k,j) + get_d2(k,j)){
           if (get_a2(k,j) == k_to){
             reset_sample_infos(k,j);
@@ -975,8 +976,13 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
             
             mowri << "\n";
             print_centers();
-            mowri << "\n" << k_second_nearest << "  " << nearest_2_infos[k][j].a_x << zentas::Endl;
-            mowri << std::setprecision(20) <<  d_second_nearest << "  " << nearest_2_infos[k][j].d_x << zentas::Endl;
+            mowri << "\nk: " << k << "   j: " << j << "   cluster size: " << nearest_2_infos[k].size() << ".";
+            mowri << "\nget_a1(k,j): " << get_a1(k,j) << ".";
+            mowri << "\njust computed k_second_nearest: " << k_second_nearest;
+            mowri << "\nrecorded k_second_nearest: " << nearest_2_infos[k][j].a_x;
+            mowri << std::setprecision(20);
+            mowri <<  "\njust computed d_second_nearest: " << d_second_nearest;
+            mowri << "\nrecorded d_second_nearest " << nearest_2_infos[k][j].d_x << zentas::Endl;
             throw std::logic_error("d_second_nearest != d_second_nearest");
           }
           
@@ -1090,12 +1096,15 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       std::unique_ptr<double []> up_dists_centers_min_pr (new double [K]);
       auto dists_centers_min_pr = up_dists_centers_min_pr.get();
       for (size_t k = 0; k < K; ++k){
-        dists_centers_min_pr[k] = std::min(dists_centers_old_k_to[k], dists_centers_new_k_to[k]);
+        /* the decrease here is necessary to prevent discrepency caused to non-commutative float addition, marked by TEST74.
+         * the problem arises with l1, li metrices, as well as l2 in 1 dimension.  */
+        dists_centers_min_pr[k] = std::min(dists_centers_old_k_to[k], dists_centers_new_k_to[k])*(1. - 1e-6);
       }
       
       std::vector<size_t> k_non_eliminated;
       for (size_t k = 0; k < K; ++k){
         if (k != k_to){
+          /* a TEST74 (grep) */
           if (dists_centers_min_pr[k] <= cluster_statistics[k].R1 + cluster_statistics[k].R2){
             k_non_eliminated.push_back(k);
           }
@@ -1131,7 +1140,8 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       std::unique_ptr<double []> up_dists_centers_min_pr (new double [K]);
       auto dists_centers_min_pr = up_dists_centers_min_pr.get();
       for (size_t k = 0; k < K; ++k){
-        dists_centers_min_pr[k] = std::min(dists_centers_old_k_to[k], dists_centers_new_k_to[k]);
+        /* a TEST74 correction (grep) */
+        dists_centers_min_pr[k] = std::min(dists_centers_old_k_to[k], dists_centers_new_k_to[k])*(1. - 1e-6);
       }
       
 

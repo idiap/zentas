@@ -78,17 +78,21 @@ def dense_vector_example():
   npr.seed(seed)
   max_proposals = 1000#000000
   maxtime = 60.0
+
   ndata = 50000
   K = 500
   maxrounds = 2
   dimension = 2
+
   basedata = 1*npr.randn(ndata, dimension)
   data = np.array(basedata, dtype = np.float64)
   indices_init = np.array(random.sample(xrange(ndata), K), dtype = np.uint64)
   indices_init.sort()
   
   print " settings (1) "
-  pyzentas.pyzentas(ndata = ndata, dimension = dimension, sizes = None, X = data, K = K, indices_init = None, initialisation_method = "random", algorithm = "clarans", level = 0, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, nthreads = 3, maxrounds = maxrounds, patient = True, metric = "l2", rooted = False, energy = 'quadratic') #, energy = 'squarepotential', critical_radius = 5.) #, energy = 'exp', exponent_coeff = 0.1)#
+
+  pyzentas.pyzentas(ndata = ndata, dimension = dimension, sizes = None, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 0, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, nthreads = 3, maxrounds = maxrounds, patient = True, metric = "l2", rooted = False, energy = 'quadratic') #, energy = 'squarepotential', critical_radius = 5.) #, energy = 'exp', exponent_coeff = 0.1)#
+
   
 
 

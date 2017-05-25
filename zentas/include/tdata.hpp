@@ -94,7 +94,16 @@ class VData{
     }
     
     std::string get_string(){
-      return "get_string not implemented for vdata";
+      std::stringstream ss;
+      for (size_t i = 0; i < ndata; ++i){
+        ss << " " << i << ":(";
+        for (size_t d = 0; d < dimension; ++d){
+          ss << " " << data[i*dimension + d] << " ";
+        }
+        ss << ") ";
+      }
+      
+      return ss.str();
     }
 };
 
