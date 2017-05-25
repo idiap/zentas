@@ -129,6 +129,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     
 
     BaseClarans(const BaseClustererInitBundle<DataIn, TMetric> & ib, const BaseClaransInitBundle & clib): BaseClarans(ib, clib.max_proposals, clib.patient) {} 
+
     
     
     
@@ -276,6 +277,12 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
 
 
   private:
+
+
+    virtual void initialise_with_kmeanspp() override final{
+      default_initialise_with_kmeanspp();
+    }
+
     
     virtual double get_delta_E(size_t k1, size_t k2, size_t j2, bool serial) = 0;
 
@@ -861,8 +868,9 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     void set_center_center_info_l2(double * const cc, double * const d_min_cc, size_t * const a_min_cc){
       
       for (size_t k = 0; k < K; ++k){
-        for (size_t kp = 0; kp < K; ++kp){
+        for (size_t kp = k; kp < K; ++kp){
           set_center_center_distance(k, kp, cc[k*K + kp]);
+          cc[kp*K + k] = cc[k*K + kp];
         }
       }
       
@@ -878,6 +886,14 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       }
     }
 
+
+    inline void put_nearest_2_infos_margin_in_cluster_final(size_t k_first_nearest, size_t k_second_nearest, double d_second_nearest, double e_second_nearest){
+      
+      nearest_2_infos[k_first_nearest].emplace_back(k_second_nearest, d_second_nearest, e_second_nearest);
+      energy_margins[k_first_nearest].push_back(e_second_nearest - get_e1_tail(k_first_nearest));
+    }
+
+
     inline void put_nearest_2_infos_margin_in_cluster(size_t i, size_t k_first_nearest, const double * const distances){
       
       //quelch warning
@@ -887,9 +903,11 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       double d_second_nearest;
       set_second_nearest(k_first_nearest, distances, k_second_nearest, d_second_nearest);
       double e_second_nearest = f_energy(d_second_nearest);  
-      nearest_2_infos[k_first_nearest].emplace_back(k_second_nearest, d_second_nearest, e_second_nearest);
-      energy_margins[k_first_nearest].push_back(e_second_nearest - get_e1_tail(k_first_nearest));
+      
+      put_nearest_2_infos_margin_in_cluster_final(k_first_nearest, k_second_nearest, d_second_nearest, e_second_nearest);
+
     }
+
     
     
     inline void reset_sample_nearest_2_infos_margin(size_t k, size_t j, size_t nearest_center, const double * const distances){
@@ -1300,6 +1318,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::get_time_remaining;
     using BaseClusterer<TMetric, TData>::gen;
     using BaseClusterer<TMetric, TData>::dis;
+    using BaseClusterer<TMetric, TData>::default_initialise_with_kmeanspp;
 };
 
 

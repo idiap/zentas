@@ -43,7 +43,7 @@ int cluster_sparse(){
   std::vector<size_t> indices_init = {0,1};
   std::string initialisation_method = "from_indices_init";
   std::string algorithm = "clarans";
-  size_t level = 0;
+  size_t level = 3;
   size_t max_proposals = 100;
   bool capture_output = false;
   std::string text;
@@ -52,7 +52,7 @@ int cluster_sparse(){
   double minmE = 0.0;
   std::vector<size_t> indices_final (K);
   std::vector<size_t> labels (ndata);
-  std::string metric = "l1";
+  std::string metric = "l2";
   std::string energy = "identity";
   size_t nthreads = 1;
   size_t maxrounds = 100;

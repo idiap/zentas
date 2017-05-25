@@ -24,6 +24,7 @@ the GNU General Public License along with zentas. If not, see
 
 #include "tdatain.hpp"
 
+
 namespace nszen{
 
 void hello();

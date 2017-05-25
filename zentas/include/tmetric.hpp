@@ -226,14 +226,30 @@ class L1Distance : public LpDistance<TNumber>{
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
 
+
+
+
+
+
     virtual inline void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final{
+      
       ++ncalcs;
       distance = 0;       
       double diff;
       size_t d;
       for (d = 0; d < dimension; ++d){
         diff = *(a + d) - *(b + d);
+        
+        //if (diff < 0){
+          //distance += -diff;
+        //}
+        //else{
+          //distance += diff;
+        //}
+        
         distance += std::abs(diff);
+        
+        
         //checking every time is too much, TODO think about changing this
         if (distance > threshold){
           break;

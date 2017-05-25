@@ -19,6 +19,7 @@ the GNU General Public License along with zentas. If not, see
 #include "tenergyfunc.hpp"
 
 #include "outputwriter.hpp"
+#include "initialisation.hpp"
 
 #include <algorithm>
 #include <type_traits>
@@ -34,6 +35,12 @@ the GNU General Public License along with zentas. If not, see
 
 
 namespace nszen{
+
+
+
+
+
+
  
  
 struct EnergyInitialiser{
@@ -126,14 +133,14 @@ class BaseClusterer{
   
   public:
   
-    zentas::outputwriting::OutputWriter mowri; //(true, false, "");
+    zentas::outputwriting::OutputWriter mowri;
 
     typedef typename TMetric::Initializer TMetricInitializer;
     typedef typename TData::DataIn DataIn;
     const size_t K;
     const size_t ndata;
-    //const TEnergyFunc f_E_rock;
-    std::function<double(double)> f_energy; //makes no difference if this or that.
+    std::function<double(double)> f_energy;
+    std::string initialisation_method;
 
   private:
     TData centers_data;
@@ -162,8 +169,10 @@ class BaseClusterer{
     size_t time_initialising = 0;
     size_t time_in_update_all_cluster_statistics = 0;
     size_t time_total = 0;
-    std::chrono::time_point<std::chrono::high_resolution_clock> tstart;
+    size_t time_to_initialise_centers = 0;
     
+    std::chrono::time_point<std::chrono::high_resolution_clock> tstart;
+    std::chrono::time_point<std::chrono::high_resolution_clock> tstart_initialise_centers;
 
     size_t ncalcs_in_update_centers = 0;
     size_t ncalcs_in_update_sample_info = 0;
@@ -189,6 +198,9 @@ class BaseClusterer{
     size_t maxrounds;
     
     std::string energy;
+    
+    
+
 /////////////////////////////////////
 /////////// public //////////////////
 /////////////////////////////////////
@@ -209,26 +221,26 @@ class BaseClusterer{
      const EnergyInitialiser & energy_initialiser): 
     
     mowri(true, false, ""),
-    K(K), ndata(datain.get_ndata()), //f_E_rock(),
-    centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain),
+    K(K), ndata(datain.get_ndata()), initialisation_method(initialisation_method),
+    centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain), 
     metric(datain, nthreads, metric_initializer), 
     cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0),
     round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), minmE(minmE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy)
 
      {
        
-       
+      
       
 
        
        
        
       if (energy.compare("identity") == 0){
-        f_energy = nszen::Identity(); //std::function<double(double)> ( [](double x){ return x*x; } );
+        f_energy = nszen::Identity(); 
       } 
        
       else if (energy.compare("quadratic") == 0){
-        f_energy = nszen::Quadratic(); //std::function<double(double)> ( [](double x){ return x*x; } );
+        f_energy = nszen::Quadratic();
       }
       
       else if (energy.compare("cubic") == 0){
@@ -251,232 +263,23 @@ class BaseClusterer{
         f_energy = nszen::SquareRoot();
       }
       
-      
       else{
         throw std::runtime_error(std::string("Unrecognised energy function, ") + energy);
       }
       
-      
+
+
       /* initialisation from indices. */
       if (initialisation_method == "from_indices_init"){
-        for (size_t k = 0; k < K; ++k){
-          /* confirm uniqueness and range. TODO : do I want to do this? performance? */
-          if (center_indices_init_[k] >= ndata){
-            throw std::runtime_error("initialising center index out of bounds in BaseClusterer constructor");
-          }
-          for (unsigned j = 0; j < k; ++j){
-            if (center_indices_init_[k] == center_indices_init_[j]){
-              throw std::runtime_error("initialising center index at j and k are the same in BaseClusterer constructor");
-            }
-          }
-          
-          v_center_indices_init[k] = center_indices_init_[k];
-        }
+        populate_from_indices_init(center_indices_init_, center_indices_init, K, ndata);
       }
       
-      
-      /* initialisation from indices. */
-      else if (initialisation_method == "uniform"){
-
-        bool accepted;
-        size_t proposed_i;
-        for (size_t k = 0; k < K; ++k){
-          accepted = false;
-          while (accepted == false){
-            accepted = true;
-            proposed_i = dis(gen)%ndata;
-            
-            for (size_t k_m = 0; k_m < k; ++k_m){
-              if (v_center_indices_init[k_m] == proposed_i){
-                accepted = false;
-              }
-            }
-          }
-          if (accepted == true){
-            v_center_indices_init[k] = proposed_i;
-          }
-        }
+      else{
+        //will do in go ( )
       }
-      
-      else if (initialisation_method.substr(0,8) == "afk-mc2-"){
-        
-        if (initialisation_method.size() < 9){
-          std::stringstream errm_ss;
-          errm_ss << "invalid initialisation_method " << initialisation_method << ". It is not of the form afk-mc2-INT, where INT is positive."; 
-          throw std::runtime_error(errm_ss.str());
-        }
-        
-        std::string digit_substring = initialisation_method.substr(8, initialisation_method.size() - 8);
-        auto striter = digit_substring.begin(); 
-        while (striter != digit_substring.end()){
-          char x = *striter;
-          if (std::isdigit(x) == false){
-            std::stringstream errm_ss;
-            errm_ss << "Unexpected character while attempting to extract integer from " << initialisation_method << " (" << digit_substring << ")" << ", `" << x << "'";
-            throw std::runtime_error(errm_ss.str());
-          }
-          ++striter;
-        }
-        
-        size_t chain_length = std::stoi(digit_substring);
-        mowri << "chain length : " << chain_length << zentas::Endl;
-        
-        
-        
-        
-        
-        
-        
-        /* number of attempted moves before sampling */
-        
-        
-
-        double adistance;
-        
-        
-        std::vector<bool> is_center (ndata, false);
-        /* the first center is chosen at random */
-        size_t index0 = dis(gen)%ndata;
-        v_center_indices_init[0] = index0;
-        is_center[index0] = true;
-
-        /* energies */
-        std::vector<double> e0 (ndata);
-        /* total unnormalised energy */
-        double e0_sum = 0;        
-        /* cumulative normalised energies */
-        std::vector<double> E0 (ndata);        
-        
-        
-        /* set raw energies and Z (E0_sum) */
-        for (size_t i = 0; i < ndata; ++i){
-          metric.set_distance(datain.at_for_metric(index0), datain.at_for_metric(i), adistance);
-          e0[i] = f_energy(adistance);
-          e0_sum += e0[i];
-        }
-        
-        E0[0] = e0[0];
-        for (size_t i = 1; i < ndata; ++i){
-          E0[i]  = E0[i-1] + e0[i];
-        }
-        for (size_t i = 0; i < ndata; ++i){
-          E0[i] /= e0_sum;
-        }
-        
-        /* will now sample 2*ndata samples from (almost) q of Bachem et al. */ 
-        size_t n_pseudo_samples = 2*ndata;
-        std::vector<size_t> pseudo_sample (n_pseudo_samples);
-
-        double d_ndata = static_cast<double>(ndata);        
-        std::uniform_real_distribution<double> dis_uni01(0.0, 1.0);
-        double rand_offset = dis_uni01(gen) / d_ndata;
-        
-        unsigned running_index = 0;
-        for (size_t i = 0; i < ndata; ++i){
-          /* the uniform distribution component (with replacement, not what Bachem et al do but, but good enough) */
-          pseudo_sample[2*i] = i;
-          /* the non-uniform distribution component. Again, the sampling is not independent as in Bachem et al, but good enough  */
-          while (E0[running_index] < (static_cast<double>(i) + rand_offset)/d_ndata){
-            ++ running_index;
-          }
-          pseudo_sample[2*i+1] = running_index; 
-        }
-        
-        /* shuffle the samples */
-        size_t swap_i;
-        for (size_t i = 0; i < ndata; ++i){
-          swap_i = dis(gen)%(ndata - i);
-          std::swap(pseudo_sample[swap_i], pseudo_sample[ndata - 1 - i]);
-        }
-        
-        //std::cout << "pseudo samples : \n";
-        //for (size_t i = 0; i < 2*ndata; ++i){
-          //std::cout << pseudo_sample[i] << " " << std::flush;
-        //}
-
-        size_t q_index = 0;
-        /* x of Bachem et al */
-        size_t sample_index_current;
-        /* d_x of Bachem et al */
-        double e_current;
-
-        /* y of Bachem et al */
-        size_t sample_index_proposal;
-        /* d_y of Bachem et al */
-        double e_proposal;
-        
-
-
-        
-        for (size_t k = 1; k < K; ++k){
-          
-          do {
-            q_index += 1;
-            q_index %= n_pseudo_samples;
-            sample_index_current = pseudo_sample[q_index];            
-          } while (is_center[sample_index_current] == true);
-          
-          
-          e_current = std::numeric_limits<double>::max();
-          for (size_t kp = 0; kp < k; ++kp){
-            metric.set_distance(datain.at_for_metric(sample_index_current), 
-                                datain.at_for_metric(v_center_indices_init[kp]), 
-                                adistance);
-            e_current = std::min<double>(e_current, f_energy(adistance));
-          }
-          
-          for (size_t m = 1; m < chain_length; ++m){
-            
-            do {
-              q_index += 1;
-              q_index %= n_pseudo_samples;
-              sample_index_proposal = pseudo_sample[q_index];
-            } while (is_center[sample_index_proposal] == true);
-            
-
-            e_proposal = std::numeric_limits<double>::max();
-            for (size_t kp = 0; kp < k; ++kp){
-              metric.set_distance(datain.at_for_metric(sample_index_proposal), 
-                                  datain.at_for_metric(v_center_indices_init[kp]), 
-                                  adistance);
-              e_proposal = std::min<double>(e_proposal, f_energy(adistance));
-            }
-  
-              
-            if ((e_proposal/e_current)*((e0[sample_index_current]*2*ndata + e0_sum)/(e0[sample_index_proposal]*2*ndata + e0_sum))  >  dis_uni01(gen)){
-              e_current = e_proposal;
-              sample_index_current = sample_index_proposal;
-            }
-          }
-          is_center[sample_index_current] = true;
-          v_center_indices_init[k] = sample_index_current;          
-        }
-      }
-      
-      else {
-        std::stringstream vims_ss;
-        vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, afk-mc2-INT (for some positive INT)]";
-        throw std::runtime_error(vims_ss.str());
-      }
-
-      std::sort(v_center_indices_init.begin(), v_center_indices_init.end());
 
       center_IDs = indices_final;
-      std::copy(center_indices_init, center_indices_init + K, center_IDs);
 
-      for (size_t k = 0; k < K; ++k){
-        centers_data.append(datain.at_for_move(center_indices_init[k]));
-        // here we make an empty cluster, using datain to determine nec. `shape' parameters
-        cluster_datas.emplace_back(datain, true);
-      }
-      
-      for (size_t k = 0; k < K; ++k){
-        if (center_indices_init[k] == center_indices_init[(k+1)%ndata]){
-          std::stringstream errm_ss;
-          errm_ss << "initialising indices must be unique, received " << center_indices_init[k] << " at least twice\n";
-          throw std::runtime_error(errm_ss.str());
-        }
-      }
     }
 
 
@@ -510,15 +313,21 @@ class BaseClusterer{
     }
 
 
+    inline void final_push_into_cluster_basic(size_t i, size_t nearest_center, double min_distance){
+      cluster_datas[nearest_center].append(ptr_datain->at_for_move(i));
+      nearest_1_infos[nearest_center].emplace_back(nearest_center, min_distance, f_energy(min_distance));
+      sample_IDs[nearest_center].push_back(i);      
+    }
+
     //TODO : move to private section
     inline void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
       //get your lock on, time for polyphonics. 
       std::lock_guard<std::mutex> lockraii(mutex0);
-      cluster_datas[nearest_center].append(ptr_datain->at_for_move(i));
-      nearest_1_infos[nearest_center].emplace_back(nearest_center, min_distance, f_energy(min_distance));
-      sample_IDs[nearest_center].push_back(i);
-      /* as usual: the final parameter up_distances.get() guarantees correctness only of lowest and second lowest, other values may exceed */
       
+      /* the common part of pushing into a cluster */
+      final_push_into_cluster_basic(i, nearest_center, min_distance);
+      
+      /* as usual: the final parameter up_distances.get() guarantees correctness only of lowest and second lowest, other values may exceed */
       //TODO : there may be computation in here which should not be under the lock. 
       put_sample_custom_in_cluster(i, nearest_center, distances);
     }
@@ -598,10 +407,82 @@ class BaseClusterer{
       final_push_into_cluster(i, nearest_center, min_distance, up_distances.get());
     }
     
+    /* all parameters passed in are to be set. TODO : parallelisation */
+    inline void triangular_kmeanspp(size_t * const centers, double * const cc, size_t * const nearest_centers, double * const nearest_distances, size_t * const second_nearest_centers, double * const second_nearest_distances){
+
+      double a_distance;
+      
+      /* generates [0,1] uniform, will use to sample centers */
+      std::uniform_real_distribution<double> dis_uni01(0.0, 1.0);      
+      
+      /* the cumulative sampling distribution */
+      std::vector<double> v_cum_nearest_energies (ndata + 1);
+      v_cum_nearest_energies[0] = 0.;
+            
+      /* the first center is sampled uniformly */
+      centers[0] = dis(gen)%ndata;      
+      cc[0*K + 0] = 0.;
+      
+      for (size_t i = 0; i < ndata; ++i){
+        set_sampleID_sampleID_distance(centers[0], i, nearest_distances[i]);
+        v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
+        second_nearest_distances[i] = std::numeric_limits<double>::max();
+        nearest_centers[i] = 0;
+      }
+      
+      for (size_t k = 1; k < K; ++k){
+        
+        /* sample center from distribution */
+        centers[k] = std::distance(
+        v_cum_nearest_energies.begin(), 
+        std::lower_bound(v_cum_nearest_energies.begin(), v_cum_nearest_energies.end(), dis_uni01(gen)*v_cum_nearest_energies.back())) - 1;
+        
+        /* update cc */
+        cc[k*K + k] = 0.;
+        for (size_t kp = 0; kp < k; ++kp){
+          set_sampleID_sampleID_distance(centers[k], centers[kp], cc[k*K + kp]);
+          cc[kp*K + k] = cc[k*K + kp];
+        }
+        
+        /* update nearest distances, second nearest distances, and centers */
+        for (size_t i = 0; i < ndata; ++i){
+          if (cc[nearest_centers[i]*K + k] < second_nearest_distances[i] + nearest_distances[i]){
+            set_sampleID_sampleID_distance(centers[k], i, second_nearest_distances[i], a_distance);
+            
+            if (a_distance < second_nearest_distances[i]){
+              if (a_distance < nearest_distances[i]){
+                second_nearest_distances[i] = nearest_distances[i];
+                second_nearest_centers[i] = nearest_centers[i];
+                nearest_distances[i] = a_distance;
+                nearest_centers[i] = k;
+              }
+              else{
+                second_nearest_distances[i] = a_distance;
+                second_nearest_centers[i] = k;
+              }
+            }
+          }
+          
+          v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
+        }  
+      }
+      
+      
+    }
+    
         
     std::string get_base_summary_string(){
       std::ostringstream out;
-      out  << round << "\tmE: " <<  std::setprecision(7) << E_total / static_cast<double>(ndata) << std::setprecision(5) <<  "\titime: "  <<  time_initialising/1000  <<  "\tctime: "  <<  time_in_update_centers/1000  <<  "\tutime: "  <<  time_in_update_sample_info/1000  <<  "\trtime: "  <<  time_in_redistribute/1000  <<  "\tttime: "  <<  time_total/1000  <<   "\tlg2 nc(c): "  << std::log2(ncalcs_in_update_centers) <<  "\tlg2 nc: "  <<  std::log2(ncalcs_total)  <<  "\t pc: " << static_cast<double> (metric.get_rel_calccosts())  ;
+      out  << round << "\tmE: " <<  std::setprecision(7) << E_total / static_cast<double>(ndata) << std::setprecision(5) <<  
+      "\tatime: "  <<  time_to_initialise_centers/1000  << 
+      "  itime: "  <<  time_initialising/1000  <<  
+      "  ctime: "  <<  time_in_update_centers/1000  <<  
+      "\tutime: "  <<  time_in_update_sample_info/1000  <<  
+      "\trtime: "  <<  time_in_redistribute/1000  <<  
+      "\tttime: "  <<  time_total/1000  <<   
+      "\tlg2 nc(c): "  << std::log2(ncalcs_in_update_centers) <<  
+      "\tlg2 nc: "  <<  std::log2(ncalcs_total)  <<  
+      "\t pc: " << static_cast<double> (metric.get_rel_calccosts())  ;
       
       //   <<  "\tstime: "  <<  time_in_update_all_cluster_statistics/1000
       
@@ -751,6 +632,15 @@ class BaseClusterer{
     inline void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
     }
+
+    inline void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
+      metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), threshold, distance);
+    }
+
+    inline void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
+      metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), distance);
+    }
+        
         
     inline double get_center_sample_distance(size_t k, size_t k1, size_t j1) {
       double distance;
@@ -794,35 +684,30 @@ class BaseClusterer{
     virtual void set_center_center_info() = 0;
     virtual void update_center_center_info() = 0;
     
+
+    
+    void default_initialise_with_kmeanspp(){
+      
+      std::vector<double> cc (K*K);
+      std::vector<size_t> nearest_centers (ndata);
+      std::vector<size_t> second_nearest_centers (ndata);      
+      std::vector<double> nearest_distances (ndata);
+      std::vector<double> second_nearest_distances (ndata);
+            
+      
+      triangular_kmeanspp(center_indices_init, cc.data(), nearest_centers.data(), nearest_distances.data(), second_nearest_centers.data(), second_nearest_distances.data());
+      
+      
+    }
     
     void go(){
-      
-      bool with_tests = false;
+
+      bool with_tests = true;
       if (with_tests == true){
         mowri << "\n\nCOMPILED WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
-      
-      std::chrono::time_point<std::chrono::high_resolution_clock> t0;
-      std::chrono::time_point<std::chrono::high_resolution_clock> t1;
-      std::chrono::time_point<std::chrono::high_resolution_clock> t2;
-      std::chrono::time_point<std::chrono::high_resolution_clock> t3;
-      std::chrono::time_point<std::chrono::high_resolution_clock> t4;
-      tstart = std::chrono::high_resolution_clock::now();
-      size_t ncalcs0;
-      size_t ncalcs1;
-      size_t ncalcs2;
-      
-  
-      //initialisation
-      set_center_center_info();
-      put_samples_in_clusters();                  
-      set_all_cluster_statistics();
-      
-      /* (CHECK POINT) all assignments and cluster statistics must be correct. Tests to pass : all */
-      if (with_tests == true){
-        post_initialisation_test();
-      }
-      
+
+
       /*TODO: prevent code duplication of this string (in pyzentas.pyx and here) */      
       mowri << 
 R"(
@@ -849,6 +734,103 @@ pc            : distance calculations can be terminated early if it can be estab
 nprops        : for clarans, the number of rejected proposals before one is accepted.       
 ------------------------------------------------------------------------------------------------------------------------------------
 )";
+
+
+      
+
+
+
+
+
+      tstart_initialise_centers = std::chrono::high_resolution_clock::now(); 
+      
+      /* initialisation from indices. */
+      if (initialisation_method == "from_indices_init"){
+        //already done in constructor
+      }
+
+      
+      
+      /* initialisation uniformly. */
+      else if (initialisation_method == "uniform"){
+        populate_uniformly(center_indices_init, K, ndata, dis, gen);
+      }
+      
+      
+      else if (initialisation_method.substr(0,8) == "afk-mc2-"){
+        populate_afk_mc2<TMetric, DataIn>(initialisation_method, center_indices_init, *ptr_datain, metric, K, ndata, mowri, gen, dis, f_energy);
+      }
+      
+      else if (initialisation_method == "kmeans++"){
+        initialise_with_kmeanspp();
+      }
+      
+      else {
+        std::stringstream vims_ss;
+        vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, afk-mc2-INT (for some positive INT)]";
+        throw std::runtime_error(vims_ss.str());
+      }
+      
+      
+      
+      
+      
+      
+      
+
+      std::sort(v_center_indices_init.begin(), v_center_indices_init.end());
+
+
+      std::copy(center_indices_init, center_indices_init + K, center_IDs);
+
+      for (size_t k = 0; k < K; ++k){
+        centers_data.append(ptr_datain->at_for_move(center_indices_init[k]));
+        // here we make an empty cluster, using datain to determine nec. `shape' parameters
+        cluster_datas.emplace_back(*ptr_datain, true);
+      }
+      
+      for (size_t k = 0; k < K; ++k){
+        if (center_indices_init[k] == center_indices_init[(k+1)%ndata]){
+          std::stringstream errm_ss;
+          errm_ss << "initialising indices must be unique, received " << center_indices_init[k] << " at least twice\n";
+          throw std::runtime_error(errm_ss.str());
+        }
+      }
+      
+      
+      
+      auto t_endit = std::chrono::high_resolution_clock::now();
+      time_to_initialise_centers = std::chrono::duration_cast<std::chrono::microseconds>(t_endit - tstart_initialise_centers).count();
+      
+      
+      
+      
+      
+      
+
+
+      
+      std::chrono::time_point<std::chrono::high_resolution_clock> t0;
+      std::chrono::time_point<std::chrono::high_resolution_clock> t1;
+      std::chrono::time_point<std::chrono::high_resolution_clock> t2;
+      std::chrono::time_point<std::chrono::high_resolution_clock> t3;
+      std::chrono::time_point<std::chrono::high_resolution_clock> t4;
+      tstart = std::chrono::high_resolution_clock::now();
+      size_t ncalcs0;
+      size_t ncalcs1;
+      size_t ncalcs2;
+      
+  
+      //initialisation
+      set_center_center_info();
+      put_samples_in_clusters();                  
+      set_all_cluster_statistics();
+      
+      /* (CHECK POINT) all assignments and cluster statistics must be correct. Tests to pass : all */
+      if (with_tests == true){
+        post_initialisation_test();
+      }
+      
 
       //mowri << "round :" << -1 << "\t tenergy : " <<  E_total << " \t itime : " << time_initialising << " \t ctime : " << time_in_update_centers << " \t utime : " << time_in_update_sample_info << " \t rtime : " << time_in_redistribute << " \t ttime : " << time_total << zentas::Endl;        
   
@@ -1005,7 +987,9 @@ nprops        : for clarans, the number of rejected proposals before one is acce
 /////////// private /////////////////
 /////////////////////////////////////    
   private:
-    
+
+    virtual void initialise_with_kmeanspp() = 0;
+        
     /* called from put_sample_in_clusters (virtual inline functions are not nonsensical) */    
     //virtual inline void put_sample_custom_in_cluster(size_t i, size_t a_x, const double * const distances) = 0;
     virtual inline void put_sample_custom_in_cluster(size_t, size_t, const double * const) {}
@@ -1072,8 +1056,6 @@ nprops        : for clarans, the number of rejected proposals before one is acce
         std::swap(non_center_IDs[i], non_center_IDs[swap_with]);
       }
       
-      
-      //pll_put_samples_in_cluster(0, ndata - K, non_center_IDs);
       
       std::vector<std::thread> threads;      
       for (size_t ti = 0; ti < nthreads; ++ti){
@@ -1369,7 +1351,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       }
     }
   
-    virtual void custom_cluster_statistics_test() = 0;//{}
+    virtual void custom_cluster_statistics_test() = 0;
 
     void cluster_statistics_test(){
       std::string errs("cluster statistics test failed.");
@@ -1397,6 +1379,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
   
   
     virtual void custom_info_test() {}
+    
     void info_tests(){
       std::string errm("info test failed. ");
       for (size_t k = 0; k < K; ++k){
@@ -1501,6 +1484,8 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       }
     }
 };
+
+
 
 
 

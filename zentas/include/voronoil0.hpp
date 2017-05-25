@@ -41,6 +41,8 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::get_ndata;
     using BaseClusterer<TMetric, TData>::get_base_summary_string;
     using BaseClusterer<TMetric, TData>::base_put_sample_in_cluster;
+    using BaseClusterer<TMetric, TData>::default_initialise_with_kmeanspp;    
+
    
    private:     
     virtual inline void put_sample_custom_in_cluster(size_t, size_t, const double * const) final override{}
@@ -52,12 +54,16 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     virtual inline void increment_custom_cluster_statistics(size_t, size_t) final override{}
     virtual void set_normalised_custom_cluster_statistics(size_t) final override{}
     virtual void set_to_zero_custom_cluster_statistics(size_t) final override{}
-    virtual void set_center_center_info() final override {}    
-    virtual void update_center_center_info() final override {}
-    virtual void custom_cluster_statistics_test() final override {}
+    virtual void set_center_center_info() final override{}
+    virtual void update_center_center_info() final override{}
+    virtual void custom_cluster_statistics_test() final override{}
 
     virtual void set_redistribute_order(std::vector<size_t> & redistribute_order) {
       std::iota(redistribute_order.begin(), redistribute_order.end(), 0);      
+    }
+
+    virtual void initialise_with_kmeanspp() override final{
+      default_initialise_with_kmeanspp();
     }
 
 
