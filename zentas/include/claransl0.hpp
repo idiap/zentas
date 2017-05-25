@@ -105,11 +105,6 @@ class ClaransL0 : public BaseClarans<TMetric, TData> {
       //BaseClusterer<TMetric, TData>::base_put_sample_in_cluster(i); 
       base_put_sample_in_cluster(i);
     }
-
-    //virtual bool update_centers() override final{
-      //return update_centers_greedy();
-    //}
-
   
   
    

@@ -24,8 +24,8 @@ template <typename TFloat>
 int cluster_dense(){
 
   //generating random data
-  size_t ndata = 100000;
-  size_t dimension = 4;
+  size_t ndata = 10000;
+  size_t dimension = 1;
   std::vector<TFloat> data (ndata*dimension);
   srand(1011);
   for (size_t i = 0; i < data.size(); ++i){
@@ -33,7 +33,7 @@ int cluster_dense(){
   }
   
   //set initialising medoid indices to be {0,...,K-1}
-  size_t K = 500;
+  size_t K = 400;
   std::vector<size_t> indices_init (K);
   for (size_t i = 0; i < K; ++i){
     indices_init[i] = i;
@@ -41,7 +41,7 @@ int cluster_dense(){
   
   //set algorithm and level of acceleration. For best performance (speed), this should *always* be clarans at level 3.
   std::string algorithm = "clarans";
-  size_t level = 3;
+  size_t level = 2;
   
   //only relevent for clarans : max number of consecutive rejected proposals before halting. Make it v-large if you don't want this to be your stopping criterion. note: if patient is true, this is not used (see python function string in pyzentas.pyx for more details) 
   size_t max_proposals = 20000;
@@ -54,7 +54,7 @@ int cluster_dense(){
   size_t seed = 1011;
 
   //maximum allowed time in seconds. make this v-large if you don't want this to be your stopping criterion
-  double maxtime = 2.;
+  double maxtime = 20.;
   
   //if the mean energy drops below this, stop and return. make this 0 if you don't want this to be your stopping criterion
   double minmE = 0.;
@@ -64,19 +64,19 @@ int cluster_dense(){
   std::vector<size_t> labels (ndata);
   
   //what metric to use. For metric data, this is one of l0, l1, l2 and li (infinity norm)
-  std::string metric = "l1"; 
+  std::string metric = "l2"; 
   
   //number of threads to use. Note for deterministic results this should be 1, otherwise order of thread operations can change redistriubtion
   size_t nthreads = 1;
   
   //max number of rounds. For clarans, this is number of successful swaps. If you don't want this to be your stopping criterion, make it v-large
-  size_t maxrounds = 13;
+  size_t maxrounds = 13000;
 
   //relevent for clarans : if false, implement a good swap as soon as it is found. If true (recommended), if the time spent evaluating proposals is less than the time spent implementing swaps, then keep searching for good swaps, only implementing a swap when you've spent as much time looking as implementing. Motivation for this is that it doesn't make sense to spend the majority of time implementing swaps, should spend at least half the time looking for good swaps. 
   bool patient = false;
   
   //energy can be log, identity, quadratic, cubic, exp, squarepotential.
-  std::string energy = "cubic";
+  std::string energy = "identity";
   
   //rooted is purely an implementation issue, but can be important. Two version : if rooted = true, data does not move around, so as to stay contiguous by cluster. if rooted = false, all data is contiguous by cluster. Contiguity by cluster means faster memory access, but there is the cost of moving data around. In general, rooted = false is fastest. Exceptions are sequence data (and sparse) where the sequences vary greatly in length : for sequence data with rooted = false, our implementations requires that each sequence is allocated the memory required by the longest sequence. for rooted = true however the sequences are stored compactly (no gaps). 
   //Summary : use rooted = false except for sequence data, where the sequences of of greatly varying length. 
