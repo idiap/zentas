@@ -37,6 +37,13 @@ the GNU General Public License along with zentas. If not, see
 namespace nszen{
 
 
+struct KMPPBlob{
+  public:
+    size_t k_1;
+    size_t k_2;
+    double d_1;
+    double d_2;
+};
 
 
 
@@ -406,9 +413,114 @@ class BaseClusterer{
       }
       final_push_into_cluster(i, nearest_center, min_distance, up_distances.get());
     }
+
+
+
+
+     
+    /* all parameters passed in are to be set. TODO : parallelisation */
+    
+    /* TODO : change from the 4 arrays to a vector of KMPPBlobs. */
+    inline void triangular_kmeanspp_after_initial(size_t * const centers, double * const cc, size_t * const nearest_centers, double * const nearest_distances, size_t * const second_nearest_centers, double * const second_nearest_distances, size_t k0){
+      
+      if (k0 == 0 || k0 >= K){
+        throw std::runtime_error("k0 should be in (0, K) here");
+      }
+ 
+
+      double a_distance;
+
+      /* generates [0,1] uniform, will use to sample centers */
+      std::uniform_real_distribution<double> dis_uni01(0.0, 1.0);      
+      
+      /* the cumulative sampling distribution */
+      std::vector<double> v_cum_nearest_energies (ndata + 1);
+      v_cum_nearest_energies[0] = 0.;
+            
+      for (size_t i = 0; i < ndata; ++i){
+        v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
+      }
+      
+      for (size_t k = k0; k < K; ++k){
+        centers[k] = std::distance(
+        v_cum_nearest_energies.begin(), 
+        std::lower_bound(v_cum_nearest_energies.begin(), v_cum_nearest_energies.end(), dis_uni01(gen)*v_cum_nearest_energies.back())) - 1;
+        
+        /* update cc */
+        cc[k*K + k] = 0.;
+        for (size_t kp = 0; kp < k; ++kp){
+          set_sampleID_sampleID_distance(centers[k], centers[kp], cc[k*K + kp]);
+          cc[kp*K + k] = cc[k*K + kp];
+        }
+        
+        /* update nearest distances, second nearest distances, and centers */
+        for (size_t i = 0; i < ndata; ++i){
+          
+          
+           if (cc[nearest_centers[i]*K + k] < second_nearest_distances[i] + nearest_distances[i]){
+            set_sampleID_sampleID_distance(centers[k], i, second_nearest_distances[i], a_distance);
+            //set_sampleID_sampleID_distance(centers[k], i, a_distance);
+            
+            if (a_distance < second_nearest_distances[i]){
+              if (a_distance < nearest_distances[i]){
+                second_nearest_distances[i] = nearest_distances[i];
+                second_nearest_centers[i] = nearest_centers[i];
+                nearest_distances[i] = a_distance;
+                nearest_centers[i] = k;
+              }
+              else{
+                second_nearest_distances[i] = a_distance;
+                second_nearest_centers[i] = k;
+              }
+            }
+          }
+                      
+          v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
+        }
+      }
+    }
     
     /* all parameters passed in are to be set. TODO : parallelisation */
     inline void triangular_kmeanspp(size_t * const centers, double * const cc, size_t * const nearest_centers, double * const nearest_distances, size_t * const second_nearest_centers, double * const second_nearest_distances){
+
+      /* the first center is sampled uniformly */
+      centers[0] = dis(gen)%ndata;      
+      cc[0*K + 0] = 0.;
+      
+      for (size_t i = 0; i < ndata; ++i){
+        set_sampleID_sampleID_distance(centers[0], i, nearest_distances[i]);
+        second_nearest_distances[i] = std::numeric_limits<double>::max();
+        nearest_centers[i] = 0;
+      }
+      
+      size_t k0 = 1;
+      triangular_kmeanspp_after_initial(centers, cc, nearest_centers, nearest_distances, second_nearest_centers, second_nearest_distances, k0);
+    }
+
+
+
+    /* all parameters passed in are to be set. TODO : parallelisation */
+    inline void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, size_t * const nearest_centers, double * const nearest_distances, size_t * const second_nearest_centers, double * const second_nearest_distances){
+      
+
+      size_t n_bins = 4;
+      size_t full_tail = K/n_bins;
+
+      std::vector<TData> bins (n_bins, {*ptr_datain, true});
+      std::vector<std::vector<size_t>> original_indices(n_bins);
+      std::vector<std::vector<KMPPBlob>> kmmblobs(n_bins);
+
+      
+      for (size_t i = 0; i < ndata; ++i){
+        size_t bin = dis(gen)%n_bins;
+        bins[bin].append(ptr_datain->at_for_move(i));
+        original_indices[bin].push_back(i);
+      }
+      
+      for (size_t bin = 0; bin < n_bins; ++bin){
+        kmmblobs[bin].resize(n_bins);
+      }
+      
 
       double a_distance;
       
@@ -431,8 +543,6 @@ class BaseClusterer{
       }
       
       for (size_t k = 1; k < K; ++k){
-        
-        /* sample center from distribution */
         centers[k] = std::distance(
         v_cum_nearest_energies.begin(), 
         std::lower_bound(v_cum_nearest_energies.begin(), v_cum_nearest_energies.end(), dis_uni01(gen)*v_cum_nearest_energies.back())) - 1;
@@ -446,8 +556,10 @@ class BaseClusterer{
         
         /* update nearest distances, second nearest distances, and centers */
         for (size_t i = 0; i < ndata; ++i){
+
           if (cc[nearest_centers[i]*K + k] < second_nearest_distances[i] + nearest_distances[i]){
             set_sampleID_sampleID_distance(centers[k], i, second_nearest_distances[i], a_distance);
+            //set_sampleID_sampleID_distance(centers[k], i, a_distance);
             
             if (a_distance < second_nearest_distances[i]){
               if (a_distance < nearest_distances[i]){
@@ -461,13 +573,10 @@ class BaseClusterer{
                 second_nearest_centers[i] = k;
               }
             }
-          }
-          
+          }            
           v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
-        }  
+        }
       }
-      
-      
     }
     
         
@@ -702,7 +811,7 @@ class BaseClusterer{
     
     void go(){
 
-      bool with_tests = true;
+      bool with_tests = false;
       if (with_tests == true){
         mowri << "\n\nCOMPILED WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
@@ -748,59 +857,46 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       if (initialisation_method == "from_indices_init"){
         //already done in constructor
       }
-
-      
       
       /* initialisation uniformly. */
       else if (initialisation_method == "uniform"){
         populate_uniformly(center_indices_init, K, ndata, dis, gen);
       }
       
-      
+      /* initialisation uniformly according to Bachem et al. */
       else if (initialisation_method.substr(0,8) == "afk-mc2-"){
         populate_afk_mc2<TMetric, DataIn>(initialisation_method, center_indices_init, *ptr_datain, metric, K, ndata, mowri, gen, dis, f_energy);
       }
       
+      /* initialisation with kmeans++ TODO : in dev mode */
       else if (initialisation_method == "kmeans++"){
         initialise_with_kmeanspp();
       }
       
       else {
         std::stringstream vims_ss;
-        vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, afk-mc2-INT (for some positive INT)]";
+        vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, kmeans++, afk-mc2-INT (for some positive INT)]";
         throw std::runtime_error(vims_ss.str());
       }
-      
-      
-      
-      
-      
-      
-      
-
+  
       std::sort(v_center_indices_init.begin(), v_center_indices_init.end());
-
-
       std::copy(center_indices_init, center_indices_init + K, center_IDs);
 
       for (size_t k = 0; k < K; ++k){
         centers_data.append(ptr_datain->at_for_move(center_indices_init[k]));
-        // here we make an empty cluster, using datain to determine nec. `shape' parameters
+        /* here we make an empty cluster, using datain to determine nec. `shape' parameters */
         cluster_datas.emplace_back(*ptr_datain, true);
       }
-      
-      for (size_t k = 0; k < K; ++k){
-        if (center_indices_init[k] == center_indices_init[(k+1)%ndata]){
-          std::stringstream errm_ss;
-          errm_ss << "initialising indices must be unique, received " << center_indices_init[k] << " at least twice\n";
-          throw std::runtime_error(errm_ss.str());
-        }
+  
+      /* if the indices are from the user or in debug mode, we run a test that initialising indices look fine. */
+      if (with_tests || initialisation_method == "from_indices_init"){
+        post_initialise_centers_test();
       }
-      
-      
       
       auto t_endit = std::chrono::high_resolution_clock::now();
       time_to_initialise_centers = std::chrono::duration_cast<std::chrono::microseconds>(t_endit - tstart_initialise_centers).count();
+
+      time_total = time_initialising;
       
       
       
@@ -837,7 +933,6 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       t1 = std::chrono::high_resolution_clock::now();
       time_initialising = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
       ncalcs_initialising = metric.get_ncalcs();
-      time_total = time_initialising;
       
       round_summary();
       
@@ -1483,6 +1578,19 @@ nprops        : for clarans, the number of rejected proposals before one is acce
         }
       }
     }
+
+
+    void post_initialise_centers_test(){
+      for (size_t k = 0; k < K; ++k){
+        if (center_indices_init[k] == center_indices_init[(k+1)%ndata]){
+          std::stringstream errm_ss;
+          errm_ss << "initialising indices must be unique, received " << center_indices_init[k] << " at least twice\n";
+          throw std::runtime_error(errm_ss.str());
+        }
+      }
+    }
+
+
 };
 
 

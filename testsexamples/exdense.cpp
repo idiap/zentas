@@ -24,22 +24,22 @@ template <typename TFloat>
 int cluster_dense(){
 
   //generating random data
-  size_t ndata = 10000;
+  size_t ndata = 80;
   size_t dimension = 1;
   std::vector<TFloat> data (ndata*dimension);
-  srand(1011);
+  srand(time(NULL));
   for (size_t i = 0; i < data.size(); ++i){
     data[i] = (static_cast<float> (rand()%1000000)) / 1000000.  ;
   }
   
   //set initialising medoid indices to be {0,...,K-1}
-  size_t K = 400;
+  size_t K = 40;
   std::vector<size_t> indices_init (K);
   for (size_t i = 0; i < K; ++i){
     indices_init[i] = i;
   }
   
-  std::string initialisation_method = "from_indices_init";
+  std::string initialisation_method = "kmeans++"; //"from_indices_init";
   
   //set algorithm and level of acceleration. For best performance (speed), this should *always* be clarans at level 3.
   std::string algorithm = "clarans";
@@ -53,7 +53,7 @@ int cluster_dense(){
   std::string text;
   
   //random seed, for proposal generation
-  size_t seed = 1011;
+  size_t seed = rand()%1000;
 
   //maximum allowed time in seconds. make this v-large if you don't want this to be your stopping criterion
   double maxtime = 20.;
@@ -90,8 +90,10 @@ int cluster_dense(){
   //only relevent of energy is exponential.
   double exponent_coeff = 0; 
   
+  
   //and finally, we cluster. 
-  nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, indices_init.data(), initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, nullptr, //indices_init.data(), 
+  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
 
   //labels and indices_final have now been set, and can now used for the next step in your application. 
   

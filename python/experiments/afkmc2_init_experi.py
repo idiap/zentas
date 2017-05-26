@@ -43,7 +43,7 @@ def load_all_rna():
 
 
 rna = load_all_rna()
-K = 30
+K = 2000
 
 #ndata = 100
 #dimension = 8
@@ -60,7 +60,8 @@ K = 30
 ndata, dimension = rna.shape
 
 #afk-mc2-25
-pyzentas.pyzentas(X = rna[0:200], K = K, initialisation_method = "afk-mc2-20", indices_init = None, energy = "identity", metric = "l2", maxrounds = 2000, seed = npr.randint(1000), maxtime = 100, exponent_coeff = 0)
+
+pyzentas.pyzentas(X = rna, K = K, initialisation_method = "kmeans++", indices_init = None, energy = "quadratic", metric = "l2", maxrounds = 3, seed = npr.randint(1000), maxtime = 100, exponent_coeff = 0)
 
 #pyzentas.pyzentas(X = rna, K = K, indices_init = random.sample(xrange(ndata), K), initialisation_method = "from_indices_init", energy = "quadratic", metric = "l2", maxrounds = 20, seed = npr.randint(1000))
 

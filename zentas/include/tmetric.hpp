@@ -126,8 +126,24 @@ class L2Distance : public LpDistance<TNumber>{
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
 
+
+    //inline void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance, const std::function<void(double)> tf){
+      //++ncalcs;
+      //distance = 0;       
+      //threshold *= threshold;
+      //double diff;
+      //size_t d;      
+      //for (d = 0; d < dimension; ++d){
+        //diff = *(a + d) - *(b + d);
+        //distance += diff*diff;
+        //tf(distance);
+      //}
+      //calccosts += (d == dimension ? d : 1 + d);
+      //distance = std::sqrt(distance);      
+    //}
+    
+    
     virtual inline void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final{
-      
       
       /* Experiment with blas : with d = 1000, the speed-up was only 10s -> 7s. Not interesting enough to warrant the additional compilation hassle. 
       ++ncalcs;
@@ -136,27 +152,23 @@ class L2Distance : public LpDistance<TNumber>{
       distance = wblas::dot(dimension, worker, 1, worker, 1);
       calccosts += dimension;
       */
-
-
-
       ++ncalcs;
       distance = 0;       
-      threshold *= threshold;
       double diff;
-      size_t d;      
+      size_t d;
+      
+      threshold *= threshold;
+
       for (d = 0; d < dimension; ++d){
         diff = *(a + d) - *(b + d);
         distance += diff*diff;
-        //checking every time is too much, TODO think about changing this. TODO blasify this.
         if (distance > threshold){
           break;
         }
       }
+      
       calccosts += (d == dimension ? d : 1 + d);
       distance = std::sqrt(distance);
-
-
-
     }
 
     inline void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance){
@@ -509,7 +521,7 @@ class LpMetric{
     
     template <typename T>
     inline void set_distance(const T & a, const T & b, double & distance){
-      set_distance(a, b, std::numeric_limits<double>::max(), distance);
+      set_distance(a, b, std::numeric_limits<double>::max(), distance); 
     }
     
     inline size_t get_ncalcs() const{
