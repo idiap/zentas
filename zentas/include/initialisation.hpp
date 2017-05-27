@@ -9,28 +9,14 @@
 
 namespace nszen{
 
+size_t extract_INT(std::string initialisation_method, size_t prefix_length);
+  
 template <class TMetric, class TDataIn>
 void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, const TDataIn & datain, TMetric & metric, size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy){
+
+
+  size_t chain_length = extract_INT(initialisation_method, 8);
   
-  if (initialisation_method.size() < 9){
-    std::stringstream errm_ss;
-    errm_ss << "invalid initialisation_method " << initialisation_method << ". It is not of the form afk-mc2-INT, where INT is positive."; 
-    throw std::runtime_error(errm_ss.str());
-  }
-  
-  std::string digit_substring = initialisation_method.substr(8, initialisation_method.size() - 8);
-  auto striter = digit_substring.begin(); 
-  while (striter != digit_substring.end()){
-    char x = *striter;
-    if (std::isdigit(x) == false){
-      std::stringstream errm_ss;
-      errm_ss << "Unexpected character while attempting to extract integer from " << initialisation_method << " (" << digit_substring << ")" << ", `" << x << "'";
-      throw std::runtime_error(errm_ss.str());
-    }
-    ++striter;
-  }
-  
-  size_t chain_length = std::stoi(digit_substring);
   mowri << "chain length : " << chain_length << zentas::Endl;
   
   /* number of attempted moves before sampling */

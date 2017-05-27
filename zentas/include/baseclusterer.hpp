@@ -36,13 +36,74 @@ the GNU General Public License along with zentas. If not, see
 
 namespace nszen{
 
+class P2Bundle{
 
-struct KMPPBlob{
   public:
-    size_t k_1;
-    size_t k_2;
-    double d_1;
-    double d_2;
+
+    size_t ndata;
+    
+    
+    /* also tried with d1 and d2 separate, slower (as always used together). */
+    std::unique_ptr <std::array<double, 2 > [] > d12_;    
+    std::unique_ptr <size_t []> k_1_;
+    std::unique_ptr <size_t []> k_2_;
+    std::unique_ptr <size_t []> ori_;
+    
+    
+    inline size_t & k_1(size_t i){
+      return k_1_[i];
+    }
+    
+    inline size_t & k_2(size_t i){
+      return k_2_[i];
+    }
+    
+    inline double & d_1(size_t i ){
+      return std::get<0>(d12_[i]);
+    }
+
+    inline double & d_2(size_t i){
+      return std::get<1>(d12_[i]);
+    }
+    
+    inline size_t & ori(size_t i){
+      return ori_[i];
+    }
+    
+    inline size_t get_ndata() const{
+      return ndata;
+    }
+    
+    void initialise_data(size_t n){
+      ndata = n;
+      d12_.reset(new std::array<double, 2> [n]);
+      k_1_.reset(new size_t[n]);
+      k_2_.reset(new size_t[n]);
+      ori_.reset(new size_t[n]);
+      
+      for (unsigned i = 0; i < n; ++i){
+        d_1(i) = std::numeric_limits<double>::max();
+        d_2(i) = std::numeric_limits<double>::max();
+      }
+      for (unsigned i = 0; i < n; ++i){
+        k_1(i) = 0; /* note that in the first round of kmeanspp, the lookup in cc requires this  */ 
+      }
+    }
+    
+    P2Bundle() = default;
+    
+    P2Bundle(size_t n){
+      initialise_data(n);
+    }
+    
+    /* TODO : how to use preceding initialised to initialise here */
+    P2Bundle(const std::vector<size_t> & ori){
+      initialise_data(ori.size());
+      for (size_t i = 0; i < ndata; ++i){
+        ori_[i] = ori[i];
+      }
+    }
+
 };
 
 
@@ -189,6 +250,10 @@ class BaseClusterer{
 
   protected:
     std::uniform_int_distribution<size_t> dis;
+
+    /* generates [0,1] uniform, will use to sample centers */
+    std::uniform_real_distribution<double> dis_uni01;      
+    
     std::default_random_engine gen;
   
   private:  
@@ -294,6 +359,7 @@ class BaseClusterer{
 
 
 
+
   
     BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.maxtime, ib.minmE, ib.indices_final, ib.labels, ib.nthreads, ib.maxrounds, ib.energy, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
 
@@ -311,7 +377,6 @@ class BaseClusterer{
         
       
       if (maxtime_micros > time_total){
-        //mowri << maxtime_micros - time_total << zentas::Endl;
         return maxtime_micros - time_total;
       }
       else{
@@ -415,168 +480,295 @@ class BaseClusterer{
     }
 
 
-
-
-     
-    /* all parameters passed in are to be set. TODO : parallelisation */
-    
-    /* TODO : change from the 4 arrays to a vector of KMPPBlobs. */
-    inline void triangular_kmeanspp_after_initial(size_t * const centers, double * const cc, size_t * const nearest_centers, double * const nearest_distances, size_t * const second_nearest_centers, double * const second_nearest_distances, size_t k0){
-      
-      if (k0 == 0 || k0 >= K){
-        throw std::runtime_error("k0 should be in (0, K) here");
+    void test_parameters_to_tkai(size_t k0, size_t k1, size_t ndata_1, size_t ndata_2){
+      if (k0 >= K || k1 < k0 || k1 > K){
+        std::stringstream errm;
+        errm << "invalid k0, k1 in kmeanspp : ";
+        errm << "k0 = " << k0 << "     k1 = " << k1 << "     K = " << K << ".";
+        throw std::runtime_error(errm.str());
       }
  
+      if (ndata_1 != ndata_2){
+        throw std::runtime_error("ndata_1 != ndata_2 in test_parameters_to_tkai");        
+      }
+    }
 
-      double a_distance;
 
-      /* generates [0,1] uniform, will use to sample centers */
-      std::uniform_real_distribution<double> dis_uni01(0.0, 1.0);      
-      
-      /* the cumulative sampling distribution */
-      std::vector<double> v_cum_nearest_energies (ndata + 1);
-      v_cum_nearest_energies[0] = 0.;
+        inline size_t get_sample_from(std::vector<double> & v_cum_nearest_energies){
+          
+          if (v_cum_nearest_energies.back() == 0){
+            throw std::runtime_error("exhausted in get_sample_from (kmeans++). in particular, the cumulative energy is zero. not sure what to do in this situation, could just return indices uniformly at random. but being cautious and throwing an error. please change it here if this is annoying. ");  
+            /* alternatively, return uniformly with this : 
+             * return dis(gen)%(v_cum_nearest_energies.size() - 1); */
+          }
+          
+          return std::distance(
+          v_cum_nearest_energies.begin(), 
+          std::lower_bound(v_cum_nearest_energies.begin(), v_cum_nearest_energies.end(), dis_uni01(gen)*v_cum_nearest_energies.back())) - 1;
+        }
+
+
+            inline void kmpp_inner(size_t i, size_t k, double a_distance, P2Bundle & p2bun){
             
-      for (size_t i = 0; i < ndata; ++i){
-        v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
+              if (a_distance < p2bun.d_2(i)){
+                if (a_distance < p2bun.d_1(i)){
+                  p2bun.d_2(i) = p2bun.d_1(i);
+                  p2bun.k_2(i) = p2bun.k_1(i);
+                  p2bun.d_1(i) = a_distance;
+                  p2bun.k_1(i) = k;
+                }
+                else{
+                  p2bun.d_2(i) = a_distance;
+                  p2bun.k_2(i) = k;
+                }
+              }
+            }
+
+
+
+    
+    
+    /* where 
+     * c_dt will store the centers
+     * c_ind stores the indices (as per original ptr_datain).
+     * cc stores the inter-ceter distances.
+     * p2bun stores a1,d1,a2,d2,ori of data used for kmeanspp.
+     * p2bun_d2 (const) is the data used for kmeanpp.
+     * get centers [k0, k1).
+     *  */
+
+    void triangular_kmeanspp_after_initial(TData & c_dt, size_t * const c_ind, double * const cc, P2Bundle & p2bun, const TData * const ptr_p2bun_dt, size_t k0, size_t k1, bool from_full_data){
+      
+      if (from_full_data != (ptr_p2bun_dt == nullptr)){
+        throw std::runtime_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (ptr_p2bun_dt == nullptr)");
       }
       
-      for (size_t k = k0; k < K; ++k){
-        centers[k] = std::distance(
-        v_cum_nearest_energies.begin(), 
-        std::lower_bound(v_cum_nearest_energies.begin(), v_cum_nearest_energies.end(), dis_uni01(gen)*v_cum_nearest_energies.back())) - 1;
+      size_t kmeanspp_ndata = from_full_data ? ndata : ptr_p2bun_dt->get_ndata();
+      
+      if (kmeanspp_ndata -1 < k1 - k0){
+        std::stringstream ss;
+        ss << "triangular_kmeanspp_after_initial, attempting to find more centers than data - 1 : ";
+        ss << "kmeanspp_ndata = " << kmeanspp_ndata << "   and   k1 - k0 = " << k1 - k0; 
+        throw std::runtime_error(ss.str());        
+      }
+      
+      test_parameters_to_tkai(k0, k1, p2bun.get_ndata(), kmeanspp_ndata);
+      
+      double a_distance;
+
+      /* the cumulative sampling distribution */
+      std::vector<double> v_cum_nearest_energies (kmeanspp_ndata + 1);      
+      v_cum_nearest_energies[0] = 0.;
+      
+      if (k0 == 0){
+        for (size_t i = 0; i < kmeanspp_ndata; ++i){
+          v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + 1.;
+        }
+      }
+
+      else{
+        for (size_t i = 0; i < kmeanspp_ndata; ++i){
+          v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(p2bun.d_1(i));
+        }
+      }
+
+      /* depending on whether we're using all the data or the data in ptr_p2bun_dt, distance calculations are performed differently. */      
+      std::function<void(size_t, size_t)> set_distance_kk;
+      std::function<void(size_t, size_t)> set_distance_ik;
+      std::function<void(size_t)> update_c_ind_c_dt;
+
+      if (from_full_data == true) {
+  
+        set_distance_kk = [this, &c_ind, &cc](size_t k, size_t kp){
+          set_sampleID_sampleID_distance(c_ind[k], c_ind[kp], cc[k*K + kp]);  
+        };
+        
+        set_distance_ik = [this, &a_distance, &p2bun, &c_ind](size_t i, size_t k){
+          set_sampleID_sampleID_distance(c_ind[k], i, p2bun.d_2(i), a_distance);
+        };
+        
+        update_c_ind_c_dt = [this, &c_ind, &c_dt, &v_cum_nearest_energies](size_t k){
+          c_ind[k] = get_sample_from(v_cum_nearest_energies); 
+          c_dt.append(ptr_datain->at_for_move(c_ind[k]));
+        };
+      }
+      
+      else{
+
+        set_distance_kk = [this, &c_ind, &cc, &c_dt](size_t k, size_t kp){
+          metric.set_distance(c_dt.at_for_metric(k), c_dt.at_for_metric(kp), cc[k*K + kp]);
+        };
+        
+        set_distance_ik = [this, &a_distance, &p2bun, &c_ind, &c_dt, &ptr_p2bun_dt](size_t i, size_t k){
+          metric.set_distance(c_dt.at_for_metric(k), ptr_p2bun_dt->at_for_metric(i), p2bun.d_2(i), a_distance);
+        };
+        
+        update_c_ind_c_dt = [this, &c_ind, &c_dt, &v_cum_nearest_energies, &ptr_p2bun_dt, &p2bun](size_t k){
+          
+          size_t sami = get_sample_from(v_cum_nearest_energies);
+          c_ind[k] = p2bun.ori(sami);
+          c_dt.append(ptr_p2bun_dt->at_for_move(sami));
+        };
+      
+      }
+      
+      
+      
+      /* k-means++, at last */
+      for (size_t k = k0; k < k1; ++k){
+        
+        update_c_ind_c_dt(k);
+ 
         
         /* update cc */
         cc[k*K + k] = 0.;
         for (size_t kp = 0; kp < k; ++kp){
-          set_sampleID_sampleID_distance(centers[k], centers[kp], cc[k*K + kp]);
+          set_distance_kk(k, kp);
           cc[kp*K + k] = cc[k*K + kp];
         }
-        
+ 
         /* update nearest distances, second nearest distances, and centers */
-        for (size_t i = 0; i < ndata; ++i){
-          
-          
-           if (cc[nearest_centers[i]*K + k] < second_nearest_distances[i] + nearest_distances[i]){
-            set_sampleID_sampleID_distance(centers[k], i, second_nearest_distances[i], a_distance);
-            //set_sampleID_sampleID_distance(centers[k], i, a_distance);
-            
-            if (a_distance < second_nearest_distances[i]){
-              if (a_distance < nearest_distances[i]){
-                second_nearest_distances[i] = nearest_distances[i];
-                second_nearest_centers[i] = nearest_centers[i];
-                nearest_distances[i] = a_distance;
-                nearest_centers[i] = k;
-              }
-              else{
-                second_nearest_distances[i] = a_distance;
-                second_nearest_centers[i] = k;
-              }
-            }
+        for (size_t i = 0; i < kmeanspp_ndata; ++i){
+          /* note that if k0 = 0, k_1(i) is 0 so this is fine. */
+          if (cc[p2bun.k_1(i)*K + k] < p2bun.d_1(i) + p2bun.d_2(i)){
+            set_distance_ik(i,k);
+            kmpp_inner(i, k, a_distance, p2bun);
           }
-                      
-          v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
+          v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(p2bun.d_1(i));
         }
       }
     }
-    
-    /* all parameters passed in are to be set. TODO : parallelisation */
-    inline void triangular_kmeanspp(size_t * const centers, double * const cc, size_t * const nearest_centers, double * const nearest_distances, size_t * const second_nearest_centers, double * const second_nearest_distances){
 
-      /* the first center is sampled uniformly */
-      centers[0] = dis(gen)%ndata;      
-      cc[0*K + 0] = 0.;
+
+    
+
+    /* all parameters passed in are to be set. TODO : parallelisation */
+    inline void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt){
       
       for (size_t i = 0; i < ndata; ++i){
-        set_sampleID_sampleID_distance(centers[0], i, nearest_distances[i]);
-        second_nearest_distances[i] = std::numeric_limits<double>::max();
-        nearest_centers[i] = 0;
+        p2bun.ori(i) = i;
       }
       
-      size_t k0 = 1;
-      triangular_kmeanspp_after_initial(centers, cc, nearest_centers, nearest_distances, second_nearest_centers, second_nearest_distances, k0);
+      size_t k0 = 0;
+      size_t k1 = K;
+      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, k0, k1, true);
     }
 
 
 
-    /* all parameters passed in are to be set. TODO : parallelisation */
-    inline void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, size_t * const nearest_centers, double * const nearest_distances, size_t * const second_nearest_centers, double * const second_nearest_distances){
+
+    
+        
+    inline void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, size_t n_bins){
+
+
+      //TData c_dt(*ptr_datain, true);
       
+      
+      double a_distance;
+      
+            
 
-      size_t n_bins = 4;
-      size_t full_tail = K/n_bins;
-
-      std::vector<TData> bins (n_bins, {*ptr_datain, true});
+      /* non_tail_k will be how many k's for which only 1/n_bins of the data is used.
+       * it will be (n_bins - 1)/n_bins, rounded down to the nearest multiple of n_bins.
+       * an analysis suggests that the tail should be sqrt(K/nbins), so this is conservative.
+       * we also ensure that the tail is at least of length min(K, 50). 
+       * */
+      size_t non_tail_k;
+      non_tail_k = static_cast<size_t>(static_cast<double>(K)*(1. - 1./static_cast<double>(n_bins)));
+      size_t minimal_tail_k = std::min<size_t>(K, 50);
+      size_t maximal_non_tail_k = K - minimal_tail_k;
+      non_tail_k = std::min(non_tail_k, maximal_non_tail_k);
+                  
+            
+      /* tail_k is how many k's have use all the data (at the end) */
+      size_t tail_k = K - non_tail_k;
+      
+      /* the data will be copied randomly into bins */
+      std::vector<TData> p2buns_dt (n_bins, {*ptr_datain, true});
       std::vector<std::vector<size_t>> original_indices(n_bins);
-      std::vector<std::vector<KMPPBlob>> kmmblobs(n_bins);
+      std::vector<P2Bundle> p2buns(n_bins);
 
       
+      std::vector<size_t> bin_indices (n_bins);
+      for (size_t bin = 0; bin < n_bins; ++bin){
+        bin_indices[bin] = bin;
+      }
       for (size_t i = 0; i < ndata; ++i){
-        size_t bin = dis(gen)%n_bins;
-        bins[bin].append(ptr_datain->at_for_move(i));
+        if (i%n_bins == 0){
+          /* shuffle the indices */
+          for (size_t bin = 0; bin < n_bins; ++bin){
+            std::swap(bin_indices[bin], bin_indices[bin + dis(gen)%(n_bins - bin)]);
+          }
+        } 
+        size_t bin = bin_indices[i%n_bins];
+        p2buns_dt[bin].append(ptr_datain->at_for_move(i));
         original_indices[bin].push_back(i);
       }
       
       for (size_t bin = 0; bin < n_bins; ++bin){
-        kmmblobs[bin].resize(n_bins);
+        p2buns[bin] = P2Bundle(original_indices[bin]);
       }
-      
 
-      double a_distance;
-      
-      /* generates [0,1] uniform, will use to sample centers */
-      std::uniform_real_distribution<double> dis_uni01(0.0, 1.0);      
-      
-      /* the cumulative sampling distribution */
-      std::vector<double> v_cum_nearest_energies (ndata + 1);
-      v_cum_nearest_energies[0] = 0.;
-            
-      /* the first center is sampled uniformly */
-      centers[0] = dis(gen)%ndata;      
-      cc[0*K + 0] = 0.;
-      
-      for (size_t i = 0; i < ndata; ++i){
-        set_sampleID_sampleID_distance(centers[0], i, nearest_distances[i]);
-        v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
-        second_nearest_distances[i] = std::numeric_limits<double>::max();
-        nearest_centers[i] = 0;
-      }
-      
-      for (size_t k = 1; k < K; ++k){
-        centers[k] = std::distance(
-        v_cum_nearest_energies.begin(), 
-        std::lower_bound(v_cum_nearest_energies.begin(), v_cum_nearest_energies.end(), dis_uni01(gen)*v_cum_nearest_energies.back())) - 1;
-        
-        /* update cc */
-        cc[k*K + k] = 0.;
-        for (size_t kp = 0; kp < k; ++kp){
-          set_sampleID_sampleID_distance(centers[k], centers[kp], cc[k*K + kp]);
-          cc[kp*K + k] = cc[k*K + kp];
-        }
-        
-        /* update nearest distances, second nearest distances, and centers */
-        for (size_t i = 0; i < ndata; ++i){
-
-          if (cc[nearest_centers[i]*K + k] < second_nearest_distances[i] + nearest_distances[i]){
-            set_sampleID_sampleID_distance(centers[k], i, second_nearest_distances[i], a_distance);
-            //set_sampleID_sampleID_distance(centers[k], i, a_distance);
-            
-            if (a_distance < second_nearest_distances[i]){
-              if (a_distance < nearest_distances[i]){
-                second_nearest_distances[i] = nearest_distances[i];
-                second_nearest_centers[i] = nearest_centers[i];
-                nearest_distances[i] = a_distance;
-                nearest_centers[i] = k;
-              }
-              else{
-                second_nearest_distances[i] = a_distance;
-                second_nearest_centers[i] = k;
+        auto update_nearest_info = [&p2buns, &p2buns_dt, &c_dt, &cc, &a_distance, this](size_t bin, size_t k_start, size_t k_end, size_t i0, size_t i1)
+        {
+          //for (size_t i = 0; i < p2buns[bin].get_ndata(); ++i){
+          for (size_t i = i0; i < i1; ++i){
+            for (size_t k = k_start; k < k_end; ++k){
+              if (cc[p2buns[bin].k_1(i)*K + k] < p2buns[bin].d_1(i) + p2buns[bin].d_2(i)){
+                metric.set_distance(c_dt.at_for_metric(k), p2buns_dt[bin].at_for_metric(i), p2buns[bin].d_2(i), a_distance);
+                kmpp_inner(i, k, a_distance, p2buns[bin]);
               }
             }
-          }            
-          v_cum_nearest_energies[i+1] = v_cum_nearest_energies[i] + f_energy(nearest_distances[i]);
+          }
+        };
+      
+
+      for (size_t bin = 0; bin < n_bins; ++bin){
+        size_t k0 = (bin*non_tail_k)/n_bins;
+        size_t k1 = ((bin + 1)*non_tail_k)/n_bins;        
+        
+        
+        /* this should be parallelised exactly like *&^* */
+        update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
+        
+        
+        /* we don't even try to parallelize to center by center kmeans++ part */
+        triangular_kmeanspp_after_initial(c_dt, centers, cc, p2buns[bin], &p2buns_dt[bin], k0, k1, false);
+      }
+      
+      /* update all until the tail (*&^*) */
+      for (size_t bin = 0; bin < n_bins; ++bin){
+        size_t k1 = ((bin + 1)*non_tail_k)/n_bins;
+        std::vector<std::thread> threads;
+        for (size_t ti = 0; ti < nthreads; ++ti){
+          threads.emplace_back([this, ti, bin, &p2buns, k1, non_tail_k, & update_nearest_info] () {update_nearest_info(
+            bin, k1, non_tail_k, 
+            get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
+            get_end(ti, get_nthreads(), 0, p2buns[bin].get_ndata()));});
+        }
+        
+        for (auto & t : threads){
+          t.join();
         }
       }
+      
+      
+      //get p2bun up to date. 
+      for (size_t bin = 0; bin < n_bins; ++bin){
+        for (size_t i = 0; i < p2buns[bin].get_ndata(); ++i){
+          size_t index0 = p2buns[bin].ori(i);
+          p2bun.d_1(index0) = p2buns[bin].d_1(i);
+          p2bun.d_2(index0) = p2buns[bin].d_2(i);          
+          p2bun.k_1(index0) = p2buns[bin].k_1(i);
+          p2bun.k_2(index0) = p2buns[bin].k_2(i);
+          p2bun.ori(index0) = index0;
+        }
+      }
+      
+      //run final
+      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, K - tail_k, K, true);
+
     }
     
         
@@ -655,7 +847,7 @@ class BaseClusterer{
       
       reset_sample_infos_basic(k, j);
     }
-        
+          
     
     inline double get_E_total(){
       return E_total;
@@ -737,7 +929,7 @@ class BaseClusterer{
     inline void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
     }
-    
+        
     inline void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
     }
@@ -796,17 +988,35 @@ class BaseClusterer{
 
     
     void default_initialise_with_kmeanspp(){
+
+      unsigned n_bins;
+
+      if (initialisation_method == "kmeans++"){
+        n_bins = 1;
+      }
+      
+      else{
+        std::string prefix = "kmeans++-";
+        n_bins = extract_INT(initialisation_method, prefix.size());
+        if (n_bins == 0){
+          throw std::runtime_error("n_bins passed to kmeans++ should be positive.");
+        }
+      }
+
+
       
       std::vector<double> cc (K*K);
-      std::vector<size_t> nearest_centers (ndata);
-      std::vector<size_t> second_nearest_centers (ndata);      
-      std::vector<double> nearest_distances (ndata);
-      std::vector<double> second_nearest_distances (ndata);
-            
+      P2Bundle p2bun(ndata);
+      TData c_dt(*ptr_datain, true);
+
       
-      triangular_kmeanspp(center_indices_init, cc.data(), nearest_centers.data(), nearest_distances.data(), second_nearest_centers.data(), second_nearest_distances.data());
+      if (n_bins == 1){
+        triangular_kmeanspp(center_indices_init, cc.data(), p2bun, c_dt);
+      }
       
-      
+      else{
+        triangular_kmeanspp_aq2(center_indices_init, cc.data(), p2bun, c_dt, n_bins);
+      }
     }
     
     void go(){
@@ -869,13 +1079,13 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       }
       
       /* initialisation with kmeans++ TODO : in dev mode */
-      else if (initialisation_method == "kmeans++"){
+      else if (initialisation_method == "kmeans++" || initialisation_method.substr(0, 9) == "kmeans++-"){
         initialise_with_kmeanspp();
       }
       
       else {
         std::stringstream vims_ss;
-        vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, kmeans++, afk-mc2-INT (for some positive INT)]";
+        vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, kmeans++-INT, afk-mc2-INT (for some positive INT)]";
         throw std::runtime_error(vims_ss.str());
       }
   
@@ -1581,10 +1791,15 @@ nprops        : for clarans, the number of rejected proposals before one is acce
 
 
     void post_initialise_centers_test(){
+      
       for (size_t k = 0; k < K; ++k){
         if (center_indices_init[k] == center_indices_init[(k+1)%ndata]){
           std::stringstream errm_ss;
-          errm_ss << "initialising indices must be unique, received " << center_indices_init[k] << " at least twice\n";
+          errm_ss << "initialising indices must be unique, received " << center_indices_init[k] << " at least twice. The initialising indices are \n";
+          for (size_t k = 0; k < K; ++k){
+            errm_ss << " " << center_indices_init[k] << " ";
+          }
+          errm_ss << "\n";
           throw std::runtime_error(errm_ss.str());
         }
       }

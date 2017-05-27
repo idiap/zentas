@@ -62,7 +62,7 @@ class VData{
       }
     }
     
-    inline size_t get_ndata(){
+    inline size_t get_ndata() const{
       return ndata;
     }
     
@@ -140,7 +140,7 @@ class SData{
       }
     }
 
-    inline size_t get_ndata(){
+    inline size_t get_ndata() const{
       return ndata;
     }
     
@@ -214,7 +214,7 @@ class SparseVectorData{
       }
     }
 
-    inline size_t get_ndata(){
+    inline size_t get_ndata() const{
       return ndata;
     }
     
@@ -304,7 +304,7 @@ class BaseDataRooted{
         throw std::logic_error("Currently, there is no implementation for constructing VData from DenseVectorDataUnrootedIn with data, due to the lack of any apparent need");
       }
     }
-    inline size_t get_ndata(){
+    inline size_t get_ndata() const{
       return ndata;
     }
     void append(size_t i){

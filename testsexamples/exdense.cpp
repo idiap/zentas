@@ -24,26 +24,29 @@ template <typename TFloat>
 int cluster_dense(){
 
   //generating random data
-  size_t ndata = 80;
-  size_t dimension = 1;
+  size_t ndata = 500000;
+  size_t dimension = 30;
   std::vector<TFloat> data (ndata*dimension);
   srand(time(NULL));
   for (size_t i = 0; i < data.size(); ++i){
     data[i] = (static_cast<float> (rand()%1000000)) / 1000000.  ;
   }
   
+
+  data[dimension*ndata/2] = 1000000.;
+  
   //set initialising medoid indices to be {0,...,K-1}
-  size_t K = 40;
+  size_t K = 2000;
   std::vector<size_t> indices_init (K);
   for (size_t i = 0; i < K; ++i){
     indices_init[i] = i;
   }
   
-  std::string initialisation_method = "kmeans++"; //"from_indices_init";
+  std::string initialisation_method = "kmeans++-5"; //"from_indices_init";
   
   //set algorithm and level of acceleration. For best performance (speed), this should *always* be clarans at level 3.
   std::string algorithm = "clarans";
-  size_t level = 2;
+  size_t level = 3;
   
   //only relevent for clarans : max number of consecutive rejected proposals before halting. Make it v-large if you don't want this to be your stopping criterion. note: if patient is true, this is not used (see python function string in pyzentas.pyx for more details) 
   size_t max_proposals = 20000;
@@ -72,7 +75,7 @@ int cluster_dense(){
   size_t nthreads = 1;
   
   //max number of rounds. For clarans, this is number of successful swaps. If you don't want this to be your stopping criterion, make it v-large
-  size_t maxrounds = 13000;
+  size_t maxrounds = 4;
 
   //relevent for clarans : if false, implement a good swap as soon as it is found. If true (recommended), if the time spent evaluating proposals is less than the time spent implementing swaps, then keep searching for good swaps, only implementing a swap when you've spent as much time looking as implementing. Motivation for this is that it doesn't make sense to spend the majority of time implementing swaps, should spend at least half the time looking for good swaps. 
   bool patient = false;

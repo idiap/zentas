@@ -8,63 +8,29 @@
 namespace nszen{
 
 
-///* ahhhh !!!! how to do this cleanly */
 
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, const SparseVectorDataRootedIn <double> & datain, LpMetric<SparseVectorDataRootedIn <double> >  & metric, size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, const SparseVectorDataRootedIn <float> & datain, LpMetric<SparseVectorDataRootedIn <float> >  & metric, size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, const SparseVectorDataUnrootedIn <double> & datain, LpMetric<SparseVectorDataUnrootedIn <double> >  & metric, size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, const SparseVectorDataUnrootedIn <float> & datain, LpMetric<SparseVectorDataUnrootedIn <float> >  & metric, size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, const DenseVectorDataRootedIn <double> & datain, LpMetric<DenseVectorDataRootedIn <double> >  & metric, size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, const DenseVectorDataRootedIn <float> & datain, LpMetric<DenseVectorDataRootedIn <float> >  & metric, size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, 
-//const DenseVectorDataUnrootedIn <double> & datain, 
-//LpMetric<DenseVectorDataUnrootedIn <double> >  & metric, 
-//size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, 
-//const DenseVectorDataUnrootedIn <float> & datain, 
-//LpMetric<DenseVectorDataUnrootedIn <float> >  & metric, 
-//size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, 
-//const StringDataUnrootedIn <int>  & datain, 
-//LevenshteinMetric<StringDataUnrootedIn <int> >  & metric, 
-//size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, 
-//const StringDataUnrootedIn <char>  & datain, 
-//LevenshteinMetric<StringDataUnrootedIn <char> >  & metric, 
-//size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, 
-//const StringDataRootedIn <int>  & datain, 
-//LevenshteinMetric<StringDataRootedIn <int> >  & metric, 
-//size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
-//template void populate_afk_mc2(std::string initialisation_method, size_t * const center_indices_init, 
-//const StringDataRootedIn <char>  & datain, 
-//LevenshteinMetric<StringDataRootedIn <char> >  & metric, 
-//size_t K, size_t ndata, zentas::outputwriting::OutputWriter & mowri, std::default_random_engine & gen,  std::uniform_int_distribution<size_t> & dis, std::function<double(double)> & f_energy);
-
-
+size_t extract_INT(std::string initialisation_method, size_t prefix_length){
+  
+  if (initialisation_method.size() < prefix_length + 1){
+    std::stringstream errm_ss;
+    errm_ss << "invalid initialisation_method " << initialisation_method << ". It is not of the form `prefix'-INT, where INT is positive."; 
+    throw std::runtime_error(errm_ss.str());
+  }
+  
+  std::string digit_substring = initialisation_method.substr(prefix_length, initialisation_method.size() - prefix_length);
+  auto striter = digit_substring.begin(); 
+  while (striter != digit_substring.end()){
+    char x = *striter;
+    if (std::isdigit(x) == false){
+      std::stringstream errm_ss;
+      errm_ss << "Unexpected character while attempting to extract integer from " << initialisation_method << " (" << digit_substring << ")" << ", `" << x << "'";
+      throw std::runtime_error(errm_ss.str());
+    }
+    ++striter;
+  }
+  
+  return std::stoi(digit_substring);
+}
 
 
 
