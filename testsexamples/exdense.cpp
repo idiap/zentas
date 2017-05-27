@@ -24,8 +24,8 @@ template <typename TFloat>
 int cluster_dense(){
 
   //generating random data
-  size_t ndata = 500000;
-  size_t dimension = 30;
+  size_t ndata = 100000;
+  size_t dimension = 2;
   std::vector<TFloat> data (ndata*dimension);
   srand(time(NULL));
   for (size_t i = 0; i < data.size(); ++i){
@@ -36,13 +36,13 @@ int cluster_dense(){
   data[dimension*ndata/2] = 1000000.;
   
   //set initialising medoid indices to be {0,...,K-1}
-  size_t K = 2000;
+  size_t K = 400;
   std::vector<size_t> indices_init (K);
   for (size_t i = 0; i < K; ++i){
     indices_init[i] = i;
   }
   
-  std::string initialisation_method = "kmeans++-5"; //"from_indices_init";
+  std::string initialisation_method = "kmeans++-1"; //"from_indices_init";
   
   //set algorithm and level of acceleration. For best performance (speed), this should *always* be clarans at level 3.
   std::string algorithm = "clarans";

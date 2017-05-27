@@ -660,14 +660,12 @@ class BaseClusterer{
     
         
     inline void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, size_t n_bins){
-
-
-      //TData c_dt(*ptr_datain, true);
-      
+       
+       
+      /* experiments so far show that multithreading does not help here, can hurt */
+      bool multithread_here = false;
       
       double a_distance;
-      
-            
 
       /* non_tail_k will be how many k's for which only 1/n_bins of the data is used.
        * it will be (n_bins - 1)/n_bins, rounded down to the nearest multiple of n_bins.
@@ -712,7 +710,6 @@ class BaseClusterer{
 
         auto update_nearest_info = [&p2buns, &p2buns_dt, &c_dt, &cc, &a_distance, this](size_t bin, size_t k_start, size_t k_end, size_t i0, size_t i1)
         {
-          //for (size_t i = 0; i < p2buns[bin].get_ndata(); ++i){
           for (size_t i = i0; i < i1; ++i){
             for (size_t k = k_start; k < k_end; ++k){
               if (cc[p2buns[bin].k_1(i)*K + k] < p2buns[bin].d_1(i) + p2buns[bin].d_2(i)){
@@ -728,28 +725,53 @@ class BaseClusterer{
         size_t k0 = (bin*non_tail_k)/n_bins;
         size_t k1 = ((bin + 1)*non_tail_k)/n_bins;        
         
+
+        /* update nearest info from 0 to k0 of this bin*/        
+        if (multithread_here == false){
+          update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
+        }
+
+        else{
+          std::vector<std::thread> threads;
+          for (size_t ti = 0; ti < nthreads; ++ti){
+            threads.emplace_back([this, ti, bin, &p2buns, k0, & update_nearest_info] () {
+              update_nearest_info(
+              bin, 0, k0, 
+              get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
+              get_end(ti, get_nthreads(), 0, p2buns[bin].get_ndata()));});
+          }
+          
+          for (auto & t : threads){
+            t.join();
+          }
+        }
+                
         
-        /* this should be parallelised exactly like *&^* */
-        update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
-        
-        
-        /* we don't even try to parallelize to center by center kmeans++ part */
+        /* we don't even try to parallelize to center by center kmeans++ part, too many syncs. */
         triangular_kmeanspp_after_initial(c_dt, centers, cc, p2buns[bin], &p2buns_dt[bin], k0, k1, false);
       }
       
-      /* update all until the tail (*&^*) */
+      /* update all until the tail k's (*&^*) */
       for (size_t bin = 0; bin < n_bins; ++bin){
         size_t k1 = ((bin + 1)*non_tail_k)/n_bins;
-        std::vector<std::thread> threads;
-        for (size_t ti = 0; ti < nthreads; ++ti){
-          threads.emplace_back([this, ti, bin, &p2buns, k1, non_tail_k, & update_nearest_info] () {update_nearest_info(
-            bin, k1, non_tail_k, 
-            get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
-            get_end(ti, get_nthreads(), 0, p2buns[bin].get_ndata()));});
+
+        
+        if (multithread_here == false){
+          update_nearest_info(bin, k1, non_tail_k, 0, p2buns[bin].get_ndata());
         }
         
-        for (auto & t : threads){
-          t.join();
+        else{
+          std::vector<std::thread> threads;
+          for (size_t ti = 0; ti < nthreads; ++ti){
+            threads.emplace_back([this, ti, bin, &p2buns, k1, non_tail_k, & update_nearest_info] () {update_nearest_info(
+              bin, k1, non_tail_k, 
+              get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
+              get_end(ti, get_nthreads(), 0, p2buns[bin].get_ndata()));});
+          }
+          
+          for (auto & t : threads){
+            t.join();
+          }
         }
       }
       
@@ -766,7 +788,7 @@ class BaseClusterer{
         }
       }
       
-      //run final
+      //set the tail k's
       triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, K - tail_k, K, true);
 
     }
