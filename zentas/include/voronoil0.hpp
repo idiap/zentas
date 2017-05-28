@@ -62,6 +62,14 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
       std::iota(redistribute_order.begin(), redistribute_order.end(), 0);      
     }
 
+    virtual void put_nearest_2_infos_margin_in_cluster_post_kmeanspp(size_t k1, size_t k2, double d2, double e2) final override {
+    
+      (void)k1;
+      (void)k2;
+      (void)d2;
+      (void)e2;
+    }
+
     virtual void initialise_with_kmeanspp() override final{
       default_initialise_with_kmeanspp();
     }

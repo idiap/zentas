@@ -894,6 +894,10 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       energy_margins[k_first_nearest].push_back(e_second_nearest - get_e1_tail(k_first_nearest));
     }
 
+    virtual void put_nearest_2_infos_margin_in_cluster_post_kmeanspp(size_t k1, size_t k2, double d2, double e2) final override{
+      put_nearest_2_infos_margin_in_cluster_final(k1, k2, d2, e2);
+    }
+
 
     inline void put_nearest_2_infos_margin_in_cluster(size_t i, size_t k_first_nearest, const double * const distances){
       

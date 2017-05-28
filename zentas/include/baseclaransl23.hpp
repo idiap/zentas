@@ -66,6 +66,7 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
       put_nearest_2_infos_margin_in_cluster(i, k_first_nearest, distances);
     }
     
+    
     virtual inline void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
       reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
     }

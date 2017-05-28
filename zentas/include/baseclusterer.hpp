@@ -108,6 +108,31 @@ class P2Bundle{
 
 
 
+template <typename TData>
+class KmooBundle {
+  
+  public:
+  
+  std::vector<double> cc;
+  P2Bundle p2bun;
+  TData c_dt;
+  
+  typedef typename TData::DataIn DataIn;
+
+  KmooBundle(size_t K, size_t ndata, const DataIn * ptr_datain):cc(K*K), p2bun(ndata), c_dt(*ptr_datain, true){
+    
+  }
+  
+  KmooBundle(const DataIn * ptr_datain):c_dt(*ptr_datain, true) {}
+  
+  void reset(size_t K, size_t ndata){
+    cc.resize(K*K);
+    p2bun = P2Bundle(ndata);
+  }
+  
+};
+
+
 
  
  
@@ -246,6 +271,7 @@ class BaseClusterer{
     size_t ncalcs_in_update_sample_info = 0;
     size_t ncalcs_initialising = 0;
     size_t ncalcs_total = 0;
+    
 
 
   protected:
@@ -270,6 +296,8 @@ class BaseClusterer{
     size_t maxrounds;
     
     std::string energy;
+
+    std::unique_ptr<KmooBundle<TData>> up_kmoo_bundle;
     
     
 
@@ -297,7 +325,7 @@ class BaseClusterer{
     centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain), 
     metric(datain, nthreads, metric_initializer), 
     cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0),
-    round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), minmE(minmE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy)
+    round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), minmE(minmE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain))
 
      {
        
@@ -402,7 +430,15 @@ class BaseClusterer{
       /* as usual: the final parameter up_distances.get() guarantees correctness only of lowest and second lowest, other values may exceed */
       //TODO : there may be computation in here which should not be under the lock. 
       put_sample_custom_in_cluster(i, nearest_center, distances);
+
     }
+    
+    inline void final_push_into_cluster_post_kmeanspp(size_t i, size_t k1, size_t k2, double d1, double d2){
+      std::lock_guard<std::mutex> lockraii(mutex0);
+      final_push_into_cluster_basic(i, k1, d1);
+      put_nearest_2_infos_margin_in_cluster_post_kmeanspp(k1, k2, d2, f_energy(d2));
+    }
+    
 
 
     void reset_multiple_sample_infos(size_t k_to, size_t j_a, size_t j_z){
@@ -662,8 +698,9 @@ class BaseClusterer{
     inline void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, size_t n_bins){
        
        
-      /* experiments so far show that multithreading does not help here, can hurt */
-      bool multithread_here = false;
+      /* experiments so far show that multithreading does not help here, can hurt. what's weird is that even if nthreads = 1 in 
+       * the pll version, it's sig slower than the serial version.  */
+      bool multithread_kmpp = false;
       
       double a_distance;
 
@@ -727,14 +764,14 @@ class BaseClusterer{
         
 
         /* update nearest info from 0 to k0 of this bin*/        
-        if (multithread_here == false){
+        if (multithread_kmpp == false){
           update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
         }
 
         else{
           std::vector<std::thread> threads;
-          for (size_t ti = 0; ti < nthreads; ++ti){
-            threads.emplace_back([this, ti, bin, &p2buns, k0, & update_nearest_info] () {
+          for (size_t ti = 0; ti < get_nthreads(); ++ti){
+            threads.emplace_back([this, ti, bin, &p2buns, k0, &update_nearest_info] () {
               update_nearest_info(
               bin, 0, k0, 
               get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
@@ -756,13 +793,13 @@ class BaseClusterer{
         size_t k1 = ((bin + 1)*non_tail_k)/n_bins;
 
         
-        if (multithread_here == false){
+        if (multithread_kmpp == false){
           update_nearest_info(bin, k1, non_tail_k, 0, p2buns[bin].get_ndata());
         }
         
         else{
           std::vector<std::thread> threads;
-          for (size_t ti = 0; ti < nthreads; ++ti){
+          for (size_t ti = 0; ti < get_nthreads(); ++ti){
             threads.emplace_back([this, ti, bin, &p2buns, k1, non_tail_k, & update_nearest_info] () {update_nearest_info(
               bin, k1, non_tail_k, 
               get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
@@ -1025,20 +1062,47 @@ class BaseClusterer{
         }
       }
 
-
       
-      std::vector<double> cc (K*K);
-      P2Bundle p2bun(ndata);
-      TData c_dt(*ptr_datain, true);
-
+      up_kmoo_bundle->reset(K, ndata);
+      
       
       if (n_bins == 1){
-        triangular_kmeanspp(center_indices_init, cc.data(), p2bun, c_dt);
+        triangular_kmeanspp(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt);
       }
       
       else{
-        triangular_kmeanspp_aq2(center_indices_init, cc.data(), p2bun, c_dt, n_bins);
+        triangular_kmeanspp_aq2(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins);
       }
+      
+      /* TODO here: rearrange everything, so that center_indices_init are in order. what a palava. */
+      std::vector<std::array<size_t, 2>> vi (K);
+      for (size_t k = 0; k < K; ++k){
+        std::get<0>(vi[k]) = center_indices_init[k];
+        std::get<1>(vi[k]) = k;
+      }
+      
+      auto fg = std::less<size_t>();
+      std::sort(vi.begin(), vi.end(), [&fg](std::array<size_t, 2> & lhs, std::array<size_t, 2> & rhs){ return fg(std::get<0>(lhs), std::get<0>(rhs)); });
+      //for (size_t k = 0; k < K; ++k){
+        //std::cout << "k: " << k << "  i:" << std::get<0>(vi[k]) << " kori:" << std::get<1>(vi[k]) << std::endl;
+      //}
+      
+      std::vector<size_t> old_to_new (K);
+      for (unsigned k = 0; k < K; ++k){
+        center_indices_init[k] = std::get<0>(vi[k]);
+        old_to_new[std::get<1>(vi[k])] = k;
+      }
+      
+      for (unsigned i = 0; i < ndata; ++ i){
+        up_kmoo_bundle->p2bun.k_1(i) = old_to_new[up_kmoo_bundle->p2bun.k_1(i)];
+        up_kmoo_bundle->p2bun.k_2(i) = old_to_new[up_kmoo_bundle->p2bun.k_2(i)];
+      }
+      
+      //std::cout << "done the " << K << " centers" << std::endl;
+      //std::abort();
+      
+      
+       
     }
     
     void go(){
@@ -1315,6 +1379,8 @@ nprops        : for clarans, the number of rejected proposals before one is acce
 /////////////////////////////////////    
   private:
 
+    virtual void put_nearest_2_infos_margin_in_cluster_post_kmeanspp(size_t k1, size_t k2, double d2, double e2) = 0;
+
     virtual void initialise_with_kmeanspp() = 0;
         
     /* called from put_sample_in_clusters (virtual inline functions are not nonsensical) */    
@@ -1396,9 +1462,32 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       
     void pll_put_samples_in_cluster(size_t i_a, size_t i_z, std::vector<size_t> & non_center_IDs){
 
-      for (size_t i = i_a; i < i_z; ++i){
-        put_sample_in_cluster(non_center_IDs[i]);
+      std::string prefix = "kmeans++";
+      if (initialisation_method.substr(0, prefix.size()) == prefix){
+        //use the kmeans++ initialisation bundle. TODO here. 
+        for (size_t i = i_a; i < i_z; ++i){
+          size_t nc_ID = non_center_IDs[i];
+          size_t k1 = up_kmoo_bundle->p2bun.k_1(nc_ID); 
+          size_t k2 = up_kmoo_bundle->p2bun.k_2(nc_ID);
+          double d1 = up_kmoo_bundle->p2bun.d_1(nc_ID);
+          double d2 = up_kmoo_bundle->p2bun.d_2(nc_ID);
+          
+          //size_t oripotter = up_kmoo_bundle->p2bun.ori(nc_ID);
+          
+          
+          //std::cout << " (i)" << i << " (nc_ID)" << nc_ID << " (oripotter)" << oripotter << std::endl;
+          final_push_into_cluster_post_kmeanspp(nc_ID, k1, k2, d1, d2);
+
+        }
+      }      
+
+      else{        
+        for (size_t i = i_a; i < i_z; ++i){
+          put_sample_in_cluster(non_center_IDs[i]);
+        }
       }
+      
+      up_kmoo_bundle.reset();
     }
   
 
@@ -1730,8 +1819,17 @@ nprops        : for clarans, the number of rejected proposals before one is acce
           //}
   
           if (d_first_nearest != nearest_1_infos[k][j].d_x){
-            mowri << "\n" << k_first_nearest << "  " << nearest_1_infos[k][j].a_x << zentas::Endl;
-            mowri << std::setprecision(20) <<  d_first_nearest << "  " << nearest_1_infos[k][j].d_x << zentas::Endl;
+            mowri << "k: " << k << "  j: " << j << zentas::Endl;
+            mowri << "\n" << "k1 (comp) " << k_first_nearest << "    k1 (testing) " << nearest_1_infos[k][j].a_x << zentas::Endl;
+            mowri << std::setprecision(20);
+            mowri <<  "d1 (comp) " << d_first_nearest << "    d1 (testing) " << nearest_1_infos[k][j].d_x << zentas::Endl;
+            
+            mowri << "the first min(10, size) distances are : " << zentas::Endl;
+            for (size_t jp = 0; jp < std::min<size_t>(10, nearest_1_infos[k].size()); ++jp){
+              mowri << " " << nearest_1_infos[k][j].d_x << " ";
+            }
+            mowri << zentas::Endl;
+            
             throw std::logic_error(errm + "d_first_nearest != nearest_1_infos[k][j].d_x");
           }
   
