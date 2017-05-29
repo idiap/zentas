@@ -35,10 +35,9 @@ size_t extract_INT(std::string initialisation_method, size_t prefix_length){
 
 
 
-/* TODO : move to a cpp  */
 void populate_from_indices_init(const size_t * const center_indices_init_in, size_t * const center_indices_init, size_t K, size_t ndata){    
   for (size_t k = 0; k < K; ++k){
-    /* confirm uniqueness and range. TODO : do I want to do this? performance? */
+    /* confirm uniqueness and range */
     if (center_indices_init_in[k] >= ndata){
       throw std::runtime_error("initialising center index out of bounds in BaseClusterer constructor");
     }

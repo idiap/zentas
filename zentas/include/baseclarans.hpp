@@ -97,7 +97,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     std::vector<ClaransStatistics> cluster_statistics;
     
  
-  protected: //TODO : privatise these.
+  protected:
     size_t k_to;
     size_t k_from;
     size_t j_from;
@@ -108,12 +108,6 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     bool patient;
   
   
-    //std::random_device rd;
-    //std::mt19937_64 gen;
-    //std::uniform_int_distribution<unsigned> dis;
-  
-  
-   
 
 
   public:
