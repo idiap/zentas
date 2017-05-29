@@ -43,7 +43,8 @@ def load_all_rna():
 
 
 rna = load_all_rna() #[0:200000,:]
-K = 2000
+#rna = npr.randn(1000000, 3)
+K = 1000
 
 #ndata = 100
 #dimension = 8
@@ -61,8 +62,10 @@ ndata, dimension = rna.shape
 
 #afk-mc2-25
 
-pyzentas.pyzentas(X = rna, K = K, initialisation_method = "kmeans++-50", indices_init = None, energy = "quadratic", metric = "l2", maxrounds = 3, seed = npr.randint(1000), maxtime = 100, exponent_coeff = 0)
+pyzentas.pyzentas(X = rna, K = K, initialisation_method = "kmeans++-50", indices_init = None, energy = "quadratic", metric = "l2", maxrounds = 1000, seed = npr.randint(1000), maxtime = 100, exponent_coeff = 0)
 
 #pyzentas.pyzentas(X = rna, K = K, indices_init = random.sample(xrange(ndata), K), initialisation_method = "from_indices_init", energy = "quadratic", metric = "l2", maxrounds = 20, seed = npr.randint(1000))
 
-#kmeans_out_kmeanspp = kmeans.get_clustering(X = rna, n_clusters = K, algorithm = "exp-sn", init = 'kmeans++', verbose = 2, capture_verbose = False, seed = None, n_threads = 3, max_iter = 1)
+#kmeans++
+
+#kmeans_out_kmeanspp = kmeans.get_clustering(X = rna, n_clusters = K, algorithm = "exp-sn", init = 'kmeans++', verbose = 2, capture_verbose = False, seed = None, n_threads = 1, max_iter = 1)

@@ -24,8 +24,8 @@ template <typename TFloat>
 int cluster_dense(){
 
   //generating random data
-  size_t ndata = 2000;
-  size_t dimension = 4;
+  size_t ndata = 1000000;
+  size_t dimension = 5;
   std::vector<TFloat> data (ndata*dimension);
   srand(time(NULL));
   for (size_t i = 0; i < data.size(); ++i){
@@ -36,13 +36,13 @@ int cluster_dense(){
   data[dimension*ndata/2] = 1000000.;
   
   //set initialising medoid indices to be {0,...,K-1}
-  size_t K = 60;
+  size_t K = 2000;
   std::vector<size_t> indices_init (K);
   for (size_t i = 0; i < K; ++i){
     indices_init[i] = i;
   }
   
-  std::string initialisation_method = "kmeans++-2"; //"from_indices_init";
+  std::string initialisation_method = "uniform"; //"from_indices_init";
   
   //set algorithm and level of acceleration. For best performance (speed), this should *always* be clarans at level 3.
   std::string algorithm = "clarans";
@@ -75,7 +75,7 @@ int cluster_dense(){
   size_t nthreads = 1;
   
   //max number of rounds. For clarans, this is number of successful swaps. If you don't want this to be your stopping criterion, make it v-large
-  size_t maxrounds = 4;
+  size_t maxrounds = 1000;
 
   //relevent for clarans : if false, implement a good swap as soon as it is found. If true (recommended), if the time spent evaluating proposals is less than the time spent implementing swaps, then keep searching for good swaps, only implementing a swap when you've spent as much time looking as implementing. Motivation for this is that it doesn't make sense to spend the majority of time implementing swaps, should spend at least half the time looking for good swaps. 
   bool patient = false;
