@@ -132,7 +132,7 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
   
   /* (4) get with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr from and costfilename.
    * if with_cost_matrices, characters are mapped to the contiguous character set : {char(0), ... char(n_distinct_input_chars)}, 
-   * this allows the matric c_switch_arr to be compact, resulting in (hopefully) quicker lookup. variables map_into_contiguous and map_into_input manage the char <-> char mapping. I do not completely understand chars, parts of this code may be grotesque */
+   * this allows the matrix c_switch_arr to be compact, resulting in (hopefully) quicker lookup. variables map_into_contiguous and map_into_input manage the char <-> char mapping. I do not completely understand chars, parts of this code may be stupid */
   std::map<char, char> map_into_contiguous;
   std::vector<char> map_into_input;
 

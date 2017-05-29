@@ -11,18 +11,32 @@ ctypedef fused char_or_int:
   cython.int
   cython.char
 
+#important : every function with floating template needs its own fused type. Is this a bug?
+ctypedef fused floating33:
+  cython.float
+  cython.double
+
+ctypedef fused floating87:
+  cython.float
+  cython.double
+
 cdef extern from "zentas.hpp" namespace "nszen":	
   void hello() except +
 
+
+  # dense vectors 
   void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
 
-
+  # sparse vectors 
   void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
 
+  # strings / sequences 
   void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff) except +;
 
+  # sequences from text file
   void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff, string initialisation_method) except +;
 
+  string get_output_inf_string() except +;
 
 def dangerwrap(f):
   """
@@ -44,8 +58,6 @@ def dangerwrap(f):
       return None
       
     event.set()
-  
-  
   
   f_process = mpr.Process(target = signalling_f)
   f_process.start()
@@ -72,26 +84,62 @@ def pyhello():
   return dangerwrap(lambda : basehello)
   
 
-#vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool isfasta, double critical_radius, double exponent_coeff
 
 
-def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s, cython.floating [:] X_v, K, size_t [:] indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size,  c_indel,  c_switch, double [:] c_indel_arr, double [:] c_switches_arr, size_t [:] indices_s, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename):
+#    self.parms = {
+#    'algorithm': algorithm, 
+#    'level': level,
+#    'max_proposals': max_proposals,
+#    'maxrounds': maxrounds,
+#    'maxtime': maxtime,
+#    'minmE': minmE,
+#    'patient': patient,
+#    'capture_output': capture_output,
+#    'nthreads': nthreads,
+#    'rooted': rooted,
+#    'metric': metric,
+#    'exponent_coeff': exponent_coeff,
+#    'seed': seed,
+#    'critical_radius': critical_radius}
 
-  cdef string astring  
+
+
+def base_vzentas(floating87 [:] X_v, size_t [:] indices_init, pms):
   
+  cdef string astring
+  cdef size_t [:] labels = np.empty((pms['ndata'],), dtype = np.uint64)
+  cdef size_t [:] indices_final = np.empty((pms['K'],), dtype = np.uint64)
+
+  cdef void (*cw_vzentas)(size_t, size_t, const floating87 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+
+  if floating87 is double:
+    cw_vzentas=&vzentas[double]
+      
+  else:
+    cw_vzentas=&vzentas[float]
+    
+  cw_vzentas(pms['ndata'], pms['dimension'], &X_v[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], astring, pms['seed'], pms['maxtime'], pms['minmE'], &indices_final[0], &labels[0], pms['metric'], pms['nthreads'], pms['maxrounds'], pms['patient'], pms['energy'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'])
+
+  return {"output": astring, 'indices_final': np.array(indices_final), 'labels': np.array(labels)}
+  
+  
+
+def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s, floating33 [:] X_v, K, size_t [:] indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size,  c_indel,  c_switch, double [:] c_indel_arr, double [:] c_switches_arr, size_t [:] indices_s, critical_radius, exponent_coeff, filenames_list, outfilename, costfilename):
+
+
   cdef vector[string] filenames_vec
-  
   for fn in filenames_list:
     filenames_vec.push_back(fn)
-  
+
+
+  cdef string astring    
   cdef size_t [:] labels = np.empty((ndata,), dtype = np.uint64)
-  
   cdef size_t [:] indices_final = np.empty((K,), dtype = np.uint64)
   
-  cdef void (*cw_vzentas)(size_t, size_t, const cython.floating * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+  cdef void (*cw_vzentas)(size_t, size_t, const floating33 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
 
 
-  cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const cython.floating * const, const size_t * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+  cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const floating33 * const, const size_t * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
   
     
   cdef void (*cw_szentas)(size_t, const size_t * const, const char_or_int * const, size_t, const size_t * const, string initialisation_method, string, size_t, size_t, bool , string & , size_t, double, double minmE, size_t * const , size_t * const, string, size_t, size_t, bool, string, bool, bool, size_t, double, double, const double * const, const double * const, double critical_radius, double exponent_coeff) except +
@@ -99,11 +147,12 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
 
   if datatype == "f":
     textfilezentas(filenames_vec, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff, initialisation_method)
-      
+
+
   
   elif datatype == "v":
     
-    if cython.floating is double:
+    if floating33 is double:
       cw_vzentas=&vzentas[double]
         
     else:
@@ -111,8 +160,10 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
       
     cw_vzentas(ndata, dimension, &X_v[0], K, &indices_init[0], initialisation_method, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
   
+  
+
   elif datatype == "sv":
-    if cython.floating is double:
+    if floating33 is double:
       cw_sparse_vector_zentas=&sparse_vector_zentas[double]
 
     else:
@@ -121,7 +172,8 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
     cw_sparse_vector_zentas(ndata, &sizes[0], &X_v[0], &indices_s[0], K, &indices_init[0], initialisation_method, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
     
 
-  
+
+      
   elif datatype == "s":
     
     if char_or_int is int:
@@ -136,12 +188,12 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
     cw_szentas(ndata, &sizes[0], &X_s[0], K, &indices_init[0], initialisation_method, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, &indices_final[0], &labels[0], metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, &c_indel_arr[0], &c_switches_arr[0], critical_radius, exponent_coeff)
     
    
-    
-  #st" : "goodbye ! :():"
-  
   return {"output": astring, 'indices_final':np.array(indices_final), 'labels':np.array(labels)}
 
 
+
+
+  
 def pyzentas(ndata = None, dimension = None, sizes = None, X = None, K = 10, indices_init = None, initialisation_method = "from_indices_init", algorithm = "clarans", level = 3, max_proposals = 10**9, capture_output = False, seed = 1011, maxtime = 3.0, minmE = 0.0, metric = "l2", nthreads = 1, maxrounds = 10**9, patient = True, energy = "identity", rooted = True, with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None, indices_s = None, critical_radius = 0, exponent_coeff = 0, filenames_list = None, outfilename = None, costfilename = None):
   """  
 .
@@ -391,6 +443,8 @@ xx-xx-xx
   null_float = np.empty((1,), dtype = np.float32)
   null_double = np.empty((1,), dtype = np.float64)  
   
+  
+  
   if isinstance(X, np.ndarray) and len(X.shape) == 2:
 
     if ndata != None and ndata != X.shape[0]:
@@ -461,28 +515,9 @@ xx-xx-xx
     
       if indices_init == None:
         indices_init = null_size_t
-
-
-#    #This belongs in C++ code:
-#    valid_initialisation_methods = ["uniform", "from_indices_init"]
-#    if initialisation_method not in valid_initialisation_methods:
-#      errm = "The valid initialisation methods are:\n"
-#      for x in valid_initialisation_methds:
-#        errm += "\tx\n"
-#      errm += "The given initialisation_method, `%s' is not in this list."%(initialisation_method,)
-#      raise RuntimeError(errm) 
-
-#    if indices_init == None and "random":
-#      indices_init = random.sample(xrange(ndata), K)
-    
-#    if indices_init == None:
-#      raise RuntimeError("indices_init is not optional in this situation, it should either be the string \"random\" or an array of K indices") 
-    
-      
-    
-    
+        
     # Dense vector data.
-    if dimension != None:        
+    if dimension != None:
       return dangerwrap(lambda : basezentas("v", ndata, dimension, null_size_t, null_int, X.ravel(), K, indices_init.ravel(), initialisation_method, algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, null_size_t, critical_radius, exponent_coeff, [], "", ""))
     
     # Sparse vector data or string data.
@@ -498,4 +533,177 @@ xx-xx-xx
       #Sparse vector data.
       else:
         return dangerwrap(lambda : basezentas("sv", ndata, 0, sizes.ravel(), null_int, X.ravel(), K, indices_init.ravel(), initialisation_method, algorithm, level, max_proposals, capture_output, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, False, 0, -1., -1., null_double, null_double, indices_s.ravel(), critical_radius, exponent_coeff, [], "", ""))
+
+
+
+
+cdef class RetBundle:
+
+  cdef size_t [:] labels
+  cdef size_t [:] indices_final
+  cdef string output_string
+  def __init__(self, ndata, K):
+    self.labels = np.empty((ndata,), dtype = np.uint64)
+    self.indices_final = np.empty((K,), dtype = np.uint64) 
+
+  def get_dict(self):
+    return {"output": self.output_string, 'indices_final': np.array(self.indices_final), 'labels': np.array(self.labels)}
+
+
+
+#def pyzentas(ndata = None, dimension = None, sizes = None, X = None, K = 10, indices_init = None, initialisation_method = "from_indices_init", algorithm = "clarans", level = 3, max_proposals = 10**9, capture_output = False, seed = 1011, maxtime = 3.0, minmE = 0.0, metric = "l2", nthreads = 1, maxrounds = 10**9, patient = True, energy = "identity", rooted = True, with_cost_matrices = False, dict_size = 0, c_indel = 1, c_switch = 1, c_indel_arr = None, c_switches_arr = None, indices_s = None, critical_radius = 0, exponent_coeff = 0, filenames_list = None, outfilename = None, costfilename = None):
   
+class pyzen(object):
+  
+#  cdef size_t [:] indices_init   
+  
+  def __init__(self, 
+    K,
+    algorithm = 'clarans', 
+    level = 3, 
+    
+    max_proposals = 10000, 
+    maxrounds = 1000, 
+    maxtime = 5, 
+    minmE = 0., 
+    
+    patient = True, 
+    capture_output = False, 
+    nthreads = 1, 
+    rooted = False, 
+    metric = 'l2', 
+    energy = 'quadratic',
+    exponent_coeff = 0, 
+    critical_radius = 0, 
+    seed = 1011, 
+    init = "uniform"):
+
+    self.pms = {
+    'K':K,
+    'algorithm': algorithm, 
+    'level': level,
+    'max_proposals': max_proposals,
+    'maxrounds': maxrounds,
+    'maxtime': maxtime,
+    'minmE': minmE,
+    'patient': patient,
+    'capture_output': capture_output,
+    'nthreads': nthreads,
+    'rooted': rooted,
+    'metric': metric,
+    'energy':energy,
+    'exponent_coeff': exponent_coeff,
+    'seed': seed,
+    'critical_radius': critical_radius}
+
+    self.null = {
+    'size_t': np.empty((1,), dtype = np.uint64),
+    'null_int': np.empty((1,), dtype = np.int32),
+    'null_float': np.empty((1,), dtype = np.float32), 
+    'null_double': np.empty((1,), dtype = np.float64)}
+
+
+    if isinstance(init, str):
+      self.pms['initialisation_method'] = init
+      self.pms['indices_init'] = self.null['size_t']
+    
+    else:
+      self.pms['initialisation_method'] = 'from_indices'
+      self.pms['indices_init'] = np.array(init, dtype = np.uint64)
+    
+      if self.pms['indices_init'].size != self.pms['K']:
+        raise RuntimeError("indices_init should be of size K")
+          
+    
+
+  ##################################################
+  ################# dense vectors ##################
+  ##################################################
+  
+  def base_vzentas(self, floating87 [:] X_v, size_t [:] indices_init, pms):
+
+    cdef void (*cw_vzentas)(size_t, size_t, const floating87 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+  
+    if floating87 is double:
+      cw_vzentas=&vzentas[double]
+      
+    elif floating87 is float:
+      cw_vzentas=&vzentas[float]
+
+    cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
+    
+    cw_vzentas(pms['ndata'], pms['dimension'], &X_v[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['maxtime'], pms['minmE'], &rb.indices_final[0], &rb.labels[0], pms['metric'], pms['nthreads'], pms['maxrounds'], pms['patient'], pms['energy'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'])
+
+    return rb.get_dict()
+
+  def den(self, X):
+    """
+    make some comment
+    """
+    
+    if isinstance(X, list):
+      X = np.array(X, dtype = np.float32)
+    
+    if len(X.shape) != 2:
+      raise RuntimeError("X should be 2-dimensional, i.e. X.shape = (ndata, dimension)")
+    
+    self.pms['ndata'], self.pms['dimension'] = X.shape    
+    return dangerwrap(lambda : self.base_vzentas(X.ravel(), self.pms['indices_init'], self.pms))
+
+
+  ####################################################
+  ################## sparse vectors ##################
+  ####################################################
+
+  
+  def base_sparse_vector_zentas(self, size_t [:] sizes, size_t [:] indices, floating87 [:] values, size_t [:] indices_init, pms):
+  
+    cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const floating87 * const, const size_t * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double maxtime, double minmE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +
+
+    if floating87 is double:
+      cw_sparse_vector_zentas=&sparse_vector_zentas[double]
+        
+    elif floating87 is float:
+      cw_sparse_vector_zentas=&sparse_vector_zentas[float]
+
+    cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
+    
+    cw_sparse_vector_zentas(pms['ndata'], &sizes[0], &values[0], &indices[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['maxtime'], pms['minmE'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['maxrounds'], pms['patient'], pms['energy'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'])
+
+    return rb.get_dict()
+      
+  def spa(self, sizes, indices, values):
+    """
+    make some comment
+    """
+    self.pms['ndata'] = sizes.size
+    if (indices.size != sizes.sum()):
+      raise RuntimeError("the sum of sizes is not the size of indices ")
+
+    if (values.size != sizes.sum()):
+      raise RuntimeError("the sum of sizes is not the size of values ")
+            
+    return dangerwrap(lambda : self.base_sparse_vector_zentas(sizes, indices, values, self.pms['indices_init'], self.pms))
+
+
+  ##################################################
+  ################# sequence data ##################
+  ##################################################
+
+  def base_szentas(self, size_t [:] sizes, char_or_int [:] values, size_t [:] indices_init, with_cost_matrices, dict_size, c_indel, c_switch, double [:] c_indel_arr, double [:] c_switches_arr, pms):
+
+    cdef void (*cw_szentas)(size_t, const size_t * const, const char_or_int * const, size_t, const size_t * const, string initialisation_method, string, size_t, size_t, bool , string & , size_t, double, double minmE, size_t * const , size_t * const, string, size_t, size_t, bool, string, bool, bool, size_t, double, double, const double * const, const double * const, double critical_radius, double exponent_coeff) except +
+    
+    if char_or_int is int:
+      cw_szentas = &szentas[int]
+    
+    elif char_or_int is char:
+      cw_szentas = &szentas[char]
+
+    cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
+        
+    cw_szentas(pms['ndata'], &sizes[0], &values[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['maxtime'], pms['minmE'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['maxrounds'], pms['patient'], pms['energy'], pms['rooted'], with_cost_matrices, dict_size, c_indel, c_switch, &c_indel_arr[0], &c_switches_arr[0], pms['critical_radius'], pms['exponent_coeff'])
+    
+    return rb.get_dict()
+  
+  def seq(self, sizes, values, zzzzzzzzzzzzz 

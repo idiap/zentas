@@ -657,9 +657,8 @@ class BaseClusterer{
 
     
 
-    /* all parameters passed in are to be set. TODO : parallelisation */
-    inline void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt){
-      
+    inline void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt){      
+
       for (size_t i = 0; i < ndata; ++i){
         p2bun.ori(i) = i;
       }
@@ -1053,7 +1052,7 @@ class BaseClusterer{
         triangular_kmeanspp_aq2(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins);
       }
       
-      /* TODO here: rearrange everything, so that center_indices_init are in order. what a palava. */
+      /* rearrange so that center_indices_init are in order */
       std::vector<std::array<size_t, 2>> vi (K);
       for (size_t k = 0; k < K; ++k){
         std::get<0>(vi[k]) = center_indices_init[k];
@@ -1062,9 +1061,6 @@ class BaseClusterer{
       
       auto fg = std::less<size_t>();
       std::sort(vi.begin(), vi.end(), [&fg](std::array<size_t, 2> & lhs, std::array<size_t, 2> & rhs){ return fg(std::get<0>(lhs), std::get<0>(rhs)); });
-      //for (size_t k = 0; k < K; ++k){
-        //std::cout << "k: " << k << "  i:" << std::get<0>(vi[k]) << " kori:" << std::get<1>(vi[k]) << std::endl;
-      //}
       
       std::vector<size_t> old_to_new (K);
       for (unsigned k = 0; k < K; ++k){
@@ -1077,10 +1073,6 @@ class BaseClusterer{
         up_kmoo_bundle->p2bun.k_2(i) = old_to_new[up_kmoo_bundle->p2bun.k_2(i)];
       }
       
-      //std::cout << "done the " << K << " centers" << std::endl;
-      //std::abort();
-      
-      
        
     }
     
@@ -1092,7 +1084,7 @@ class BaseClusterer{
       }
 
 
-      /*TODO: prevent code duplication of this string (in pyzentas.pyx and here) */      
+      /* prevent code duplication of this string (in pyzentas.pyx and here) */      
       mowri << 
 R"(
 (The prevent output to terminal, set capture_output to false)
@@ -1143,7 +1135,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
         populate_afk_mc2<TMetric, DataIn>(initialisation_method, center_indices_init, *ptr_datain, metric, K, ndata, mowri, gen, dis, f_energy);
       }
       
-      /* initialisation with kmeans++ TODO : in dev mode */
+      /* initialisation with kmeans++ */
       else if (initialisation_method == "kmeans++" || initialisation_method.substr(0, 9) == "kmeans++-"){
         initialise_with_kmeanspp();
       }
@@ -1565,7 +1557,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
 
     
     
-    // single threaded redistribution. TODO : make multithreaded.
+    // single threaded redistribution. mulithreading here will be very tricky.
     // requires that to_leave_cluster be reliably set. 
     // centers are unchanged by this function. this function simply moves samples between clusters.
     // additional complexity required to maintain randomness (immigrant samples inserted into random indices)

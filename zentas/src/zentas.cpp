@@ -26,6 +26,10 @@ void hello(){
   
 }
 
+std::string get_output_inf_string(){
+  return "123 123 123 123 123 12 312 3";
+}
+
 
 
 /* dense vectors */

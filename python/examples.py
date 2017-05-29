@@ -114,11 +114,15 @@ def sparse_data_example():
   8,9000], dtype = np.uint64)
   data = np.ones(sizes.sum()) #npr.randn(sizes.size)  
   indices_init = np.array([0,1], dtype = np.uint64)
-  indices_init.sort()  
-  cl1 = pyzentas.pyzentas(ndata = ndata, sizes = sizes, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 3, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, metric = "l0", nthreads = 1, maxrounds = maxrounds, patient = False, energy = "identity", rooted = False, indices_s = indices_s)
+  indices_init.sort()
   
+    
+  #cl1 = pyzentas.pyzentas(ndata = ndata, sizes = sizes, X = data, K = K, indices_init = indices_init, algorithm = "clarans", level = 3, max_proposals = max_proposals, capture_output = False, seed = seed, maxtime = maxtime, metric = "l0", nthreads = 1, maxrounds = maxrounds, patient = False, energy = "identity", rooted = False, indices_s = indices_s)
+
+  z = pyzentas.pyzen(K)
+  return z.spa(sizes, indices_s, data)  
   
-  return cl1
+  #return cl1
   
   
   
