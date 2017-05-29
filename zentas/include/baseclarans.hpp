@@ -1177,7 +1177,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       
       std::unique_ptr<double []> up_dists_centers_j2 (new double [K]);
       auto dists_centers_j2 = up_dists_centers_j2.get();
-      //TODO : parallelise this for loop.
+      /* if this were l(>1) I would consider parallelising it */
       for (size_t k = 0; k < K; ++k){
         set_center_sample_distance(k, k2, j2, dists_centers_j2[k]);
       }

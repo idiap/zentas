@@ -58,7 +58,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     virtual void update_center_center_info() final override{}
     virtual void custom_cluster_statistics_test() final override{}
 
-    virtual void set_redistribute_order(std::vector<size_t> & redistribute_order) {
+    virtual void set_redistribute_order(std::vector<size_t> & redistribute_order) override final {
       std::iota(redistribute_order.begin(), redistribute_order.end(), 0);      
     }
 

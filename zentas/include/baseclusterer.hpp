@@ -96,7 +96,6 @@ class P2Bundle{
       initialise_data(n);
     }
     
-    /* TODO : how to use preceding initialised to initialise here */
     P2Bundle(const std::vector<size_t> & ori){
       initialise_data(ori.size());
       for (size_t i = 0; i < ndata; ++i){
@@ -419,27 +418,7 @@ class BaseClusterer{
       sample_IDs[nearest_center].push_back(i);      
     }
 
-    //TODO : move to private section
-    inline void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
-      //get your lock on, time for polyphonics. 
-      std::lock_guard<std::mutex> lockraii(mutex0);
-      
-      /* the common part of pushing into a cluster */
-      final_push_into_cluster_basic(i, nearest_center, min_distance);
-      
-      /* as usual: the final parameter up_distances.get() guarantees correctness only of lowest and second lowest, other values may exceed */
-      //TODO : there may be computation in here which should not be under the lock. 
-      put_sample_custom_in_cluster(i, nearest_center, distances);
-
-    }
     
-    inline void final_push_into_cluster_post_kmeanspp(size_t i, size_t k1, size_t k2, double d1, double d2){
-      std::lock_guard<std::mutex> lockraii(mutex0);
-      final_push_into_cluster_basic(i, k1, d1);
-      put_nearest_2_infos_margin_in_cluster_post_kmeanspp(k1, k2, d2, f_energy(d2));
-    }
-    
-
 
     void reset_multiple_sample_infos(size_t k_to, size_t j_a, size_t j_z){
       for (size_t j = j_a; j < j_z; ++j){
@@ -1418,6 +1397,27 @@ nprops        : for clarans, the number of rejected proposals before one is acce
 
     virtual void round_summary() = 0;    
 
+    inline void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
+      //get your lock on, time for polyphonics. 
+      std::lock_guard<std::mutex> lockraii(mutex0);
+      
+      /* the common part of pushing into a cluster */
+      final_push_into_cluster_basic(i, nearest_center, min_distance);
+      
+      /* as usual: the final parameter up_distances.get() guarantees correctness
+       * only of lowest and second lowest, other values may exceed */
+      /* TODO : there may be computation in here which should not be under the lock */
+      put_sample_custom_in_cluster(i, nearest_center, distances);
+
+    }
+    
+    
+    inline void final_push_into_cluster_post_kmeanspp(size_t i, size_t k1, size_t k2, double d1, double d2){
+      std::lock_guard<std::mutex> lockraii(mutex0);
+      final_push_into_cluster_basic(i, k1, d1);
+      put_nearest_2_infos_margin_in_cluster_post_kmeanspp(k1, k2, d2, f_energy(d2));
+    }
+
 
         
     void put_samples_in_clusters(){
@@ -1464,18 +1464,13 @@ nprops        : for clarans, the number of rejected proposals before one is acce
 
       std::string prefix = "kmeans++";
       if (initialisation_method.substr(0, prefix.size()) == prefix){
-        //use the kmeans++ initialisation bundle. TODO here. 
         for (size_t i = i_a; i < i_z; ++i){
+
           size_t nc_ID = non_center_IDs[i];
           size_t k1 = up_kmoo_bundle->p2bun.k_1(nc_ID); 
           size_t k2 = up_kmoo_bundle->p2bun.k_2(nc_ID);
           double d1 = up_kmoo_bundle->p2bun.d_1(nc_ID);
           double d2 = up_kmoo_bundle->p2bun.d_2(nc_ID);
-          
-          //size_t oripotter = up_kmoo_bundle->p2bun.ori(nc_ID);
-          
-          
-          //std::cout << " (i)" << i << " (nc_ID)" << nc_ID << " (oripotter)" << oripotter << std::endl;
           final_push_into_cluster_post_kmeanspp(nc_ID, k1, k2, d1, d2);
 
         }
@@ -1562,8 +1557,9 @@ nprops        : for clarans, the number of rejected proposals before one is acce
     virtual void put_sample_in_cluster(size_t i) = 0;
     
     
-    
-    // For clarans, it is preferential to redistribute from k_to first (TODO : detailed explanation of what redistribute() does). This function allows clarans to set the order of redistribution. 
+    /* redistribute_order is the order in which clusters `send away immigrants' */
+    /* this function : set the vector to be indices {0,...K-1} in a specific order */
+    /* clarans is best when k_to is first (done in virtual of baseclarans) */
     virtual void set_redistribute_order(std::vector<size_t> & redistribute_order) = 0;
     
 
@@ -1572,16 +1568,15 @@ nprops        : for clarans, the number of rejected proposals before one is acce
     // single threaded redistribution. TODO : make multithreaded.
     // requires that to_leave_cluster be reliably set. 
     // centers are unchanged by this function. this function simply moves samples between clusters.
-    // additional complexity required to maintain randomness (samples inserted into random indices)
+    // additional complexity required to maintain randomness (immigrant samples inserted into random indices)
     void redistribute(){
+
       size_t k_new;
       size_t j;
-      
       size_t j_new;
       
       std::vector<size_t> redistribute_order (K, 0);
       set_redistribute_order(redistribute_order);
-      
       
       std::vector<size_t> redistribute_rank (K,0);
       for (size_t k = 0; k < K; ++k){
@@ -1590,15 +1585,16 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       
       
       bool target_is_a_mover;
-      for (auto & k : redistribute_order){ //size_t k = 0; k < K; ++k){
+      for (auto & k : redistribute_order){
         if (nthreads > 1){
           std::sort(to_leave_cluster[k].begin(), to_leave_cluster[k].end());
         }
-        // it would be nice if one could auto over a vector in reverse
+        // thought : it would be nice if one could auto over a vector in reverse
         for (size_t ji = to_leave_cluster[k].size(); ji-- > 0;){
           
           j = to_leave_cluster[k][ji];
           
+          /* size_t max indicates that the mover has moved to the tail, because of an earlier immigration */
           if (j != std::numeric_limits<size_t>::max()){
             k_new = nearest_1_infos[k][j].a_x;
             
@@ -1609,17 +1605,15 @@ nprops        : for clarans, the number of rejected proposals before one is acce
             // (1) make space somewhere in k_new (k,j) will be inserted at k_new, j_new:
             j_new = dis(gen)%(get_ndata(k_new) + 1);
             
+            
+            /* try to swap with a non-mover, as it makes swapping quicker. but if after 10 attempts no luck, 
+             * can still swap with movers */
             size_t insert_attempts = 0;
             while (j_new != get_ndata(k_new) && nearest_1_infos[k_new][j_new].a_x != k_new && insert_attempts < 10){
               j_new = dis(gen)%(get_ndata(k_new) + 1);
               ++insert_attempts;
             }
-            
-            //if (insert_attempts == 10){
-              //mowri << "from : "  << k <<  " k_to " << redistribute_order[0] << " k_new : " << k_new << " j_new : " << j_new << zentas::Endl;
-              ////throw std::runtime_error("insert attempts is 10. Wow");
-            //}
-            
+                        
             /* case 1 : k,j goes on the tail */
             if (j_new == get_ndata(k_new)){
               nearest_1_infos[k_new].push_back(nearest_1_infos[k][j]);
@@ -1639,19 +1633,24 @@ nprops        : for clarans, the number of rejected proposals before one is acce
                 target_is_a_mover = false;
               }
               
+              /* putting k_new, j_new on the tail to make space for k, j */
               nearest_1_infos[k_new].push_back(nearest_1_infos[k_new][j_new]);
               sample_IDs[k_new].push_back(sample_IDs[k_new][j_new]);
               cluster_datas[k_new].append(cluster_datas[k_new].at_for_move(j_new));
               custom_append(k_new, k_new, j_new);
               
+              /* putting k, j in where space has been made for it */
               nearest_1_infos[k_new][j_new] = nearest_1_infos[k][j];
               sample_IDs[k_new][j_new] = sample_IDs[k][j];
               cluster_datas[k_new].replace_with(j_new, cluster_datas[k].at_for_move(j));
               custom_replace_with(k_new, j_new, k,j);
               
               
-              
-              if (target_is_a_mover && redistribute_rank[k_new] > redistribute_rank[k]){ //quadratic : ouch. sort this out. 
+              /* k_new, j_new is still going to move when k_new immigration starts. 
+               * Record that k_new, j_new has moved to tail, and leave a notive (max size_t) 
+               * so that when k_new immigration starts we know */
+              if (target_is_a_mover && redistribute_rank[k_new] > redistribute_rank[k]){
+                /* if to_leave_cluster is sorted we can improve this search. */
                 for (auto & x : to_leave_cluster[k_new]){
                   if (x == j_new){
                     x = std::numeric_limits<size_t>::max();

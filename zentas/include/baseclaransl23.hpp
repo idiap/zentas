@@ -109,7 +109,7 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
       
           
     virtual void center_center_info_test() override final{
-      //TODO (cc test).
+      /* TODO (cc test) */
     }
     
     
