@@ -21,7 +21,7 @@ cdef extern from "zentas.hpp" namespace "nszen":
 
   void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff) except +;
 
-  void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff) except +;
+  void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double maxtime, double minmE, string metric, size_t nthreads, size_t maxrounds, bool patient, string energy, bool rooted, double critical_radius, double exponent_coeff, string initialisation_method) except +;
 
 
 def dangerwrap(f):
@@ -98,7 +98,7 @@ def basezentas(datatype, ndata, dimension, size_t [:] sizes, char_or_int [:] X_s
 
 
   if datatype == "f":
-    textfilezentas(filenames_vec, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff)
+    textfilezentas(filenames_vec, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, astring, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff, initialisation_method)
       
   
   elif datatype == "v":

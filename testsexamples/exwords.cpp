@@ -48,7 +48,8 @@ int cluster_words(){
   bool rooted = true;
   double critical_radius = 0;
   double exponent_coeff = 0;
-  nszen::textfilezentas(filenames, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  std::string initialisation_method("kmeans++-10");
+  nszen::textfilezentas(filenames, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff, initialisation_method);
  
   return 0; 
 }

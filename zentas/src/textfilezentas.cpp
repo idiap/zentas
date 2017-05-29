@@ -23,9 +23,8 @@ the GNU General Public License along with zentas. If not, see
 namespace nszen{
 
 
-//TODO(james) : make this work for general text files.
-
-void textfilezentas(std::vector<std::string> filenames, std::string outfilename, std::string costfilename, size_t K, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff){
+void textfilezentas(std::vector<std::string> filenames, std::string outfilename, std::string costfilename, size_t K, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double maxtime, double minmE, std::string metric, size_t nthreads, size_t maxrounds, bool patient, std::string energy, bool rooted, double critical_radius, double exponent_coeff, std::string initialisation_method){
+  
   
   
 /* Input : filenames, outfilename,  costfilename 
@@ -48,6 +47,10 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
  * 
  * */
 
+
+  if (initialisation_method == "from_indices_init"){
+    throw std::runtime_error("cannonot initialise from indices (from_indices_init) in textfilezentas (indices not clearly defined until in array)");
+  }
 
  
   std::mt19937_64 gen(seed);
@@ -112,36 +115,11 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
   
   
   /* (2) get indices_init from seed, ndata, K */
-  std::vector<size_t> v_indices_init(K, 0);
-  if (K >= ndata/2){
-    throw std::runtime_error("Request for " + std::to_string(K) + " clusters with " + std::to_string(ndata) + " samples rejected. Select a smaller K ( less than " + std::to_string(ndata/2) + " ).");
-  }
- 
-  ///* TODO : this is premature, delay til down stream */
-  //std::string initialisation_method = "from_indices_init";
-  //bool accepted;
-  //size_t proposed_i;
-  //for (size_t k = 0; k < K; ++k){
-    //accepted = false;
-    //while (accepted == false){
-      //accepted = true;
-      //proposed_i = dis(gen)%ndata;
-      
-      //for (size_t k_m = 0; k_m < k; ++k_m){
-        //if (v_indices_init[k_m] == proposed_i){
-          //accepted = false;
-        //}
-      //}
-    //}
-    //if (accepted == true){
-      //v_indices_init[k] = proposed_i;
-    //}
+  //std::vector<size_t> v_indices_init(K, 0);
+  //if (K >= ndata/2){
+    //throw std::runtime_error("Request for " + std::to_string(K) + " clusters with " + std::to_string(ndata) + " samples rejected. Select a smaller K ( less than " + std::to_string(ndata/2) + " ).");
   //}
-  //std::sort(v_indices_init.begin(), v_indices_init.end());
-  //const size_t * const indices_init = v_indices_init.data();
-  
-  
-  
+   
   
   /* (3) initialise indices_final, labels */
   std::unique_ptr<size_t []> uptr_indices_final (new size_t [K]);
@@ -236,8 +214,7 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
   
   
   /* (5) call szentas */
-  const size_t * const indices_init = nullptr;
-  std::string initialisation_method = "uniform";
+  const size_t * const indices_init = nullptr;  
   szentas(ndata, sizes, ptr_datain, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final, labels, metric, nthreads, maxrounds, patient, energy, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr, critical_radius, exponent_coeff);
   
   
