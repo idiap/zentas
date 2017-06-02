@@ -118,7 +118,9 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
     }
 
     virtual void put_sample_in_cluster(size_t i) override final {
+      
       triangular_put_sample_in_cluster(i, cc);
+      //BaseClusterer<TMetric, TData>::base_put_sample_in_cluster(i);
     }
     
 

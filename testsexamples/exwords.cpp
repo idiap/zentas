@@ -38,18 +38,19 @@ int cluster_words(){
   size_t capture_output = false;
   std::string text;
   size_t seed = 1012;
-  double maxtime = 10000.;
-  double minmE = 0.;
+  double max_time = 10000.;
+  double min_mE = 0.;
   std::string metric("normalised levenshtein");
   size_t nthreads = 1;
-  size_t maxrounds = 100;
+  size_t max_rounds = 100;
   bool patient = false;
   std::string energy("identity");
   bool rooted = true;
   double critical_radius = 0;
   double exponent_coeff = 0;
   std::string initialisation_method("kmeans++-10");
-  nszen::textfilezentas(filenames, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff, initialisation_method);
+  bool with_tests = false;
+  nszen::textfilezentas(filenames, outfilename, costfilename, K, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff, initialisation_method);
  
   return 0; 
 }

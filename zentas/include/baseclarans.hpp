@@ -629,8 +629,10 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       remove_with_tail_pull(k_from, j_from);      
     }
 
-    virtual void round_summary() override final{
-      mowri << get_base_summary_string() << "\t nprops : " <<  n_proposals << zentas::Endl;
+    virtual std::string get_round_summary() override final{
+      std::stringstream ss;
+      ss << get_base_summary_string() << "nprops=" <<  n_proposals;
+      return ss.str();
     }
 
     inline void reset_second_nearest_info(size_t k, size_t j, size_t k_second_nearest, double d_second_nearest, double e_second_nearest){
@@ -698,7 +700,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
           mowri << "size of cluster_datas[k] " << get_ndata(k) << zentas::Endl;
           mowri << "size of nearest_2_infos[k] " << nearest_2_infos[k].size() << zentas::Endl;
           
-          throw std::logic_error("custom ndata test failed");
+          throw zentas::zentas_error("custom ndata test failed");
         }
       }  
     }
@@ -740,7 +742,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
           mowri << "R2  \t "<< R2 << "\t" << cluster_statistics[k].R2 << zentas::Endl;
           mowri << "m  \t "<< m << "\t" << cluster_statistics[k].m << zentas::Endl;
           mowri << "m_star \t " << m_star << "\t" << cluster_statistics[k].m_star << zentas::Endl;
-          throw std::logic_error(errm);
+          throw zentas::zentas_error(errm);
         }
       }
     }
@@ -755,7 +757,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       cluster_statistics[k].increment(get_d1(k,j), get_e1(k,j), nearest_2_infos[k][j].d_x, nearest_2_infos[k][j].e_x);
       
       if (nearest_2_infos[k][j].e_x - get_e1(k,j) != energy_margins[k][j]){
-        throw std::logic_error("internal problem detected with energy margin");
+        throw zentas::zentas_error("internal problem detected with energy margin");
       }
          
     }
@@ -813,15 +815,15 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
         }
 
         //if (nearest != center_nearest_center[k].a_x){
-          //throw std::logic_error("nearest center to center not in agreement (new test)");
+          //throw zentas::zentas_error("nearest center to center not in agreement (new test)");
         //}
         
         if (distance != center_nearest_center[k].d_x){
-          throw std::logic_error("distance to nearest center not in agreement");
+          throw zentas::zentas_error("distance to nearest center not in agreement");
         }
         
         if (f_energy(distance) != center_nearest_center[k].e_x){
-          throw std::logic_error("energy of nearest center no in agreement");
+          throw zentas::zentas_error("energy of nearest center no in agreement");
         }
         
       }
@@ -866,7 +868,9 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
         for (size_t kp = k; kp < K; ++kp){
           set_center_center_distance(k, kp, cc[k*K + kp]);
           cc[kp*K + k] = cc[k*K + kp];
+          //std::cout << cc[kp*K + k] << " ";
         }
+        //std::cout << std::endl;
       }
       
       for (size_t k = 0; k < K; ++k){
@@ -967,32 +971,40 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
           double e_second_nearest = f_energy(d_second_nearest);
           
           //if (k_second_nearest != nearest_2_infos[k][j].a_x){
-            //throw std::logic_error("k_second_nearest != k_second_nearest");
+            //throw zentas::zentas_error("k_second_nearest != k_second_nearest");
           //}
           
           if (d_second_nearest != nearest_2_infos[k][j].d_x){
             
-            mowri << "\n";
-            print_centers();
-            mowri << "\nk: " << k << "   j: " << j << "   cluster size: " << nearest_2_infos[k].size() << ".";
-            mowri << "\nget_a1(k,j): " << get_a1(k,j) << ".";
-            mowri << "\njust computed k_second_nearest: " << k_second_nearest;
-            mowri << "\nrecorded k_second_nearest: " << nearest_2_infos[k][j].a_x;
-            mowri << std::setprecision(20);
-            mowri <<  "\njust computed d_second_nearest: " << d_second_nearest;
-            mowri << "\nrecorded d_second_nearest " << nearest_2_infos[k][j].d_x << zentas::Endl;
-            throw std::logic_error("d_second_nearest != d_second_nearest");
+            std::stringstream errm;
+            
+            errm << "error detected : d_second_nearest != d_second_nearest\n";
+            errm << "k=" << k << "\n";
+            errm << "j=" << j << "\n";
+            errm << "the " << j << "'th sample in cluster " << k << " is " << string_for_sample(k, j) << "\n";
+            errm << "cluster size is " << nearest_2_infos[k].size() << "\n";
+            errm << std::setprecision(20);
+            errm << "get_a1(k,j)=" << get_a1(k,j) << "\n";
+            errm << "just computed second nearest center index: " << k_second_nearest << "\n";
+            errm << "the " << k_second_nearest << "'th center is: " << string_for_center(k_second_nearest) << "\n";
+            errm <<  "just computed distance to this center is: " << d_second_nearest << "\n";
+            errm << "the recorded second nearest center index: " << nearest_2_infos[k][j].a_x << "\n";
+            errm << "the " << nearest_2_infos[k][j].a_x << "'th center is " << string_for_center(nearest_2_infos[k][j].a_x) << "\n";
+            errm << "the recorded distance to this center is " << nearest_2_infos[k][j].d_x << "\n";
+
+            throw zentas::zentas_error(errm.str());
+
           }
           
           if (e_second_nearest != nearest_2_infos[k][j].e_x){
-            throw std::logic_error("e_second_nearest != e_second_nearest");
+            throw zentas::zentas_error("e_second_nearest != e_second_nearest");
           }
           
           double m_v = nearest_2_infos[k][j].e_x - get_e1(k,j);
           if (m_v != energy_margins[k][j]){
             mowri << "\nk : " << k << " \t j : " << j << zentas::Endl;
             mowri << "\nm_v : " << m_v << " \t energy_margins[k][j] : " << energy_margins[k][j] << zentas::Endl;
-            throw std::logic_error("m_v != energy_margin");
+            throw zentas::zentas_error("m_v != energy_margin");
           }
         }
       }
@@ -1224,8 +1236,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       
       
       //quelch warning
-      bool bla = false;
-      bla += dists_centers_old_k_to == nullptr;
+      (void)dists_centers_old_k_to;
       
       
       std::unique_ptr<double []> up_distances (new double [K]);
@@ -1269,7 +1280,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
        * but I prefer not to, to make sure things are initialised correctly,
        * hence this unelegant code: */
       if (center_nearest_center.size() != 0){
-        throw std::logic_error("center_nearest_center should be an empty vector");
+        throw zentas::zentas_error("center_nearest_center should be an empty vector");
       }
       
       for (size_t k = 0; k < K; ++k){
@@ -1327,6 +1338,8 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::gen;
     using BaseClusterer<TMetric, TData>::dis;
     using BaseClusterer<TMetric, TData>::default_initialise_with_kmeanspp;
+    using BaseClusterer<TMetric, TData>::string_for_sample;    
+    using BaseClusterer<TMetric, TData>::string_for_center;    
 };
 
 
@@ -1488,7 +1501,7 @@ double BaseClarans<TMetric, TData>::get_delta_hat_l3(size_t k1, size_t k2, size_
         /* (1) this is the case where all ndata samples are processed in one go */
         if (ndet_n_active_old[ki] == 0 && ndet_n_active[ki] == get_ndata(k)){
           if (s_index != f_index){
-            throw std::logic_error("this seems wrong (s_index != f_index). Come and check it out");
+            throw zentas::zentas_error("this seems wrong (s_index != f_index). Come and check it out");
           }
           start_end.emplace_back(0, get_ndata(k));
         }
@@ -1718,7 +1731,7 @@ double BaseClarans<TMetric, TData>::get_delta_E_hoeffding_l3(size_t k1, size_t k
         /* (1) this is the case where all ndata samples are processed in one go */
         if (ndet_n_active_old[ki] == 0 && ndet_n_active[ki] == get_ndata(k)){
           if (s_index != f_index){
-            throw std::logic_error("this seems wrong (s_index != f_index). Come and check it out");
+            throw zentas::zentas_error("this seems wrong (s_index != f_index). Come and check it out");
           }
           start_end.emplace_back(0, get_ndata(k));
         }

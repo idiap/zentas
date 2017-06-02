@@ -48,21 +48,21 @@ int cluster_sparse(){
   bool capture_output = false;
   std::string text;
   size_t seed = 1011;
-  double maxtime = 0.5;
-  double minmE = 0.0;
+  double max_time = 0.5;
+  double min_mE = 0.0;
   std::vector<size_t> indices_final (K);
   std::vector<size_t> labels (ndata);
   std::string metric = "l2";
   std::string energy = "identity";
   size_t nthreads = 1;
-  size_t maxrounds = 100;
+  size_t max_rounds = 100;
   bool patient = true;
   bool rooted = true;
   double critical_radius = 0;
   double exponent_coeff = 0;
- 
+  bool with_tests = false;
 
-  nszen::sparse_vector_zentas(ndata, sizes.data(), data_in.data(), indices.data(), K, indices_init.data(), initialisation_method, algorithm, level, max_proposals,  capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  nszen::sparse_vector_zentas(ndata, sizes.data(), data_in.data(), indices.data(), K, indices_init.data(), initialisation_method, algorithm, level, max_proposals,  capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff);
   
   std::cout << std::endl;
   for (size_t i = 0; i < ndata; ++i){

@@ -79,8 +79,10 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
       base_put_sample_in_cluster(i);
     }
         
-    virtual void round_summary() final override {
-      mowri << get_base_summary_string() << zentas::Endl;
+    virtual std::string get_round_summary() final override {
+      std::stringstream ss;
+      ss << get_base_summary_string();
+      return ss.str();
     }
     
     virtual void update_sample_info() override final{

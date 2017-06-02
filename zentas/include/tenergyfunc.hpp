@@ -64,7 +64,7 @@ class Exponential{
     Exponential(double lambda_in): lambda(lambda_in) {}
     
     inline double operator() (double distance) const{
-      return std::exp(lambda * distance);
+      return std::exp(lambda * distance) - 1.;
     }
     
   private:

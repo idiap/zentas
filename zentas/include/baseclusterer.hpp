@@ -20,11 +20,13 @@ the GNU General Public License along with zentas. If not, see
 
 #include "outputwriter.hpp"
 #include "initialisation.hpp"
+#include "zentasinfo.hpp"
 
 #include <algorithm>
 #include <type_traits>
 #include <chrono>
 #include <random>
+
 
 
 #include <sstream>
@@ -197,20 +199,21 @@ struct BaseClustererInitBundle{
   const size_t * const center_indices_init;
   std::string initialisation_method;
   size_t seed;
-  double maxtime;
-  double minmE;
+  double max_time;
+  double min_mE;
   size_t * const indices_final;
   size_t * const labels;
   size_t nthreads;
-  size_t maxrounds;
+  size_t max_rounds;
   std::string energy;
+  bool with_tests;
   const TMetricInitializer * ptr_metric_initializer;
   const EnergyInitialiser * ptr_energy_initialiser;
 
   
-  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, std::string initialisation_method_, size_t seed, double maxtime, double minmE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t maxrounds, std::string energy, const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser): 
+  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, std::string initialisation_method_, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, std::string energy, bool with_tests,  const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser): 
   
-  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), initialisation_method(initialisation_method_), seed(seed), maxtime(maxtime), minmE(minmE), indices_final(indices_final), labels(labels), nthreads(nthreads), maxrounds(maxrounds), energy(energy), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser) {}
+  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), initialisation_method(initialisation_method_), seed(seed), max_time(max_time), min_mE(min_mE), indices_final(indices_final), labels(labels), nthreads(nthreads), max_rounds(max_rounds), energy(energy), with_tests(with_tests), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser) {}
 
 };
 
@@ -282,8 +285,8 @@ class BaseClusterer{
     std::default_random_engine gen;
   
   private:  
-    size_t maxtime_micros;
-    double minmE;
+    size_t max_time_micros;
+    double min_mE;
     
     size_t * const labels;
     
@@ -292,11 +295,15 @@ class BaseClusterer{
     size_t nthreads;
     size_t nthreads_fl;
 
-    size_t maxrounds;
+    size_t max_rounds;
     
     std::string energy;
+    bool with_tests;
+
 
     std::unique_ptr<KmooBundle<TData>> up_kmoo_bundle;
+    
+    
     
     
 
@@ -309,13 +316,14 @@ class BaseClusterer{
      const size_t * const center_indices_init_, /* The K sample indices to initialise with (if initialisation_method is from_indices_init)*/
      std::string initialisation_method, /* */
      size_t seed, /* starting seed for generating random numbers, uses a custom "std::default_random_engine"  */
-     double maxtime, /* will stop in go ( ) at first opportunity after maxtime */
-     double minmE, /* will stop in go ( ) at first opportunity if mE is less than minmE */
+     double max_time, /* will stop in go ( ) at first opportunity after max_time */
+     double min_mE, /* will stop in go ( ) at first opportunity if mE is less than min_mE */
      size_t * const indices_final, /* the K final indices (to populate) */
      size_t * const labels, /* the assigned cluster of the datain.ndata samples */
      size_t nthreads,
-     size_t maxrounds, 
+     size_t max_rounds, 
      std::string energy, 
+     bool with_tests,
      const TMetricInitializer & metric_initializer, 
      const EnergyInitialiser & energy_initialiser): 
     
@@ -324,7 +332,7 @@ class BaseClusterer{
     centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain), 
     metric(datain, nthreads, metric_initializer), 
     cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0),
-    round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), maxtime_micros(static_cast<size_t>(maxtime*1000000.)), minmE(minmE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), maxrounds(maxrounds), energy(energy), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain))
+    round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), max_time_micros(static_cast<size_t>(max_time*1000000.)), min_mE(min_mE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), max_rounds(max_rounds), energy(energy), with_tests(with_tests), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain))
 
      {
        
@@ -363,10 +371,20 @@ class BaseClusterer{
       }
       
       else{
-        throw std::runtime_error(std::string("Unrecognised energy function, ") + energy);
+        throw zentas::zentas_error(std::string("Unrecognised energy function, ") + energy);
       }
       
-
+      
+      /* confirm that f_energy(0) is 0 */
+      if (f_energy(0) != 0){
+        std::stringstream ss;
+        ss << "the energy function, f_energy, has f_energy(0) = ";
+        ss << f_energy(0) << ". This is a problem for k-means++ initialisation.";
+        ss << "If you're not using k-means++ initialisation, this should not cause any problems, ";
+        ss << "but as k-means++ is the default, we are being cautious and throwing an error.";
+        throw zentas::zentas_error(ss.str());
+        
+      }
 
       /* initialisation from indices. */
       if (initialisation_method == "from_indices_init"){
@@ -388,7 +406,7 @@ class BaseClusterer{
 
 
   
-    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.maxtime, ib.minmE, ib.indices_final, ib.labels, ib.nthreads, ib.maxrounds, ib.energy, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
+    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.max_time, ib.min_mE, ib.indices_final, ib.labels, ib.nthreads, ib.max_rounds, ib.energy, ib.with_tests, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
 
     size_t get_time_in_update_centers(){
       return time_in_update_centers;
@@ -403,12 +421,20 @@ class BaseClusterer{
       time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
         
       
-      if (maxtime_micros > time_total){
-        return maxtime_micros - time_total;
+      if (max_time_micros > time_total){
+        return max_time_micros - time_total;
       }
       else{
         return -1;
       }
+    }
+    
+    std::string string_for_sample(size_t k, size_t j){
+      return cluster_datas[k].string_for_sample(j);
+    }
+    
+    std::string string_for_center(size_t k){
+      return centers_data.string_for_sample(k);
     }
 
 
@@ -475,8 +501,10 @@ class BaseClusterer{
 
       size_t nearest_center = 0;
       
+      //double xi = (1 - 1e-6);
       for (size_t k = 0; k < K; ++k){
         up_distances[k] = std::numeric_limits<double>::max();
+        //  !!!!!! xi*
         if (cc[nearest_center*K + k] < second_min_distance + min_distance){
           set_center_sampleID_distance(k, i, second_min_distance, up_distances[k]);
           if (up_distances[k] < second_min_distance){
@@ -500,21 +528,21 @@ class BaseClusterer{
         std::stringstream errm;
         errm << "invalid k0, k1 in kmeanspp : ";
         errm << "k0 = " << k0 << "     k1 = " << k1 << "     K = " << K << ".";
-        throw std::runtime_error(errm.str());
+        throw zentas::zentas_error(errm.str());
       }
  
       if (ndata_1 != ndata_2){
-        throw std::runtime_error("ndata_1 != ndata_2 in test_parameters_to_tkai");        
+        throw zentas::zentas_error("ndata_1 != ndata_2 in test_parameters_to_tkai");        
       }
     }
 
 
-        inline size_t get_sample_from(std::vector<double> & v_cum_nearest_energies){
+        inline size_t get_sample_from(std::vector<double> & v_cum_nearest_energies){ //, const size_t * c_ind, size_t k){
           
+          /* kmeans++ is exhausted : everything sample has a center at distance 0 (obviously duplicated data)
+           * however, this case should have been caught upstream, so throwing an error. */
           if (v_cum_nearest_energies.back() == 0){
-            throw std::runtime_error("exhausted in get_sample_from (kmeans++). in particular, the cumulative energy is zero. not sure what to do in this situation, could just return indices uniformly at random. but being cautious and throwing an error. please change it here if this is annoying. ");  
-            /* alternatively, return uniformly with this : 
-             * return dis(gen)%(v_cum_nearest_energies.size() - 1); */
+            throw zentas::zentas_error("exhausted in get_sample_from (kmeans++). in particular, the cumulative energy is zero. this should have been caught upstream: logic error in zentas");  
           }
           
           return std::distance(
@@ -550,12 +578,13 @@ class BaseClusterer{
      * p2bun stores a1,d1,a2,d2,ori of data used for kmeanspp.
      * p2bun_d2 (const) is the data used for kmeanpp.
      * get centers [k0, k1).
+     * is_exhausted reports whether the every sample has a center a distance 0 (when samples duplicated). 
      *  */
 
-    void triangular_kmeanspp_after_initial(TData & c_dt, size_t * const c_ind, double * const cc, P2Bundle & p2bun, const TData * const ptr_p2bun_dt, size_t k0, size_t k1, bool from_full_data){
-      
+    void triangular_kmeanspp_after_initial(TData & c_dt, size_t * const c_ind, double * const cc, P2Bundle & p2bun, const TData * const ptr_p2bun_dt, size_t k0, size_t k1, bool from_full_data, bool & is_exhausted){
+    
       if (from_full_data != (ptr_p2bun_dt == nullptr)){
-        throw std::runtime_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (ptr_p2bun_dt == nullptr)");
+        throw zentas::zentas_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (ptr_p2bun_dt == nullptr)");
       }
       
       size_t kmeanspp_ndata = from_full_data ? ndata : ptr_p2bun_dt->get_ndata();
@@ -564,7 +593,7 @@ class BaseClusterer{
         std::stringstream ss;
         ss << "triangular_kmeanspp_after_initial, attempting to find more centers than data - 1 : ";
         ss << "kmeanspp_ndata = " << kmeanspp_ndata << "   and   k1 - k0 = " << k1 - k0; 
-        throw std::runtime_error(ss.str());        
+        throw zentas::zentas_error(ss.str());        
       }
       
       test_parameters_to_tkai(k0, k1, p2bun.get_ndata(), kmeanspp_ndata);
@@ -591,6 +620,9 @@ class BaseClusterer{
       std::function<void(size_t, size_t)> set_distance_kk;
       std::function<void(size_t, size_t)> set_distance_ik;
       std::function<void(size_t)> update_c_ind_c_dt;
+      
+      /* whether to revert to uniform sampling when all samples already have a center at distance 0 (obviously duplicated data)*/
+      bool try_uniform_when_exhausted;
 
       if (from_full_data == true) {
   
@@ -603,9 +635,12 @@ class BaseClusterer{
         };
         
         update_c_ind_c_dt = [this, &c_ind, &c_dt, &v_cum_nearest_energies](size_t k){
-          c_ind[k] = get_sample_from(v_cum_nearest_energies); 
+          c_ind[k] = get_sample_from(v_cum_nearest_energies);
           c_dt.append(ptr_datain->at_for_move(c_ind[k]));
         };
+        
+        /* we can handle the exhausted case here */
+        try_uniform_when_exhausted = true;
       }
       
       else{
@@ -619,11 +654,14 @@ class BaseClusterer{
         };
         
         update_c_ind_c_dt = [this, &c_ind, &c_dt, &v_cum_nearest_energies, &ptr_p2bun_dt, &p2bun](size_t k){
-          
           size_t sami = get_sample_from(v_cum_nearest_energies);
           c_ind[k] = p2bun.ori(sami);
           c_dt.append(ptr_p2bun_dt->at_for_move(sami));
         };
+
+        /* handling the exhausted case here is too complex (cross batch indices needed, argh)
+         * , rather just bail and try again from full data */        
+        try_uniform_when_exhausted = false;
       
       }
       
@@ -632,7 +670,36 @@ class BaseClusterer{
       /* k-means++, at last */
       for (size_t k = k0; k < k1; ++k){
         
-        update_c_ind_c_dt(k);
+        if (v_cum_nearest_energies.back() != 0){
+          is_exhausted = false;
+          update_c_ind_c_dt(k);
+        }
+        
+        else{
+          is_exhausted = true;
+          if (try_uniform_when_exhausted == false){
+            /* bailing, because 
+             * (1) every sample has a center a distance 0 : k-means++ fails
+             * (2) must not switch to uniform sampling.
+             * */
+            return;
+          }
+          
+          else{
+            if (from_full_data == false){
+              std::stringstream ss;
+              ss << "try uniform when exhausted is true, but from full data is false, this looks like a logic error."; 
+              throw zentas::zentas_error(ss.str());
+            }
+
+            size_t new_index = dis(gen)%(K);
+            while (std::find(c_ind, c_ind+k, new_index) != c_ind+k){
+              new_index = dis(gen)%(K);
+            }
+            c_ind[k] = new_index;
+            c_dt.append(ptr_datain->at_for_move(c_ind[k]));
+          }
+        }
  
         
         /* update cc */
@@ -657,7 +724,8 @@ class BaseClusterer{
 
     
 
-    inline void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt){      
+    inline void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, bool & is_exhausted){      
+
 
       for (size_t i = 0; i < ndata; ++i){
         p2bun.ori(i) = i;
@@ -665,7 +733,8 @@ class BaseClusterer{
       
       size_t k0 = 0;
       size_t k1 = K;
-      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, k0, k1, true);
+    
+      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, k0, k1, true, is_exhausted);
     }
 
 
@@ -673,9 +742,9 @@ class BaseClusterer{
 
     
         
-    inline void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, size_t n_bins){
-       
-       
+    inline void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, size_t n_bins, bool & is_exhausted){
+
+      
       /* experiments so far show that multithreading does not help here, can hurt. what's weird is that even if nthreads = 1 in 
        * the pll version, it's sig slower than the serial version.  */
       bool multithread_kmpp = false;
@@ -763,7 +832,12 @@ class BaseClusterer{
                 
         
         /* we don't even try to parallelize to center by center kmeans++ part, too many syncs. */
-        triangular_kmeanspp_after_initial(c_dt, centers, cc, p2buns[bin], &p2buns_dt[bin], k0, k1, false);
+        triangular_kmeanspp_after_initial(c_dt, centers, cc, p2buns[bin], &p2buns_dt[bin], k0, k1, false, is_exhausted);
+        /* is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
+        if (is_exhausted){
+          return;
+        }
+        
       }
       
       /* update all until the tail k's (*&^*) */
@@ -804,26 +878,68 @@ class BaseClusterer{
       }
       
       //set the tail k's
-      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, K - tail_k, K, true);
+      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, K - tail_k, K, true, is_exhausted);
+      /* is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
+      if (is_exhausted){
+        return;
+      }
 
     }
     
-        
+    
+      
     std::string get_base_summary_string(){
+      
+      
+      
+      std::string st_round = "R=" + std::to_string(round);
+      st_round.resize(3 + 6, ' ');
+      
+      std::stringstream st_mE_ss;
+      st_mE_ss << "mE=" << std::setprecision(7) << E_total / static_cast<double>(ndata);
+      std::string st_mE = st_mE_ss.str();
+      st_mE.resize(std::max<size_t>(st_mE.size() + 1,3 + 11), ' ');
+
+      std::string st_Ti = "Ti=" + std::to_string(time_to_initialise_centers/1000);
+      st_Ti += "  ";
+      
+      std::string st_Tb = "Tb=" + std::to_string(time_initialising/1000);
+      st_Tb += "  ";
+      
+      std::string st_Tc = "Tc=" + std::to_string(time_in_update_centers/1000);
+      st_Tc.resize(3 + 8, ' ');
+      
+      std::string st_Tu = "Tu=" + std::to_string(time_in_update_sample_info/1000);
+      st_Tu.resize(3 + 7, ' ');
+      
+      std::string st_Tr = "Tr=" + std::to_string(time_in_redistribute/1000);
+      st_Tr.resize(3 + 5, ' ');
+
+      
+      std::string st_Tt = "Tt="  + std::to_string(time_total/1000);
+      st_Tt.resize(3 + 8, ' ');
+
+
+      std::stringstream ncc_ss;
+      ncc_ss <<  "lg2nc(c)="  << std::setprecision(5) << std::log2(ncalcs_in_update_centers);
+      std::string ncc = ncc_ss.str();
+      ncc.resize(9+9, ' ');
+
+
+      std::stringstream nc_ss;
+      nc_ss <<  "lg2nc="  << std::setprecision(5) << std::log2(ncalcs_total);
+      std::string nc = nc_ss.str();
+      nc.resize(6+9, ' ');
+
+
+      std::stringstream pc_ss;
+      pc_ss <<  "pc="  << std::setprecision(5) << static_cast<double> (metric.get_rel_calccosts());
+      std::string pc = pc_ss.str();
+      pc.resize(3+10, ' ');
+
+      
       std::ostringstream out;
-      out  << round << "\tmE: " <<  std::setprecision(7) << E_total / static_cast<double>(ndata) << std::setprecision(5) <<  
-      "\tatime: "  <<  time_to_initialise_centers/1000  << 
-      "  itime: "  <<  time_initialising/1000  <<  
-      "  ctime: "  <<  time_in_update_centers/1000  <<  
-      "\tutime: "  <<  time_in_update_sample_info/1000  <<  
-      "\trtime: "  <<  time_in_redistribute/1000  <<  
-      "\tttime: "  <<  time_total/1000  <<   
-      "\tlg2 nc(c): "  << std::log2(ncalcs_in_update_centers) <<  
-      "\tlg2 nc: "  <<  std::log2(ncalcs_total)  <<  
-      "\t pc: " << static_cast<double> (metric.get_rel_calccosts())  ;
-      
-      //   <<  "\tstime: "  <<  time_in_update_all_cluster_statistics/1000
-      
+      out << st_round << st_mE << st_Ti << st_Tb << st_Tc << st_Tu << st_Tr << st_Tt << ncc << nc << pc;
       return out.str();
     
       //return "*" + std::to_string(round) + "\t E: " + std::to_string(E_total) + "\t itime: " + std::to_string( time_initialising/1000 ) + "\t ctime: " + std::to_string( time_in_update_centers/1000 ) + "\t utime: " + std::to_string( time_in_update_sample_info/1000 ) + "\t rtime: " + std::to_string( time_in_redistribute/1000 ) + "\t ttime: " + std::to_string( time_total/1000 )  + "\t stime: " + std::to_string( time_in_update_all_cluster_statistics/1000 ) +  "\t log2 nc(c): " + std::to_string(std::log2(ncalcs_in_update_centers) )+ "\t log2 nc: " + std::to_string( std::log2(ncalcs_total) );
@@ -939,7 +1055,7 @@ class BaseClusterer{
       }
       if (up_cum_ndatas[K-1] != (ndata - K)){
         mowri << "Weird : cum_ndatas[K-1] != ndata : up_cum_ndatas[K-1] = " << up_cum_ndatas[K-1] << " and ndata = " << ndata << zentas::Endl;
-        throw std::logic_error("(see above)");
+        throw zentas::zentas_error("(see above)");
       }
       size_t i = dis(gen)%(ndata - K);
       size_t k_below = 0;
@@ -1036,21 +1152,34 @@ class BaseClusterer{
         std::string prefix = "kmeans++-";
         n_bins = extract_INT(initialisation_method, prefix.size());
         if (n_bins == 0){
-          throw std::runtime_error("n_bins passed to kmeans++ should be positive.");
+          throw zentas::zentas_error("n_bins passed to kmeans++ should be positive.");
         }
       }
 
       
       up_kmoo_bundle->reset(K, ndata);
       
+      bool is_exhausted = false;
+
+      if (n_bins != 1){
+        triangular_kmeanspp_aq2(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins, is_exhausted);
+        if (is_exhausted){
+          mowri << "exhausted in " << initialisation_method << ", will revert to kmeans++-1" << zentas::Endl;
+          up_kmoo_bundle->reset(K, ndata);
+        }
+      }
+
       
-      if (n_bins == 1){
-        triangular_kmeanspp(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt);
+      if (is_exhausted == true || n_bins == 1){
+        is_exhausted = false;
+        triangular_kmeanspp(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, is_exhausted);
+        if (is_exhausted){
+          mowri << "exhausted in kmeans++-1, used uniform sampling to complete initialisation" << zentas::Endl;
+        }
       }
       
-      else{
-        triangular_kmeanspp_aq2(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins);
-      }
+
+      
       
       /* rearrange so that center_indices_init are in order */
       std::vector<std::array<size_t, 2>> vi (K);
@@ -1078,39 +1207,65 @@ class BaseClusterer{
     
     void go(){
 
-      bool with_tests = false;
       if (with_tests == true){
-        mowri << "\n\nCOMPILED WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
+        mowri << "\n\nRUNNING WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
+
+      auto output_halt_reason = [this](){
+        
+        unsigned n_reasons = 0;
+        mowri << "halted because: " << zentas::Endl;
+        if (time_total >= max_time_micros){
+          mowri << "  (" << n_reasons+1 << ") exceeded max_time (" << max_time_micros/1000. << ")" << zentas::Endl;
+          ++n_reasons;
+        }
+        if (round >= max_rounds){
+          mowri << "  (" << n_reasons+1 << ") exceeded max_rounds (" << max_rounds << ")" << zentas::Endl;
+          ++n_reasons;
+        }
+        if (E_total / static_cast<double>(ndata) < min_mE){
+          mowri << "  (" << n_reasons+1 << ") mE below termination min_mE (" << min_mE << ")" << zentas::Endl;        
+          ++n_reasons;
+        }
+        if (n_reasons == 0){
+          mowri << "   round without any center update" << zentas::Endl;
+        }
+        
+      };
+
+
+
+      auto populate_labels = [this](){
+        for (size_t k = 0; k < K; ++k){
+          labels[center_IDs[k]] = k;
+          for (size_t j = 0; j < get_ndata(k); ++j){
+            labels[sample_IDs[k][j]] = k;
+          }
+        }
+      };
+
+
+      auto halt = [this](){
+        bool do_not_halt = (time_total < max_time_micros) && (round < max_rounds) && (E_total / static_cast<double>(ndata)) >= min_mE;
+        return (do_not_halt == false);
+      };
+
+      
+      
+      //if (halt()){
+        //output_halt_reason();
+        //return;
+      //}
 
 
       /* prevent code duplication of this string (in pyzentas.pyx and here) */      
       mowri << 
 R"(
 (The prevent output to terminal, set capture_output to false)
-
-The output below contains the following round-by-round statistics
-------------------------------------------------------------------------------------------------------------------------------------
-first column  : round (where a round is defined by center change)
-mE            : mean energy over samples
-itime         : time [in milliseconds] taken for initialisation (first assignments)
-ctime         : time spent in center update. For clarans, this is the time spent evaluating proposals. 
-                For Voronoi, this is time in updating assignments
-utime         : time spent in updating. For clarans, this is the time spent determining the nearest and second nearest 
-                centers following a swap. For voronoi, this is time spent determining medoids.
-rtime         : time spent implementing the center move. This cost involves moving data between clusters while maintaining 
-                it in a random order. If rooted = True, this can be expected be higher that when rooted = False,
-                (with a correspondlingly lower ctime for rooted = True)
-ttime         : total time.
-lg2 nc(c)     : log based 2 of the number of distance calculations made in center update (corresponding to ctime)
-lg2 nc        : log based 2 of total number of distance calculations made.
-pc            : distance calculations can be terminated early if it can be established that they are above some threshold. 
-                This is particularly effective when the Levenshtein or normalised Levenshtein distance is used.
-                pc measures how effective the early stopping in a distance computation is. For details see the appendix of our paper
-nprops        : for clarans, the number of rejected proposals before one is accepted.       
-------------------------------------------------------------------------------------------------------------------------------------
 )";
 
+
+      mowri << get_output_info_string();
 
       
 
@@ -1143,7 +1298,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       else {
         std::stringstream vims_ss;
         vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, kmeans++-INT, afk-mc2-INT (for some positive INT)]";
-        throw std::runtime_error(vims_ss.str());
+        throw zentas::zentas_error(vims_ss.str());
       }
   
       std::sort(v_center_indices_init.begin(), v_center_indices_init.end());
@@ -1201,11 +1356,18 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       time_initialising = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
       ncalcs_initialising = metric.get_ncalcs();
       
-      round_summary();
       
-      //mowri << time_total << "   " << maxtime MM zentas::Endl;
-      while ((time_total < maxtime_micros) && (round < maxrounds) && (E_total / static_cast<double>(ndata)) >= minmE){ // (E_total != old_E_total) && 
+      mowri << get_equals_line(get_round_summary().size());
+      mowri << get_round_summary() << zentas::Endl;
+      
+      //auto dummy_line = get_output_info_string();      
+      //mowri << get_equals_line(dummy_line.size());
 
+      
+        
+      //mowri << time_total << "   " << max_time MM zentas::Endl;
+      while (halt() == false){
+    
         t0 = std::chrono::high_resolution_clock::now();
         ncalcs0 = metric.get_ncalcs();
         
@@ -1231,7 +1393,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
         if (modified_centers == false){
           time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
           ncalcs_total = metric.get_ncalcs();
-          round_summary();
+          mowri << get_round_summary() << zentas::Endl;
           
           break;
         }
@@ -1278,33 +1440,28 @@ nprops        : for clarans, the number of rejected proposals before one is acce
           
           time_total = std::chrono::duration_cast<std::chrono::microseconds>(t4 - tstart).count();
           ncalcs_total = metric.get_ncalcs();
-          round_summary();
+          
+          if (with_tests == true){
+            mowri << zentas::Endl;
+          }
+            
+          
+          mowri << get_round_summary() << zentas::Endl;
           
           
           ++round;        
         }
       }
       
-      if (time_total >= maxtime_micros){
-        mowri << "exceeded maxtime (" << maxtime_micros/1000. << ")" << zentas::Endl;
-      }
       
-      if (round >= maxrounds){
-        mowri << "exceeded maxrounds (" << maxrounds << ")" << zentas::Endl;
-      }
+      mowri << get_equals_line(get_round_summary().size());
+
+      output_halt_reason();
+            
       
-      if (E_total / static_cast<double>(ndata) < minmE){
-        mowri << "mE below termination minmE (" << minmE << ")" << zentas::Endl;        
-      }
+      populate_labels();
+
       
-      
-      //populate labels : 
-      for (size_t k = 0; k < K; ++k){
-        labels[center_IDs[k]] = k;
-        for (size_t j = 0; j < get_ndata(k); ++j){
-          labels[sample_IDs[k][j]] = k;
-        }
-      }
     }
 
     
@@ -1387,7 +1544,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
     virtual void set_normalised_custom_cluster_statistics(size_t k) = 0;
     virtual void set_to_zero_custom_cluster_statistics(size_t k) = 0;
 
-    virtual void round_summary() = 0;    
+    virtual std::string get_round_summary() = 0;    
 
     inline void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
       //get your lock on, time for polyphonics. 
@@ -1668,7 +1825,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
     
     
     void post_initialisation_test(){
-      mowri << " post initialisation test... " << zentas::Flush;
+      mowri << "--post initialisation test... " << zentas::Flush;
       mowri << " (injective) " << zentas::Flush;
       injective_ID_test();
       mowri << " (ndata) " << zentas::Flush;
@@ -1684,14 +1841,14 @@ nprops        : for clarans, the number of rejected proposals before one is acce
     
     
     void post_center_update_test(){
-      mowri << " post center update test... " << zentas::Flush;
+      mowri << "--post center update test... " << zentas::Flush;
       ndata_tests();
       center_center_info_test();
       mowri << "done." << zentas::Flush;
     }
     
     void post_sample_update_test(){
-      mowri << " post sample update test... " << zentas::Flush;
+      mowri << "--post sample update test... " << zentas::Flush;
       ndata_tests();
       info_tests();
       to_leave_cluster_test();
@@ -1699,7 +1856,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
     }
     
     void post_redistribute_test(){
-      mowri << " post redistribute test... " << zentas::Flush;
+      mowri << "--post redistribute test... " << zentas::Flush;
       ndata_tests();
       as_assigned_test();  
         mowri << "done." << zentas::Flush;
@@ -1724,7 +1881,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
             }
             if (is_listed == false){
               mowri << "\nis_listed == false" << zentas::Endl;
-              throw std::logic_error(errm);
+              throw zentas::zentas_error(errm);
             }
           }
         }
@@ -1752,7 +1909,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
             }
             mowri <<  "\n(a,d,e) : " << nearest_1_infos[k][x].get_string() << zentas::Endl;
             mowri << "\nto leave cluster but k is 'k'" << zentas::Endl;
-            throw std::logic_error(errm);
+            throw zentas::zentas_error(errm);
           }
         }
       }
@@ -1771,13 +1928,13 @@ nprops        : for clarans, the number of rejected proposals before one is acce
           E__0k += nearest_1_infos[k][j].e_x;
         }
         if (E__0k != cluster_energies[k]){
-          throw std::logic_error(errs);
+          throw zentas::zentas_error(errs);
         }
         E__0 += E__0k;
       }
       
       if (E__0 != get_E_total()){
-        throw std::logic_error(errs);
+        throw zentas::zentas_error(errs);
       }
       
       custom_cluster_statistics_test();
@@ -1806,26 +1963,50 @@ nprops        : for clarans, the number of rejected proposals before one is acce
           //if (k_first_nearest != nearest_1_infos[k][j].a_x){
             //mowri << "\n" << k_first_nearest << "  " << nearest_1_infos[k][j].a_x << zentas::Endl;
             //mowri << d_first_nearest << "  " << nearest_1_infos[k][j].d_x << zentas::Endl;
-            //throw std::logic_error(errm + " k_first_nearest != nearest_1_infos[k][j].a_x");
+            //throw zentas::zentas_error(errm + " k_first_nearest != nearest_1_infos[k][j].a_x");
           //}
   
           if (d_first_nearest != nearest_1_infos[k][j].d_x){
-            mowri << "k: " << k << "  j: " << j << zentas::Endl;
-            mowri << "\n" << "k1 (comp) " << k_first_nearest << "    k1 (testing) " << nearest_1_infos[k][j].a_x << zentas::Endl;
-            mowri << std::setprecision(20);
-            mowri <<  "d1 (comp) " << d_first_nearest << "    d1 (testing) " << nearest_1_infos[k][j].d_x << zentas::Endl;
+
+
+
+            std::stringstream errm;
             
-            mowri << "the first min(10, size) distances are : " << zentas::Endl;
-            for (size_t jp = 0; jp < std::min<size_t>(10, nearest_1_infos[k].size()); ++jp){
-              mowri << " " << nearest_1_infos[k][j].d_x << " ";
-            }
-            mowri << zentas::Endl;
+            errm << "error detected : d_first_nearest != d_first_nearest\n";
+            errm << "k=" << k << "\n";
+            errm << "j=" << j << "\n";
+            errm << "the " << j << "'th sample in cluster " << k << " is " << string_for_sample(k, j) << "\n";
+            errm << "cluster size is " << nearest_1_infos[k].size() << "\n";
+            errm << std::setprecision(20);
+            errm << "get_a1(k,j)=" << get_a1(k,j) << "\n";
+            errm << "just computed first nearest center index: " << k_first_nearest << "\n";
+            errm << "the " << k_first_nearest << "'th center is: " << string_for_center(k_first_nearest) << "\n";
+            errm <<  "just computed distance to this center is: " << d_first_nearest << "\n";
+            errm << "the recorded first nearest center index: " << nearest_1_infos[k][j].a_x << "\n";
+            errm << "the " << nearest_1_infos[k][j].a_x << "'th center is " << string_for_center(nearest_1_infos[k][j].a_x) << "\n";
+            errm << "the recorded distance to this center is " << nearest_1_infos[k][j].d_x << "\n";
+
+            throw zentas::zentas_error(errm.str());
+
+
             
-            throw std::logic_error(errm + "d_first_nearest != nearest_1_infos[k][j].d_x");
+            
+            //mowri << "k: " << k << "  j: " << j << zentas::Endl;
+            //mowri << "\n" << "k1 (comp) " << k_first_nearest << "    k1 (testing) " << nearest_1_infos[k][j].a_x << zentas::Endl;
+            //mowri << std::setprecision(20);
+            //mowri <<  "d1 (comp) " << d_first_nearest << "    d1 (testing) " << nearest_1_infos[k][j].d_x << zentas::Endl;
+            
+            //mowri << "the first min(10, size) distances are : " << zentas::Endl;
+            //for (size_t jp = 0; jp < std::min<size_t>(10, nearest_1_infos[k].size()); ++jp){
+              //mowri << " " << nearest_1_infos[k][j].d_x << " ";
+            //}
+            //mowri << zentas::Endl;
+            
+            //throw zentas::zentas_error(errm + "d_first_nearest != nearest_1_infos[k][j].d_x");
           }
   
           if (e_first_nearest != nearest_1_infos[k][j].e_x){
-            throw std::logic_error(errm + "e_first_nearest != nearest_1_infos[k][j].e_x");
+            throw zentas::zentas_error(errm + "e_first_nearest != nearest_1_infos[k][j].e_x");
           }          
         }      
       }
@@ -1838,7 +2019,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       size_t ndata_internal = 0;
       for (size_t k = 0; k < K; ++k){
         if (get_ndata(k) != nearest_1_infos[k].size()){
-          throw std::logic_error(errm);
+          throw zentas::zentas_error(errm);
         }
         ndata_internal += get_ndata(k);
       }
@@ -1847,7 +2028,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
       
       
       if (ndata_internal != ndata - K){
-        throw std::logic_error(errm);
+        throw zentas::zentas_error(errm);
       }
     }
 
@@ -1856,7 +2037,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
         for (size_t j = 0; j < get_ndata(k); ++j){
           if (nearest_1_infos[k][j].a_x != k){
             std::string errstring = "A sample in cluster " + std::to_string(k) + " has a_x " + std::to_string(nearest_1_infos[k][j].a_x);
-            throw std::runtime_error(errstring);
+            throw zentas::zentas_error(errstring);
           }
         }
       }
@@ -1895,7 +2076,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
           }
           
           errstring = errstring + "].";
-          throw std::logic_error(errstring);
+          throw zentas::zentas_error(errstring);
         }
       }
     }
@@ -1911,7 +2092,7 @@ nprops        : for clarans, the number of rejected proposals before one is acce
             errm_ss << " " << center_indices_init[k] << " ";
           }
           errm_ss << "\n";
-          throw std::runtime_error(errm_ss.str());
+          throw zentas::zentas_error(errm_ss.str());
         }
       }
     }

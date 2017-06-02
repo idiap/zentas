@@ -4,6 +4,7 @@
 #include "tdatain.hpp"
 #include "tmetric.hpp"
 
+#include "zentaserror.hpp"
 
 namespace nszen{
 
@@ -14,7 +15,7 @@ size_t extract_INT(std::string initialisation_method, size_t prefix_length){
   if (initialisation_method.size() < prefix_length + 1){
     std::stringstream errm_ss;
     errm_ss << "invalid initialisation_method " << initialisation_method << ". It is not of the form `prefix'-INT, where INT is positive."; 
-    throw std::runtime_error(errm_ss.str());
+    throw zentas::zentas_error(errm_ss.str());
   }
   
   std::string digit_substring = initialisation_method.substr(prefix_length, initialisation_method.size() - prefix_length);
@@ -24,7 +25,7 @@ size_t extract_INT(std::string initialisation_method, size_t prefix_length){
     if (std::isdigit(x) == false){
       std::stringstream errm_ss;
       errm_ss << "Unexpected character while attempting to extract integer from " << initialisation_method << " (" << digit_substring << ")" << ", `" << x << "'";
-      throw std::runtime_error(errm_ss.str());
+      throw zentas::zentas_error(errm_ss.str());
     }
     ++striter;
   }
@@ -39,11 +40,11 @@ void populate_from_indices_init(const size_t * const center_indices_init_in, siz
   for (size_t k = 0; k < K; ++k){
     /* confirm uniqueness and range */
     if (center_indices_init_in[k] >= ndata){
-      throw std::runtime_error("initialising center index out of bounds in BaseClusterer constructor");
+      throw zentas::zentas_error("initialising center index out of bounds in BaseClusterer constructor");
     }
     for (unsigned j = 0; j < k; ++j){
       if (center_indices_init_in[k] == center_indices_init_in[j]){
-        throw std::runtime_error("initialising center index at j and k are the same in BaseClusterer constructor");
+        throw zentas::zentas_error("initialising center index at j and k are the same in BaseClusterer constructor");
       }
     }
     

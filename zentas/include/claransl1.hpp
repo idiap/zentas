@@ -131,6 +131,7 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
 
 
     virtual void update_sample_info() override final{
+      //BaseClarans<TMetric, TData>::basic_clarans_update_sample_info();
       update_sample_info_l1(dists_centers_old_k_to, dists_centers_new_k_to);
     }
     
