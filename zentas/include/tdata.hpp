@@ -58,7 +58,7 @@ class VData{
   public: 
     VData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.dimension){
       if (as_empty == false){
-        throw std::logic_error("Currently, there is no implementation for constructing VData from DenseVectorDataUnrootedIn with data, due to the lack of any apparent need");
+        throw zentas::zentas_error("Currently, there is no implementation for constructing VData from DenseVectorDataUnrootedIn with data, due to the lack of any apparent need");
       }
     }
     
@@ -81,7 +81,7 @@ class VData{
         
     void remove_last(){
       if (ndata == 0){
-        throw std::logic_error("Request for remove_last, but ndata == 0");
+        throw zentas::zentas_error("Request for remove_last, but ndata == 0");
       }
       ndata -= 1;
       data.resize(ndata*dimension);
@@ -93,14 +93,21 @@ class VData{
       }
     }
     
+    
+    std::string string_for_sample(size_t i){
+      std::stringstream ss;
+      ss << "(";
+      for (size_t d = 0; d < dimension; ++d){
+        ss << " " << data[i*dimension + d] << " ";
+      }
+      ss << ")";
+      return ss.str();
+    }
+    
     std::string get_string(){
       std::stringstream ss;
       for (size_t i = 0; i < ndata; ++i){
-        ss << " " << i << ":(";
-        for (size_t d = 0; d < dimension; ++d){
-          ss << " " << data[i*dimension + d] << " ";
-        }
-        ss << ") ";
+        ss << string_for_sample(i);
       }
       
       return ss.str();
@@ -136,7 +143,7 @@ class SData{
     
     SData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){//, mowri(true, false, ""){
       if (as_empty == false){
-        throw std::logic_error("Currently, there is no implementation for constructing SData from SDataIn with data, due to the lack of any apparent need");
+        throw zentas::zentas_error("Currently, there is no implementation for constructing SData from SDataIn with data, due to the lack of any apparent need");
       }
     }
 
@@ -161,7 +168,7 @@ class SData{
         
     void remove_last(){
       if (ndata == 0){
-        throw std::logic_error("Request for remove_last, but ndata == 0");
+        throw zentas::zentas_error("Request for remove_last, but ndata == 0");
       }
       ndata -= 1;
       data.resize(ndata*dimension);
@@ -175,14 +182,22 @@ class SData{
       sizes[j] = s.size;
     }
     
+    
+    std::string string_for_sample(size_t i){
+      std::stringstream ss;
+      
+      ss << "{";
+      for (size_t d = 0; d < sizes[i]; ++d){
+        ss << data[i*dimension + d];
+      }
+      ss << "}";
+      return ss.str();
+    }
+    
     std::string get_string(){
       std::stringstream ss;
       for (size_t j = 0; j < ndata; ++j){
-        ss << j << "   ";
-        for (size_t d = 0; d < sizes[j]; ++d){
-          ss << data[j*dimension + d];
-        }
-        ss << "\n";
+        ss << string_for_sample(j) << " ";
       }
       return ss.str();
     }
@@ -210,7 +225,7 @@ class SparseVectorData{
    public: 
     SparseVectorData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){
       if (as_empty == false){
-        throw std::logic_error("Currently, there is no implementation for constructing SData from SDataIn with data, due to the lack of any apparent need");
+        throw zentas::zentas_error("Currently, there is no implementation for constructing SData from SDataIn with data, due to the lack of any apparent need");
       }
     }
 
@@ -237,7 +252,7 @@ class SparseVectorData{
         
     void remove_last(){
       if (ndata == 0){
-        throw std::logic_error("Request for remove_last, but ndata == 0");
+        throw zentas::zentas_error("Request for remove_last, but ndata == 0");
       }
       ndata -= 1;
       data.resize(ndata*dimension);
@@ -252,14 +267,21 @@ class SparseVectorData{
       }
       sizes[j] = s.size;
     }
-    
+
+
+    std::string string_for_sample(size_t i){
+      std::stringstream ss;
+      for (size_t d = 0; d < sizes[i]; ++d){
+        ss << "(" << data[i*dimension + d] << ")" << data[i*dimension + d];
+      }
+      return ss.str();
+    }
+        
     std::string get_string(){
       std::stringstream ss;
       for (size_t j = 0; j < ndata; ++j){
         ss << j << "   ";
-        for (size_t d = 0; d < sizes[j]; ++d){
-          ss << "(" << data[j*dimension + d] << ")" << data[j*dimension + d];
-        }
+        ss << string_for_sample(j);
         ss << "\n";
       }
       
@@ -301,7 +323,7 @@ class BaseDataRooted{
   public: 
     BaseDataRooted (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.dimension), ptr_datain(&datain){
       if (as_empty == false){
-        throw std::logic_error("Currently, there is no implementation for constructing VData from DenseVectorDataUnrootedIn with data, due to the lack of any apparent need");
+        throw zentas::zentas_error("Currently, there is no implementation for constructing VData from DenseVectorDataUnrootedIn with data, due to the lack of any apparent need");
       }
     }
     inline size_t get_ndata() const{
@@ -317,7 +339,7 @@ class BaseDataRooted{
     }
     void remove_last(){
       if (ndata == 0){
-        throw std::logic_error("Request for remove_last, but ndata == 0");
+        throw zentas::zentas_error("Request for remove_last, but ndata == 0");
       }
       ndata -= 1;
       IDs.resize(ndata);
@@ -325,6 +347,12 @@ class BaseDataRooted{
     void replace_with(size_t j, size_t i){
       IDs[j] = i;
     }
+
+    std::string string_for_sample(size_t i){
+      (void)i;
+      return "string_for_sample not implemented for vdatarooted";
+    }    
+    
     std::string get_string(){
       return "get_string not implemented for vdatarooted";
     }
@@ -400,11 +428,11 @@ class SparseVectorDataRooted : public BaseDataRooted<TDinz>{
 template <class TData>
 void replace_with_last(TData & data, size_t j){
   if (data.get_ndata() == 0){
-    throw std::logic_error("Request for replace_with_last, but ndata == 0");
+    throw zentas::zentas_error("Request for replace_with_last, but ndata == 0");
   }
   
   else if (j == data.get_ndata() - 1){
-    throw std::logic_error("Request for replace_with_last(ndata - 1) which is valid but non-sensical");
+    throw zentas::zentas_error("Request for replace_with_last(ndata - 1) which is valid but non-sensical");
   }
   
   data.replace_with(j, data.at_for_move(data.get_ndata() - 1));

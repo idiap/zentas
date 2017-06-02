@@ -21,6 +21,7 @@ the GNU General Public License along with zentas. If not, see
 #include <algorithm>
 #include <sstream>
 #include <fstream>
+#include "zentaserror.hpp"
 
 
 /* 
@@ -41,15 +42,20 @@ class TDataIn{
 namespace nszen{
 
 /* For vector data : array of size ndata x dimension */
-
-
-
 template <typename TAtomic>
 struct VariableLengthSample{ /* Used for strings */
   public:
     size_t size;
     const TAtomic * const values;
     VariableLengthSample(size_t size, const TAtomic * const values): size(size), values(values) {}
+    std::string str() const{
+      std::stringstream ss;
+      for (size_t i = 0; i < size; ++i){
+        ss << values[i];
+      }
+      return ss.str();   
+    }
+    
 };
 
 template <typename TAtomic>
@@ -118,7 +124,7 @@ class BaseVarLengthDataIn {
     typedef const VariableLengthSample<TAtomic> Sample;
     typedef TAtomic AtomicType;
     size_t ndata;
-    // a hack to get acceptance by metric (in l2 for sparse). TODO : clean this up.
+    /* a hack to get acceptance by metric (in l2 for sparse). TODO : redesign / clean-up */
     size_t dimension = std::numeric_limits<size_t>::max();
     
   protected:
@@ -143,7 +149,7 @@ class BaseVarLengthDataIn {
       mean_size = c_sizes[ndata] / static_cast<double> (ndata);
 
       if (ndata == 0){
-        throw std::runtime_error("ndata == 0 in StringDataUnrootedInconstructor, this is strange");
+        throw zentas::zentas_error("ndata == 0 in StringDataUnrootedInconstructor, this is strange");
       }
     }
     
@@ -262,7 +268,7 @@ class StringDataUnrootedIn : public BaseStringDataIn<TAtomic>{
         
         std::stringstream ss;
         ss << "mean size : " << mean_size << "  max size : " << max_size << "\n" << "The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true).";
-        throw std::runtime_error(ss.str());
+        throw zentas::zentas_error(ss.str());
       }
     }
     
@@ -333,7 +339,7 @@ class SparseVectorDataUnrootedIn : public SparseVectorDataUnrootedInBase<TAtomic
       if (static_cast<double>(max_size) > 5.*mean_size){
         std::stringstream ss;
         ss << "mean size : " << mean_size << "  max size : " << max_size << "\n" << "The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true) if implemented.";
-        throw std::runtime_error(ss.str());
+        throw zentas::zentas_error(ss.str());
       }
     }
 

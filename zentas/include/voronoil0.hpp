@@ -58,7 +58,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     virtual void update_center_center_info() final override{}
     virtual void custom_cluster_statistics_test() final override{}
 
-    virtual void set_redistribute_order(std::vector<size_t> & redistribute_order) {
+    virtual void set_redistribute_order(std::vector<size_t> & redistribute_order) override final {
       std::iota(redistribute_order.begin(), redistribute_order.end(), 0);      
     }
 
@@ -79,8 +79,10 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
       base_put_sample_in_cluster(i);
     }
         
-    virtual void round_summary() final override {
-      mowri << get_base_summary_string() << zentas::Endl;
+    virtual std::string get_round_summary() final override {
+      std::stringstream ss;
+      ss << get_base_summary_string();
+      return ss.str();
     }
     
     virtual void update_sample_info() override final{

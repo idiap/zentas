@@ -34,7 +34,6 @@ class ClaransL0 : public BaseClarans<TMetric, TData> {
     ClaransL0(const BaseClustererInitBundle<DataIn, TMetric> & ib, const BaseClaransInitBundle & clib): 
     BaseClarans<TMetric, TData> (ib, clib) {} 
     
-    //ClaransL0(size_t K, const DataIn & datain, const size_t * const center_indices_init, size_t max_proposals, double maxtime): BaseClarans<TMetric, TData>(K, datain, center_indices_init, max_proposals, maxtime){}
     
    private: 
    
@@ -92,7 +91,7 @@ class ClaransL0 : public BaseClarans<TMetric, TData> {
       
       //quelch warning
       serial = ~serial;
-      //"TODO" : implement a parallel version of get_delta_E_l0
+      /* I am not going to implement a parallel version of get_delta_E_l0, l0 is not important */
       return get_delta_E_l0(k1, k2, j2);
     }
     

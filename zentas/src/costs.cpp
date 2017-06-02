@@ -12,10 +12,11 @@ the GNU General Public License along with zentas. If not, see
 */
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
 #include <vector>
 #include <string>
 #include <map>
+#include "zentaserror.hpp"
+
  
 namespace costs{
 
@@ -47,7 +48,7 @@ void set_costs(std::string filename, std::map<std::pair<char, char>, double> & s
 
   std::ifstream input(filename);
   if(!input.good()){
-    throw std::runtime_error( "Error opening '" + filename + "'. ");
+    throw zentas::zentas_error( "Error opening '" + filename + "'. ");
   }
   
   std::string line, name, content;
@@ -63,11 +64,11 @@ void set_costs(std::string filename, std::map<std::pair<char, char>, double> & s
   }
   
   if (splitlines.size() == 0){
-    throw std::runtime_error("File " + filename + " appears to be empty ");
+    throw zentas::zentas_error("File " + filename + " appears to be empty ");
   }
 
   if (splitlines.size() == 1){
-    throw std::runtime_error("File " + filename + " only contains 1 line, something is wrong ");
+    throw zentas::zentas_error("File " + filename + " only contains 1 line, something is wrong ");
   }  
   
   if (splitlines.size() == 2 and splitlines[0][0] == "*"){
@@ -87,7 +88,7 @@ void set_costs(std::string filename, std::map<std::pair<char, char>, double> & s
     }
     
     else{
-      throw std::runtime_error("File " + filename + " has been deduced to contain global indel and substitution coefficients, and therefore should contain two lines, one : * v and the other * * v. ");
+      throw zentas::zentas_error("File " + filename + " has been deduced to contain global indel and substitution coefficients, and therefore should contain two lines, one : * v and the other * * v. ");
     }
     
     indel_cost = std::stod(splitline_indel[1]);
@@ -100,21 +101,21 @@ void set_costs(std::string filename, std::map<std::pair<char, char>, double> & s
   else{
     for (auto & splitline : splitlines){
       if (splitline.size() != 0 && splitline.size() != 3 && splitline.size() != 2){
-        throw std::runtime_error("It appears that file " + filename + " contains a line which is not of the form '[char]  [char]   [double]' (substitution) or '[char]   [double]' (indel). ");
+        throw zentas::zentas_error("It appears that file " + filename + " contains a line which is not of the form '[char]  [char]   [double]' (substitution) or '[char]   [double]' (indel). ");
       }
       else{
         
         if ( splitline.size() == 2 && ((splitline[0].size() != 1))){
-          throw std::runtime_error("It appears that file " + filename + " does not have [char]  [double] on one of the lines which is of length 2 -- one of the 'chars' is too long");
+          throw zentas::zentas_error("It appears that file " + filename + " does not have [char]  [double] on one of the lines which is of length 2 -- one of the 'chars' is too long");
         }
         
         if ( splitline.size() == 3 && ((splitline[0].size() != 1) || (splitline[1].size() != 1))){
-          throw std::runtime_error("It appears that file " + filename + " does not have [char] [char] [double] on one of the lines which is of length 3 -- one of the 'chars' is too long");
+          throw zentas::zentas_error("It appears that file " + filename + " does not have [char] [char] [double] on one of the lines which is of length 3 -- one of the 'chars' is too long");
         }
         
         
         if (splitline[0][0] == splitline[1][0]){
-          throw std::runtime_error("The characters are expected to be different - as this file should should specify distances, we implicitly assume 0 for like characters. Remove lines with like characters");
+          throw zentas::zentas_error("The characters are expected to be different - as this file should should specify distances, we implicitly assume 0 for like characters. Remove lines with like characters");
         }
         
         if (splitline.size() == 3){
@@ -125,7 +126,7 @@ void set_costs(std::string filename, std::map<std::pair<char, char>, double> & s
           for (auto & x : std::vector<std::pair<char, char>> {key1, key2} ){
             if (substitution_costs.count(x) != 0){
               if (value != substitution_costs[x]){
-                throw std::runtime_error("contradictory input values in file " + filename + " . Note that [char1] [char2] must have the same value as [char2] [char1]");
+                throw zentas::zentas_error("contradictory input values in file " + filename + " . Note that [char1] [char2] must have the same value as [char2] [char1]");
               }
             }
           }
@@ -138,7 +139,7 @@ void set_costs(std::string filename, std::map<std::pair<char, char>, double> & s
           char key = splitline[0][0];
           double value = std::stod(splitline[1]);
           if (indel_costs.count(key) != 0){
-            throw std::runtime_error("Duplicate entry for indel cost of key " + splitline[0]);
+            throw zentas::zentas_error("Duplicate entry for indel cost of key " + splitline[0]);
           }
           
           indel_costs[key] = value;

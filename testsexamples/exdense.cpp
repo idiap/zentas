@@ -16,6 +16,7 @@ the GNU General Public License along with zentas. If not, see
 
 #include "fasta.hpp"
 #include "zentas.hpp"
+#include "zentasinfo.hpp"
 
 
 /* Test case : clustering dense vectors. 
@@ -59,10 +60,10 @@ int cluster_dense(){
   size_t seed = rand()%1000;
 
   //maximum allowed time in seconds. make this v-large if you don't want this to be your stopping criterion
-  double maxtime = 20.;
+  double max_time = 20.;
   
   //if the mean energy drops below this, stop and return. make this 0 if you don't want this to be your stopping criterion
-  double minmE = 0.;
+  double min_mE = 0.;
   
   //save the final results (center indices and assignments) to these:
   std::vector<size_t> indices_final (K);
@@ -75,7 +76,7 @@ int cluster_dense(){
   size_t nthreads = 1;
   
   //max number of rounds. For clarans, this is number of successful swaps. If you don't want this to be your stopping criterion, make it v-large
-  size_t maxrounds = 1000;
+  size_t max_rounds = 1000;
 
   //relevent for clarans : if false, implement a good swap as soon as it is found. If true (recommended), if the time spent evaluating proposals is less than the time spent implementing swaps, then keep searching for good swaps, only implementing a swap when you've spent as much time looking as implementing. Motivation for this is that it doesn't make sense to spend the majority of time implementing swaps, should spend at least half the time looking for good swaps. 
   bool patient = false;
@@ -92,11 +93,12 @@ int cluster_dense(){
   
   //only relevent of energy is exponential.
   double exponent_coeff = 0; 
-  
+
+  bool with_tests = false;
   
   //and finally, we cluster. 
   nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, nullptr, //indices_init.data(), 
-  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, maxtime, minmE, indices_final.data(), labels.data(), metric, nthreads, maxrounds, patient, energy, rooted, critical_radius, exponent_coeff);
+  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff);
 
   //labels and indices_final have now been set, and can now used for the next step in your application. 
   
@@ -118,5 +120,8 @@ int cluster_dense_double(){
 
 int main(){
   //Choose your test and put it here (single precision or double precision). 
-  return cluster_dense_single();
+  //return cluster_dense_single();
+  std::cout << nszen::get_python_paramater_string() << std::endl;
+
+  std::cout << "\n\n" << nszen::get_python_function_decl() << std::endl;
 }

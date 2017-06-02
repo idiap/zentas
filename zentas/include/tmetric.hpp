@@ -32,8 +32,7 @@ class TMetric{
 #include <mutex>
 #include <atomic>
 #include <vector>
-
-//#include "blastemplates.h"
+#include <iostream>
 
 #include "tdatain.hpp" 
 /* the above is included for this guy:
@@ -43,6 +42,8 @@ struct SparseVectorSample; */
 namespace nszen{
   
 
+
+    
 
 class LpMetricInitializer{
 
@@ -75,7 +76,9 @@ class LpMetricInitializer{
       }
       
       else{
-        throw std::runtime_error("Currently, only li (inf) & l0 & l1 & l2 metrics are implemented for vector data");
+        std::stringstream ss;
+        ss << "Currently, only li (inf) & l0 & l1 & l2 metrics are implemented for vector data, not `" << metric << "'."; 
+        throw zentas::zentas_error(ss.str());
       }
     }
 };
@@ -89,7 +92,6 @@ class LpDistance{
   public:
   
     LpDistance(size_t dimension):dimension(dimension) {}
-    //LpDistance(){}
   
     inline size_t get_ncalcs(){
       return ncalcs;
@@ -103,62 +105,56 @@ class LpDistance{
     size_t ncalcs = 0;
     size_t calccosts = 0;
 
-    //virtual inline void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) = 0;
+    /* the inherited classes have very similar set_distance functions, but with differences scattered within them.
+     * code could be compactified by having set_distance be non-virtual, with a few calls to virtual functions within.
+     * but virtual calls are slower than non-virtual calls (I have measured this) and for now sticking to current approach  */
+
     virtual inline void set_distance(const TNumber * const &, const TNumber * const &, double, double & ) {}
     
-    //virtual inline void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) = 0;
     virtual inline void set_distance(const SparseVectorSample<TNumber> &, const SparseVectorSample<TNumber> &, double, double &) {}
     
+        
 };
 
 template <typename TNumber>
 class L2Distance : public LpDistance<TNumber>{
-/* Comment on squaring the threshold : We square the threshold as we'll be working with the squared distance. This might look dodgey: what if the threshold squared oveflows? This is not so serious as it overflows to std::infi nity, which is larger than any double anyway. Besides, it would be hypocritical to complain here, as we're assuming that the distance squared is a valid double (which is a necessary assumption to make the computation). */
       
   public:
-  
-    //std::unique_ptr<TNumber []> uptr_worker;
-    //TNumber * const worker;
     
-    L2Distance(size_t dimension):LpDistance<TNumber>(dimension){} //, uptr_worker (new TNumber [dimension]), worker(uptr_worker.get()) {}
+    L2Distance(size_t dimension):LpDistance<TNumber>(dimension){} 
 
+    
     using LpDistance<TNumber>::dimension;
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
-
-
-    //inline void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance, const std::function<void(double)> tf){
-      //++ncalcs;
-      //distance = 0;       
-      //threshold *= threshold;
-      //double diff;
-      //size_t d;      
-      //for (d = 0; d < dimension; ++d){
-        //diff = *(a + d) - *(b + d);
-        //distance += diff*diff;
-        //tf(distance);
-      //}
-      //calccosts += (d == dimension ? d : 1 + d);
-      //distance = std::sqrt(distance);      
-    //}
-    
     
     virtual inline void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final{
       
-      /* Experiment with blas : with d = 1000, the speed-up was only 10s -> 7s. Not interesting enough to warrant the additional compilation hassle. 
-      ++ncalcs;
-      wblas::copy(dimension, a, 1, worker, 1);
-      wblas::axpy(dimension, static_cast<TNumber>(-1.), b, 1, worker, 1);
-      distance = wblas::dot(dimension, worker, 1, worker, 1);
-      calccosts += dimension;
+      /* Experiment with blas : 
+       * with d = 1000, the speed-up was only 10s -> 7s. 
+       * Not interesting enough to warrant the additional compilation hassle. 
+       * it looked like this:
+      >> ++ncalcs;
+      >> wblas::copy(dimension, a, 1, worker, 1);
+      >> wblas::axpy(dimension, static_cast<TNumber>(-1.), b, 1, worker, 1);
+      >> distance = wblas::dot(dimension, worker, 1, worker, 1);
+      >> calccosts += dimension;
       */
+              
       ++ncalcs;
       distance = 0;       
       double diff;
       size_t d;
-      
-      threshold *= threshold;
 
+      /* Comment on squaring the threshold : We square the threshold 
+       * as we'll be working with the squared distance. This might look
+       *  dodgey: what if the threshold squared oveflows? This is not
+       *  serious as it overflows to std::infinity, which is larger than
+       *  any double anyway. Besides, it would be silly to complain 
+       * here, as we're assuming that the distance squared is a valid 
+       * double (which is a necessary assumption to make the computation).
+       *  */
+      threshold *= threshold;
       for (d = 0; d < dimension; ++d){
         diff = *(a + d) - *(b + d);
         distance += diff*diff;
@@ -169,18 +165,20 @@ class L2Distance : public LpDistance<TNumber>{
       
       calccosts += (d == dimension ? d : 1 + d);
       distance = std::sqrt(distance);
+
     }
 
     inline void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance){
           
       ++ncalcs;
       distance = 0;      
-      threshold *= threshold;
       double diff;
       size_t a_pos = 0;
       size_t b_pos = 0;
       bool indices_remain = (a.size > 0 && b.size > 0);
 
+      threshold *= threshold;
+      
       while (indices_remain && distance <= threshold){
         if (a.indices[a_pos] == b.indices[b_pos]){
           diff = a.values[a_pos] - b.values[b_pos];
@@ -238,31 +236,16 @@ class L1Distance : public LpDistance<TNumber>{
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
 
-
-
-
-
-
     virtual inline void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final{
       
       ++ncalcs;
       distance = 0;       
       double diff;
       size_t d;
+      
       for (d = 0; d < dimension; ++d){
         diff = *(a + d) - *(b + d);
-        
-        //if (diff < 0){
-          //distance += -diff;
-        //}
-        //else{
-          //distance += diff;
-        //}
-        
         distance += std::abs(diff);
-        
-        
-        //checking every time is too much, TODO think about changing this
         if (distance > threshold){
           break;
         }
@@ -277,7 +260,9 @@ class L1Distance : public LpDistance<TNumber>{
       double diff;
       size_t a_pos = 0;
       size_t b_pos = 0;
-      bool indices_remain = (a.size > 0 && b.size > 0); // both a and b have uncheck indices.
+      
+      /* if both a and b have unchecked indices remaining */
+      bool indices_remain = (a.size > 0 && b.size > 0); 
 
       while (indices_remain && distance <= threshold){
         if (a.indices[a_pos] == b.indices[b_pos]){
@@ -304,8 +289,7 @@ class L1Distance : public LpDistance<TNumber>{
       }
       
       
-      //either or a or b or both have exhausted their indices, make both exhausted.
-      
+      /* either or a or b or both have exhausted their indices, noe make both exhausted */
       while (a_pos != a.size && distance <= threshold){
         distance += std::abs(a.values[a_pos]);
         calccosts += 1;
@@ -338,7 +322,6 @@ class L0Distance : public LpDistance<TNumber>{
       size_t d;
       for (d = 0; d < dimension; ++d){
         distance += (*(a + d) != *(b + d));
-        //checking every time is too much, TODO think about changing this
         if (distance > threshold){
           break;
         }
@@ -352,9 +335,9 @@ class L0Distance : public LpDistance<TNumber>{
       distance = 0;
       size_t a_pos = 0;
       size_t b_pos = 0;
-      bool indices_remain = (a.size > 0 && b.size > 0); // neither have exhausted their indices
+      bool indices_remain = (a.size > 0 && b.size > 0);
       
-      threshold += 100;
+      //threshold += 0; //why :| :| :| ?
       while (indices_remain && distance <= threshold){
         if (a.indices[a_pos] == b.indices[b_pos]){
           distance += (a.values[a_pos] != b.values[b_pos]);
@@ -378,12 +361,9 @@ class L0Distance : public LpDistance<TNumber>{
       }
       
       if (distance <= threshold){
-        //either or a or b or both have exhausted their indices      
         distance += a.size - a_pos;
         distance += b.size - b_pos;
         calccosts += 1;
-        //calccosts += a.size - a_pos;
-        //calccosts += b.size - b_pos;
       }
       
     
@@ -408,7 +388,6 @@ class L_oo_Distance : public LpDistance<TNumber>{
       for (d = 0; d < dimension; ++d){
         diff = *(a + d) - *(b + d);
         distance = std::max(distance, std::abs(diff));
-        //checking every time is too much, TODO think about changing this
         if (distance > threshold){
           break;
         }
@@ -507,14 +486,16 @@ class LpMetric{
       else{
         std::string err = "No implementation for p = ";
         err = err + p;
-        throw std::runtime_error(err);
+        throw zentas::zentas_error(err);
       }
     }
-    //TODO : mutex lock for calccosts increment NO! same approach as Levenshtein : vector of calccosts, added when get_ncalcs called. 
     
     template <typename T>
     inline void set_distance(const T & a, const T & b, double threshold, double & distance){
-      //This virtual function call costs about 2% when dimension = 2. 2% slowdown is negligible, I'm going for the clean code.  
+      /* This virtual function call costs 
+       * about 2% when dimension = 2. 2% 
+       * slowdown is negligible, I'm going
+       * for the clean code.  */
       uptr_lpdistance->set_distance(a, b, threshold, distance);
     }
     
@@ -533,7 +514,6 @@ class LpMetric{
     }
   
   private:
-//    const size_t dimension;
     const char p;
 
 };
@@ -557,6 +537,7 @@ class MultiIndel{
     }
 };
 
+/* dict_size x dict_size switch costs for Levenshtein */
 class MultiSwitch{
   private:
     const double * values;
@@ -564,7 +545,6 @@ class MultiSwitch{
      
   public:
     MultiSwitch(const double * const values, size_t dict_size):values(values), dict_size(dict_size) {}
-//    MultiSwitch(): values(nullptr), dict_size(0) {}
     
     inline double operator() (size_t i, size_t j) const {
       return values[i*dict_size + j];
@@ -601,23 +581,27 @@ class ConstSwitch{
 
 
 
+
+/* Random comment. The use of min_c_indel might not be the optimal strategy in Levenshtein */
 template <class TSample, class TIndelCost, class TSwitchCost>
 inline void set_levenshtein_distance(const TSample & v_vertical, const TSample & v_horizontal, double threshold,
+                                     size_t dict_size, const TIndelCost f_c_indel, double min_c_indel, 
+                                     double max_c_indel,  const TSwitchCost f_c_switch, double * A_prev, 
+                                     double *  A_acti, int nrows, int ncols, size_t & n_cells_visited_local, 
+                                     double & distance){
 
-size_t dict_size, const TIndelCost f_c_indel, double min_c_indel, double max_c_indel,  const TSwitchCost f_c_switch, 
-// where (above) c_indel has dict_size values and c_switch has dict_size * dict_size values
-
-double * A_prev, double *  A_acti, int nrows, int ncols, size_t & n_cells_visited_local, double & distance){
-  /* Comment to put somewhere propicious :  The use of min_c_indel is perhaps not the optimal strategy */
-
-  //quelch warning
-  dict_size += 0;
+  (void)dict_size;
   
-  int length_difference = std::abs(nrows - ncols);
+  int length_difference = ncols - nrows; 
+  if (length_difference < 0){
+    throw zentas::zentas_error("ncols must not be smaller than nrows in set_levenshtein_distnance, ie shorter sequence first");
+  }
+  
   threshold = std::min(threshold, max_c_indel*(nrows + ncols));
   if (min_c_indel*length_difference >= threshold){
     distance = threshold;
-  }  
+  }
+    
   else{
     int j_start; 
     int j_end;    
@@ -628,14 +612,12 @@ double * A_prev, double *  A_acti, int nrows, int ncols, size_t & n_cells_visite
 
     A_acti[1 + half_width] = 0;
     for (int j = 2 + half_width; j < width; ++j){
-      A_acti[j] = A_acti[j-1] + f_c_indel(v_horizontal.values[j - 2 - half_width]); // [v_horizontal[j - 1 - half_width]]*
+      A_acti[j] = A_acti[j-1] + f_c_indel(v_horizontal.values[j - 2 - half_width]);
     }
     int row = 0; 
     int column = 0;    
     double min_distance = 0;
     while (row < nrows && min_distance < threshold){
-      
-      //std::fill(scores.begin(), scores.end(), threshold);
       
       std::swap(A_acti, A_prev);
       ++row;
@@ -644,28 +626,17 @@ double * A_prev, double *  A_acti, int nrows, int ncols, size_t & n_cells_visite
       j_end = std::min(ncols - row + 2 + half_width, width - 1);
       for (int j = j_start; j < j_end; ++j){
         column = row + j - (1 + half_width);
-        //A_acti[j] = std::min(
-        //std::min(c_indel + A_acti[j - 1], c_indel + A_prev[j + 1]),
-          //A_prev[j] + c_switch*(v_vertical.values[row - 1] != v_horizontal.values[column - 1])
-        //);
+
         A_acti[j] = std::min(
           std::min(
           f_c_indel(v_horizontal.values[column - 1]) + A_acti[j - 1], 
           f_c_indel(v_vertical.values[row - 1]) + A_prev[j + 1]),
           A_prev[j] + 
           f_c_switch(v_vertical.values[row - 1], v_horizontal.values[column - 1])
-          //f_c_switch(v_vertical.values[row - 1]*dict_size + v_horizontal.values[column - 1])
-          //*(v_vertical.values[row - 1] != v_horizontal.values[column - 1]) //TODO : make faster and cleaner (as before).
-          
           );
-                
+
         min_distance = std::min(min_distance, A_acti[j]);
-        
-        //scores[column] = std::min(A_acti[j], threshold);
- 
       }
-      
-      
       n_cells_visited_local += j_end - j_start;
     }
     
@@ -674,7 +645,6 @@ double * A_prev, double *  A_acti, int nrows, int ncols, size_t & n_cells_visite
       distance = std::min(threshold, A_acti[1 + half_width + ncols - nrows]);
     }
     else{
-      //throw std::runtime_error("length_difference <= half_width +1 should not be possible, there is a flaw in algorithm's logic");
       distance = threshold;
     }
   }
@@ -695,39 +665,83 @@ class LevenshteinInitializer{
     size_t dict_size;
     double c_indel;
     double c_switch;
-    // will use either the above (if dict_size == 0) or the below (otherwise).
+    /*  will use either the above (if dict_size == 0) or the below (otherwise). */
     const double *  c_indel_arr;
     const double *  c_switch_arr;
     bool normalised;
 
-    LevenshteinInitializer(const size_t dict_size, const double c_indel, const double c_switch, const double * const c_indel_arr, const double * const c_switch_arr, bool normalised): dict_size(dict_size), c_indel(c_indel), c_switch(c_switch), c_indel_arr(c_indel_arr), c_switch_arr(c_switch_arr), normalised(normalised) {}
+    LevenshteinInitializer(const size_t dict_size, const double c_indel, const double c_switch, const double * const c_indel_arr, const double * const c_switch_arr, bool normalised): dict_size(dict_size), c_indel(c_indel), c_switch(c_switch), c_indel_arr(c_indel_arr), c_switch_arr(c_switch_arr), normalised(normalised) {
+      
+      
+      if (c_switch_arr != nullptr){
+        /* confirm symmetry */
+        for (unsigned i = 0; i < dict_size; ++i){
+          for (unsigned j = 0; j < dict_size; ++j){  
+            if (c_switch_arr[i*dict_size + j] != c_switch_arr[j*dict_size + i]){
+              std::stringstream ss;
+              ss << "cost_switch is not symmetric, it should be ";
+              ss << "(" << c_switch_arr[i*dict_size + j] << " != " << c_switch_arr[j*dict_size + i] << ")";
+              throw zentas::zentas_error(ss.str());
+            }
+            if (c_switch_arr[i*dict_size + j] < 0){
+              throw zentas::zentas_error("cost_switch should contain no negative values, it does ");
+            }
+          }
+        }
+        
+        /* confirm triangle inequality holds. may be a quicker way to do this. */
+        for (unsigned i = 0; i < dict_size; ++i){
+          for (unsigned j = 0; j < dict_size; ++j){
+            if (i != j){
+              double d_ij = c_switch_arr[dict_size*i + j];
+              for (unsigned k = 0; k < dict_size; ++k){
+                double d_ik = c_switch_arr[dict_size*i + k];
+                double d_jk = c_switch_arr[dict_size*j + k];
+                if (d_ij > d_ik + d_jk){
+                  std::stringstream ss;
+                  ss << "the cost_switch matrix does not obey the triangle inequality, \n";
+                  ss << "d[" << i << "][" << j << "]" <<  " > "  << "d[" << i << "][" << k <<  "]" << " + " << "d[" << j << "][" << k << "], \n";
+                  ss << d_ij << " > " << d_ik  << " + " << d_jk << ".\n";
+                  throw zentas::zentas_error(ss.str());
+                }
+              }
+            }
+          }
+        }
+        
+        
+        if (normalised == true){
+          for (unsigned i = 0; i < dict_size; ++i){
+            if (c_indel_arr[i] != c_indel_arr[0]){
+              std::stringstream ss;
+              ss << "The normalised Levenshtein metric is only a true metric when the indel costs are the same, but cost_indel[" << i << "] is not the same as cost_indel[0]";
+              ss << " (" << c_indel_arr[i] << ") vs (" << c_indel_arr[0] << ").";
+              throw zentas::zentas_error(ss.str());
+            }
+          }
+        }
+      }
+    }
     
     LevenshteinInitializer(const double c_indel, const double c_switch, bool normalised): LevenshteinInitializer(0, c_indel, c_switch, nullptr, nullptr, normalised) {}
     
     LevenshteinInitializer(const size_t dict_size, const double * const c_indel_arr, const double * const c_switch_arr, bool normalised): LevenshteinInitializer(dict_size, 0., 0., c_indel_arr, c_switch_arr, normalised){}
     
     LevenshteinInitializer():LevenshteinInitializer(0,0.,0.,nullptr, nullptr, false) {}
-  
-//    LevenshteinInitializer& operator= ( const LevenshteinInitializer & ) = default;	
-  
+    
 };
 
 template<typename TSDataIn>
 /* See levenshtein_prototyping for equivalent python version */
 class LevenshteinMetric{
-  
-  
+    
   private:
-    std::vector<size_t> v_ncalcs;
-   
-   
-   
+    std::vector<size_t> v_ncalcs;   
     const size_t dict_size; 
     bool normalised;
     
     ConstIndel cv_c_indel;
     ConstSwitch cv_c_switch;
-    //// will use either the above (if dict_size > 0) or the below (if dict_size == 0).
     MultiIndel av_c_indel;
     MultiSwitch av_c_switch;
     
@@ -746,8 +760,8 @@ class LevenshteinMetric{
     double min_c_indel;
     double max_c_indel;
 
-  
-
+    bool test_where_possible;
+    
   protected:  
     std::mt19937_64 gen;
     std::uniform_int_distribution<unsigned> dis;
@@ -771,10 +785,11 @@ class LevenshteinMetric{
     v_n_cells_visited(nthreads, 0), 
     v_n_cells_visitable(nthreads, 0), 
     max_size(datain.get_max_size()), 
-    memory_size(4*datain.get_max_size() + 10), //making 10*size + 10 makes no difference to performance (speed)
+    
+    /* below : making 10*size + 10 makes no difference to performance (speed) */
+    memory_size(4*datain.get_max_size() + 10), 
     nthreads(nthreads),
     v_mutex0(nthreads)
-    
     
     {
       for (size_t ti = 0; ti < nthreads; ++ti){
@@ -798,33 +813,60 @@ class LevenshteinMetric{
         min_c_indel = cv_c_indel(0);
         max_c_indel = cv_c_indel(0);
       }
+      
+      
+      test_where_possible = false;
+      if (test_where_possible == true){
+        std::cerr << "\n\nLEVENSHTEIN WITH (LIMITED) TESTS ENABLED : WILL BE SLOWER" << std::endl;        
+      }
     }
     
     inline void set_distance_simple_test(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance){
-      //quelch warning
-      threshold += 0;
-      
+      (void)threshold;      
       distance = std::abs(int(v_vertical.size) - int(v_horizontal.size));
     }
     
 
-    inline void set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance) {
+    inline void set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance){      
+      
+      /* make sure the shorter vector comes first */
+      if (v_vertical.size < v_horizontal.size) {
+        set_distance_tiffany(v_vertical, v_horizontal, threshold, distance);
+      }
+      else{
+        set_distance_tiffany(v_horizontal, v_vertical, threshold, distance);
+      }
+      
+      if (test_where_possible && v_vertical.size == v_horizontal.size){
+        double d1;
+        double d2;
+        set_distance_tiffany(v_vertical, v_horizontal, threshold, d1);
+        set_distance_tiffany(v_horizontal, v_vertical, threshold, d2);
+        
+        if (d1 != d2){
+          std::stringstream ss;
+          ss << "Haha! Levenshtein distances not the same when order reversed  \n";
+          ss << v_vertical.str() << " ->  " << v_horizontal.str() <<  " : " << d1 << "\n";
+          ss << v_horizontal.str() << " ->  " << v_vertical.str() <<  " : " << d2 << "\n";
+          throw zentas::zentas_error(ss.str());
+        }        
+      }
+    }
+
+    inline void set_distance_tiffany(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance) {
       
  
       /* numerical issues */
-      threshold *= 1.00001;
+      threshold *= 1.0000230507000110130001701900023;
 
       /* n_d = 2d / ( alpha (L1 + L2) + d )  where alpha = max indel cost
        * => d = alpha n_d (L1 + L2) / (2 - n_d)
-       * 
        * */
       if (normalised == true){
-        
         // threshold in normalised space
-        threshold = std::min(1., threshold); 
-        
+        threshold = std::min(1., threshold);         
         //threshold in non-normalised space, where the distance calculation is to take place.
-        threshold = max_c_indel * threshold * (v_vertical.size + v_horizontal.size) / (2. - threshold); 
+        threshold = max_c_indel * threshold * static_cast<double>(v_vertical.size + v_horizontal.size) / (2. - threshold); 
       }
            
      
@@ -832,8 +874,7 @@ class LevenshteinMetric{
       int ncols = static_cast<int>(v_horizontal.size);
       size_t n_cells_visited_local = 0;
 
-      
-      //get a mutex and keep
+      // get a mutex and keep it
       size_t mutex_i = dis(gen)%nthreads;
       
       while (v_mutex0[mutex_i].try_lock() == false){
@@ -845,43 +886,41 @@ class LevenshteinMetric{
       double * A_acti = v_A_acti[mutex_i];
       double * A_prev = v_A_prev[mutex_i];
 
-
       /* do some fast tracking tests */
-      double length_difference  = std::abs(nrows - ncols);
       if (nrows == 0 || ncols == 0){
-        throw std::runtime_error("empty string, I need to confirm that this is not a special case. remind me to do this !");
-        distance = 3.1415*length_difference;
+        throw zentas::zentas_error("empty string, I need to confirm that this is not a special case. remind me to do this !");
       }
       
       else{
-        if (dict_size == 0){ // constant indel and switch cost (switch is either 0 or c_switch).
+        /* constant indel and switch cost */
+        if (dict_size == 0){ 
          set_levenshtein_distance(v_vertical, v_horizontal, threshold, dict_size, cv_c_indel, min_c_indel, max_c_indel, cv_c_switch, A_prev, A_acti, nrows, ncols,  n_cells_visited_local, distance);
-
         }
         
-        else{ // variable indel and switch costs. 
+        /* matrices of costs */
+        else{
           set_levenshtein_distance(v_vertical, v_horizontal, threshold, dict_size, av_c_indel, min_c_indel, max_c_indel, av_c_switch, A_prev, A_acti, nrows, ncols, n_cells_visited_local, distance);
         }
       }
 
 
       if (normalised == true){
-        //return to the normalised space
-        distance = 2.*distance / (max_c_indel * ( v_horizontal.size + v_vertical.size ) + distance ); 
+        /* return to the normalised space */
+        distance = 2.*distance / (max_c_indel * static_cast<double> ( v_horizontal.size + v_vertical.size ) + distance ); 
       }
       
       ++v_ncalcs[mutex_i];
       v_n_cells_visitable[mutex_i] += nrows*ncols;
       v_n_cells_visited[mutex_i] += n_cells_visited_local;
       
-  
-      
+      distance = static_cast<double>(static_cast<float> (distance));
     }
           
     inline void set_distance(const Sample & a, const Sample & b, double & distance) {
       set_distance(a, b, std::numeric_limits<double>::max(), distance);
-      //TODO : If there is no threshold, one might do better with a simpler algorithm. 
     }
+    
+    
     
     
     inline size_t get_ncalcs() const{
@@ -893,8 +932,8 @@ class LevenshteinMetric{
     }
     
     inline double get_rel_calccosts() const{
-      /* How well have we done as compared to the O(row*column) algorithm ?*/
       
+      /* How well have we done as compared to the O(row*column) algorithm ?*/
       size_t n_cells_visited = 0;
       for (auto & x : v_n_cells_visited){
         n_cells_visited += x;

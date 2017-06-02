@@ -12,13 +12,14 @@ the GNU General Public License along with zentas. If not, see
 */
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
+
 #include <vector>
 #include <string>
 #include <map>
 #include <regex>
 
 
+#include "zentaserror.hpp"
 
 
 
@@ -30,7 +31,7 @@ void append_txt(
 
   std::ifstream input(filename);
   if(!input.good()){
-    throw std::runtime_error( "Error opening '" + filename + "'. ");
+    throw zentas::zentas_error( "Error opening '" + filename + "'. ");
   }
   
   std::string line, content;
@@ -47,7 +48,7 @@ void append_txt(
     }  
     
     else if(line[0] == '>' ){
-      throw std::runtime_error("'>' is not a valid first character in a regular text file. This has been been done so as to prevent confusion between FASTA and regular txt files. If this is problematic, I can easily change it, please contact me : james . ne wling @ idi ap.ch");
+      throw zentas::zentas_error("'>' is not a valid first character in a regular text file. This has been been done so as to prevent confusion between FASTA and regular txt files. If this is problematic, I can easily change it, please contact me : james . ne wling @ idi ap.ch");
     }
     
     else{
@@ -69,7 +70,7 @@ bool get_isfasta(std::string filename){
   bool isfasta = false;
   std::ifstream input(filename);
   if(!input.good()){
-    throw std::runtime_error( "Error opening '" + filename + "'. ");
+    throw zentas::zentas_error( "Error opening '" + filename + "'. ");
   }
   
   std::string line, name, content;
@@ -92,7 +93,7 @@ void append_fasta(
   
   std::ifstream input(filename);
   if(!input.good()){
-    throw std::runtime_error( "Error opening '" + filename + "'. ");
+    throw zentas::zentas_error( "Error opening '" + filename + "'. ");
   }
   
   std::string line, name, content;
@@ -104,7 +105,7 @@ void append_fasta(
     
     if (line.empty() == true){
       if (state == just_had_name){
-        throw std::runtime_error("Empty lines may not follow name lines");
+        throw zentas::zentas_error("Empty lines may not follow name lines");
       }
       state = just_had_space;
     }
@@ -116,11 +117,11 @@ void append_fasta(
     else if(line[0] == '>' ){ // Identifier marker
       
       if (state == just_had_name){
-        throw std::runtime_error("Multiline names are not allowed");
+        throw zentas::zentas_error("Multiline names are not allowed");
       }
       
       if (line.size() == 1){
-        throw std::runtime_error("Empty names (>'') are not allowed");
+        throw zentas::zentas_error("Empty names (>'') are not allowed");
       }
       
       if (content.size() != 0){
@@ -136,11 +137,11 @@ void append_fasta(
     else{
       
       if (state == just_had_space){
-        throw std::runtime_error("Blank lines are not allowed within content, or between name and content (only allowed between content and name). The current line is  ->[" + line + "]<-");
+        throw zentas::zentas_error("Blank lines are not allowed within content, or between name and content (only allowed between content and name). The current line is  ->[" + line + "]<-");
       }
 
       if( line.find(' ') != std::string::npos ){ // Invalid sequence--no spaces allowed
-        throw std::runtime_error("A space detected in line : ->[" + line + "]<- . This line appears to be content, and thus should not contain any spaces (even at the end).");
+        throw zentas::zentas_error("A space detected in line : ->[" + line + "]<- . This line appears to be content, and thus should not contain any spaces (even at the end).");
       }
 
 
@@ -151,7 +152,7 @@ void append_fasta(
   }
   
   if (content.size() == 0){
-    throw std::runtime_error("The file has been completed, expecting final content to append");
+    throw zentas::zentas_error("The file has been completed, expecting final content to append");
   }
   std::transform(content.begin(), content.end(), content.begin(), ::toupper);
   data.insert(data.end(), content.begin(), content.end());  
