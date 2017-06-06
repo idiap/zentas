@@ -112,6 +112,13 @@ struct BaseDataIn{
     Sample at_for_metric(size_t i) const {
       return data + dimension*i;
     }
+    
+
+    std::string string_for_sample(size_t i) const{
+      (void)i;
+      return "currently no string function for BaseDataIn";          
+    }
+    
 };
 
 
@@ -149,7 +156,7 @@ class BaseVarLengthDataIn {
       mean_size = c_sizes[ndata] / static_cast<double> (ndata);
 
       if (ndata == 0){
-        throw zentas::zentas_error("ndata == 0 in StringDataUnrootedInconstructor, this is strange");
+        throw zentas::zentas_error("ndata == 0 in BaseVarLengthDataIn, this is strange");
       }
     }
     
@@ -174,6 +181,17 @@ class BaseVarLengthDataIn {
     size_t get_mean_size() const{
       return mean_size;
     }
+
+    std::string string_for_sample(size_t i) const{
+      std::stringstream ss;
+      ss << "{";
+      for (size_t d = 0; d < sizes[i]; ++d){
+        ss << data[c_sizes[i] + d];
+      }
+      ss << "}";
+      return ss.str();          
+    }  
+
 };
 
 
@@ -233,7 +251,9 @@ class BaseStringDataIn: public BaseVarLengthDataIn<TAtomic> {
   
     const Sample at_for_metric(size_t i) const{
       return Sample(sizes[i], data + c_sizes[i]);
-    }  
+    }
+    
+
 };
 
 template <typename TAtomic>
