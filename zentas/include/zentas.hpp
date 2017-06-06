@@ -32,7 +32,7 @@ void hello();
 
 // dense vectors 
 template <typename T>
-void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, std::string initialisation_method, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff);
+void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, std::string initialisation_method, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap);
 
 // sparse vectors 
 template <typename T>

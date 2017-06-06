@@ -38,6 +38,8 @@ the GNU General Public License along with zentas. If not, see
 
 namespace nszen{
 
+
+
 class P2Bundle{
 
   public:
@@ -107,34 +109,6 @@ class P2Bundle{
 
 };
 
-
-
-template <typename TData>
-class KmooBundle {
-  
-  public:
-  
-  std::vector<double> cc;
-  P2Bundle p2bun;
-  TData c_dt;
-  
-  typedef typename TData::DataIn DataIn;
-
-  KmooBundle(size_t K, size_t ndata, const DataIn * ptr_datain):cc(K*K), p2bun(ndata), c_dt(*ptr_datain, true){
-    
-  }
-  
-  KmooBundle(const DataIn * ptr_datain):c_dt(*ptr_datain, true) {}
-  
-  void reset(size_t K, size_t ndata){
-    cc.resize(K*K);
-    p2bun = P2Bundle(ndata);
-  }
-  
-};
-
-
-
  
  
 struct EnergyInitialiser{
@@ -168,13 +142,13 @@ struct XNearestInfo{
   // the energy of d_x
   double e_x;
   
-  inline void reset(size_t new_a_x, double new_d_x, double new_e_x){
+  void reset(size_t new_a_x, double new_d_x, double new_e_x){
     a_x = new_a_x;
     d_x = new_d_x;
     e_x = new_e_x;
   }
   
-  inline void reset(XNearestInfo & nearest_x_infos){
+  void reset(XNearestInfo & nearest_x_infos){
     a_x = nearest_x_infos.a_x;
     d_x = nearest_x_infos.d_x;
     e_x = nearest_x_infos.e_x;
@@ -187,6 +161,37 @@ struct XNearestInfo{
     return  std::to_string(a_x) + "\t " + std::to_string(d_x) + "\t " + std::to_string(e_x);
   }
 };
+
+
+
+
+template <typename TData>
+class KmooBundle {
+  
+  public:
+  
+  std::vector<double> cc;
+  P2Bundle p2bun;
+  TData c_dt;
+  
+  typedef typename TData::DataIn DataIn;
+
+  KmooBundle(size_t K, size_t ndata, const DataIn * ptr_datain):cc(K*K), p2bun(ndata), c_dt(*ptr_datain, true){
+    
+  }
+  
+  KmooBundle(const DataIn * ptr_datain):c_dt(*ptr_datain, true) {}
+  
+  void reset(size_t K, size_t ndata){
+    cc.resize(K*K);
+    p2bun = P2Bundle(ndata);
+  }
+  
+};
+
+
+
+
 
 
 template <class TDataIn, class TMetric>
@@ -209,11 +214,14 @@ struct BaseClustererInitBundle{
   bool with_tests;
   const TMetricInitializer * ptr_metric_initializer;
   const EnergyInitialiser * ptr_energy_initialiser;
+  std::chrono::time_point<std::chrono::high_resolution_clock> bigbang;
 
   
-  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, std::string initialisation_method_, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, std::string energy, bool with_tests,  const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser): 
+  BaseClustererInitBundle(size_t K, const TDataIn * const ptr_datain, const size_t * const center_indices_init, std::string initialisation_method_, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, std::string energy, bool with_tests,  const TMetricInitializer & metric_initializer, const EnergyInitialiser & energy_initialiser, const std::chrono::time_point<std::chrono::high_resolution_clock> & bigbang_): 
   
-  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), initialisation_method(initialisation_method_), seed(seed), max_time(max_time), min_mE(min_mE), indices_final(indices_final), labels(labels), nthreads(nthreads), max_rounds(max_rounds), energy(energy), with_tests(with_tests), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser) {}
+  K(K), ptr_datain(ptr_datain), center_indices_init(center_indices_init), initialisation_method(initialisation_method_), seed(seed), max_time(max_time), min_mE(min_mE), indices_final(indices_final), labels(labels), nthreads(nthreads), max_rounds(max_rounds), energy(energy), with_tests(with_tests), ptr_metric_initializer(&metric_initializer), ptr_energy_initialiser(&energy_initialiser), bigbang(bigbang_) {
+    
+  }
 
 };
 
@@ -258,6 +266,7 @@ class BaseClusterer{
     size_t * const center_indices_init;    
     
     
+    size_t time_prehistory = 0;
     size_t time_in_update_centers = 0;
     size_t time_in_update_sample_info = 0;
     size_t time_in_redistribute = 0;
@@ -265,6 +274,8 @@ class BaseClusterer{
     size_t time_in_update_all_cluster_statistics = 0;
     size_t time_total = 0;
     size_t time_to_initialise_centers = 0;
+
+
     
     std::chrono::time_point<std::chrono::high_resolution_clock> tstart;
     std::chrono::time_point<std::chrono::high_resolution_clock> tstart_initialise_centers;
@@ -302,6 +313,9 @@ class BaseClusterer{
 
 
     std::unique_ptr<KmooBundle<TData>> up_kmoo_bundle;
+
+    /* passed in through constructor */
+    std::chrono::time_point<std::chrono::high_resolution_clock> bigbang;
     
     
     
@@ -325,16 +339,18 @@ class BaseClusterer{
      std::string energy, 
      bool with_tests,
      const TMetricInitializer & metric_initializer, 
-     const EnergyInitialiser & energy_initialiser): 
+     const EnergyInitialiser & energy_initialiser,
+     std::chrono::time_point<std::chrono::high_resolution_clock> bigbang): 
     
     mowri(true, false, ""),
     K(K), ndata(datain.get_ndata()), initialisation_method(initialisation_method),
     centers_data(datain, true), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), ptr_datain(& datain), 
     metric(datain, nthreads, metric_initializer), 
     cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0),
-    round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), max_time_micros(static_cast<size_t>(max_time*1000000.)), min_mE(min_mE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), max_rounds(max_rounds), energy(energy), with_tests(with_tests), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain))
+    round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), gen(seed), max_time_micros(static_cast<size_t>(max_time*1000000.)), min_mE(min_mE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), max_rounds(max_rounds), energy(energy), with_tests(with_tests), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain)), bigbang(bigbang)
 
      {
+       
        
       
       
@@ -406,7 +422,7 @@ class BaseClusterer{
 
 
   
-    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.max_time, ib.min_mE, ib.indices_final, ib.labels, ib.nthreads, ib.max_rounds, ib.energy, ib.with_tests, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser)) {}
+    BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.max_time, ib.min_mE, ib.indices_final, ib.labels, ib.nthreads, ib.max_rounds, ib.energy, ib.with_tests, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser), ib.bigbang) {}
 
     size_t get_time_in_update_centers(){
       return time_in_update_centers;
@@ -418,7 +434,7 @@ class BaseClusterer{
     
     inline double get_time_remaining(){
       auto t1 = std::chrono::high_resolution_clock::now();
-      time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
+      time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - bigbang).count();
         
       
       if (max_time_micros > time_total){
@@ -900,6 +916,9 @@ class BaseClusterer{
       std::string st_mE = st_mE_ss.str();
       st_mE.resize(std::max<size_t>(st_mE.size() + 1,3 + 11), ' ');
 
+      std::string st_Tp = "Tp=" + std::to_string(time_prehistory/1000);
+      st_Tp += "  ";
+
       std::string st_Ti = "Ti=" + std::to_string(time_to_initialise_centers/1000);
       st_Ti += "  ";
       
@@ -939,10 +958,10 @@ class BaseClusterer{
 
       
       std::ostringstream out;
-      out << st_round << st_mE << st_Ti << st_Tb << st_Tc << st_Tu << st_Tr << st_Tt << ncc << nc << pc;
+      out << st_round << st_mE << st_Tp << st_Ti << st_Tb << st_Tc << st_Tu << st_Tr << st_Tt << ncc << nc << pc;
       return out.str();
     
-      //return "*" + std::to_string(round) + "\t E: " + std::to_string(E_total) + "\t itime: " + std::to_string( time_initialising/1000 ) + "\t ctime: " + std::to_string( time_in_update_centers/1000 ) + "\t utime: " + std::to_string( time_in_update_sample_info/1000 ) + "\t rtime: " + std::to_string( time_in_redistribute/1000 ) + "\t ttime: " + std::to_string( time_total/1000 )  + "\t stime: " + std::to_string( time_in_update_all_cluster_statistics/1000 ) +  "\t log2 nc(c): " + std::to_string(std::log2(ncalcs_in_update_centers) )+ "\t log2 nc: " + std::to_string( std::log2(ncalcs_total) );
+
     }
         
     inline size_t get_a1(size_t k, size_t j) const{
@@ -1211,6 +1230,19 @@ class BaseClusterer{
         mowri << "\n\nRUNNING WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
 
+
+      mowri << 
+R"((The prevent output to terminal, set capture_output to false)
+(For a description of column statistics, consider function get_output_verbose_string())
+)";      
+      mowri << get_equals_line(get_round_summary().size());
+
+      
+      
+      if (with_tests == true){
+        fundamental_triangle_inequality_test();
+      }
+
       auto output_halt_reason = [this](){
         
         unsigned n_reasons = 0;
@@ -1251,29 +1283,16 @@ class BaseClusterer{
       };
 
       
-      
-      //if (halt()){
-        //output_halt_reason();
-        //return;
-      //}
 
 
-      /* prevent code duplication of this string (in pyzentas.pyx and here) */      
-      mowri << 
-R"(
-(The prevent output to terminal, set capture_output to false)
-)";
-
-
-      mowri << get_output_info_string();
-
-      
-
-
-
+      //mowri << get_output_info_string();
 
 
       tstart_initialise_centers = std::chrono::high_resolution_clock::now(); 
+      
+      time_prehistory = std::chrono::duration_cast<std::chrono::microseconds>(tstart_initialise_centers - bigbang).count();
+
+
       
       /* initialisation from indices. */
       if (initialisation_method == "from_indices_init"){
@@ -1318,7 +1337,6 @@ R"(
       auto t_endit = std::chrono::high_resolution_clock::now();
       time_to_initialise_centers = std::chrono::duration_cast<std::chrono::microseconds>(t_endit - tstart_initialise_centers).count();
 
-      time_total = time_initialising;
       
       
       
@@ -1357,7 +1375,10 @@ R"(
       ncalcs_initialising = metric.get_ncalcs();
       
       
-      mowri << get_equals_line(get_round_summary().size());
+      time_total = time_prehistory + time_initialising + time_to_initialise_centers;
+
+
+
       mowri << get_round_summary() << zentas::Endl;
       
       //auto dummy_line = get_output_info_string();      
@@ -1391,7 +1412,7 @@ R"(
 
         
         if (modified_centers == false){
-          time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
+          time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - bigbang).count();
           ncalcs_total = metric.get_ncalcs();
           mowri << get_round_summary() << zentas::Endl;
           
@@ -1438,7 +1459,7 @@ R"(
           t4 = std::chrono::high_resolution_clock::now();
           time_in_update_all_cluster_statistics += std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count();  
           
-          time_total = std::chrono::duration_cast<std::chrono::microseconds>(t4 - tstart).count();
+          time_total = std::chrono::duration_cast<std::chrono::microseconds>(t4 - bigbang).count();
           ncalcs_total = metric.get_ncalcs();
           
           if (with_tests == true){
@@ -1941,6 +1962,31 @@ R"(
       
     }
   
+    void fundamental_triangle_inequality_test(){
+      
+      size_t n_tests = ndata*ndata;
+      
+      for (unsigned ti = 0; ti < n_tests; ++ti){
+        size_t index0 = dis(gen)%ndata;
+        size_t index1 = dis(gen)%ndata;
+        size_t index2 = dis(gen)%ndata;
+        double d01, d02, d12;
+        
+        set_sampleID_sampleID_distance(index0, index1, d01);
+        set_sampleID_sampleID_distance(index0, index2, d02);
+        set_sampleID_sampleID_distance(index1, index2, d12);
+        
+        if ((1 - 1e-5)*d02 > d01 + d12){
+          std::stringstream ss;
+          ss << "Triangle inequality failed :\n";
+          ss << "Sample 0: " << ptr_datain->string_for_sample(index0) << "\n";
+          ss << "Sample 1: " << ptr_datain->string_for_sample(index1) << "\n";
+          ss << "Sample 2: " << ptr_datain->string_for_sample(index2) << "\n";
+          ss << "d02 = " << d02 << ", d01 = " << d01 << ", d12 = " << d12 << ", d01 + d12 = " << (d01 + d12);
+          throw zentas::zentas_error(ss.str());
+        }
+      }
+    }
   
     virtual void custom_info_test() {}
     
@@ -1960,15 +2006,8 @@ R"(
           }
           double e_first_nearest = f_energy(d_first_nearest);
           
-          //if (k_first_nearest != nearest_1_infos[k][j].a_x){
-            //mowri << "\n" << k_first_nearest << "  " << nearest_1_infos[k][j].a_x << zentas::Endl;
-            //mowri << d_first_nearest << "  " << nearest_1_infos[k][j].d_x << zentas::Endl;
-            //throw zentas::zentas_error(errm + " k_first_nearest != nearest_1_infos[k][j].a_x");
-          //}
   
           if (d_first_nearest != nearest_1_infos[k][j].d_x){
-
-
 
             std::stringstream errm;
             
@@ -1990,19 +2029,6 @@ R"(
 
 
             
-            
-            //mowri << "k: " << k << "  j: " << j << zentas::Endl;
-            //mowri << "\n" << "k1 (comp) " << k_first_nearest << "    k1 (testing) " << nearest_1_infos[k][j].a_x << zentas::Endl;
-            //mowri << std::setprecision(20);
-            //mowri <<  "d1 (comp) " << d_first_nearest << "    d1 (testing) " << nearest_1_infos[k][j].d_x << zentas::Endl;
-            
-            //mowri << "the first min(10, size) distances are : " << zentas::Endl;
-            //for (size_t jp = 0; jp < std::min<size_t>(10, nearest_1_infos[k].size()); ++jp){
-              //mowri << " " << nearest_1_infos[k][j].d_x << " ";
-            //}
-            //mowri << zentas::Endl;
-            
-            //throw zentas::zentas_error(errm + "d_first_nearest != nearest_1_infos[k][j].d_x");
           }
   
           if (e_first_nearest != nearest_1_infos[k][j].e_x){

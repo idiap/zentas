@@ -13,6 +13,9 @@ target_link_libraries(exsparse LINK_PUBLIC zentas)
 add_executable(exwords exwords.cpp)
 target_link_libraries(exwords LINK_PUBLIC zentas)
 
+add_executable(exvdimap exvdimap.cpp)
+target_link_libraries(exvdimap LINK_PUBLIC zentas)
+
 
 #add_executable(
 #deepbench deepbench.cpp)

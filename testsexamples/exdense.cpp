@@ -96,9 +96,11 @@ int cluster_dense(){
 
   bool with_tests = false;
   
+  bool do_vdimap = false;
+  
   //and finally, we cluster. 
   nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, nullptr, //indices_init.data(), 
-  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff);
+  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff, do_vdimap);
 
   //labels and indices_final have now been set, and can now used for the next step in your application. 
   
@@ -120,8 +122,8 @@ int cluster_dense_double(){
 
 int main(){
   //Choose your test and put it here (single precision or double precision). 
-  //return cluster_dense_single();
-  std::cout << nszen::get_python_paramater_string() << std::endl;
-
-  std::cout << "\n\n" << nszen::get_python_function_decl() << std::endl;
+  return cluster_dense_single();
+  
+  //std::cout << nszen::get_python_paramater_string() << std::endl;
+  //std::cout << "\n\n" << nszen::get_python_function_decl() << std::endl;
 }
