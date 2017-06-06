@@ -1,4 +1,5 @@
 #include "zentasinfo.hpp"
+#include "zentaserror.hpp"
 #include <vector>
 #include <algorithm>
 #include <tuple>
@@ -7,16 +8,81 @@
 namespace nszen{
   
 
+std::map<std::string, std::string> get_seq_dict(){
+return {
+{"sizes", "an array containing the length of each sequence"},
+{"values", "an array of type np.int32, np.int8 ('|S1'). All of the sequence data, concatenated."},
+{"cost_indel", "the cost of an insertion/deletion. Either an array containing costs for each base/char/int, or a single value if the cost is the same for all bases."},
+{"cost_switch", "the cost of a switch (a.k.a.  a `subsitution'). Either a single value, or an array of size (number of bases)*(number of bases)"},
+};
+}
+
+
+std::map<std::string, std::string> get_spa_dict(){
+return {
+{"sizes", "an array containing the number of non-zero elements of each sparse vector"},
+{"indices", "the indices at which the values are non-zero"},
+{"values", "the non-zero values"},
+};
+}
+
+std::map<std::string, std::string> get_den_dict(){
+return {
+{"X", "the data, ndata x dimension (contiguous within sample)"},
+{"do_vdimap", "if true, the data is transformed so that latter indices have lower variance, enabling earlier stopping. The distances are preserved by the transformation up to floating point rounding errors, so that clustering results should be exactly the same, if used or not. "},
+};
+}
+
+
+auto spa_dict = get_spa_dict();
+auto seq_dict = get_seq_dict();
+auto den_dict = get_den_dict();
 
 
 
-/* R=16    mE=3.23235   Ti=0  Tb=27  Tc=4      Tu=5      Tr=0    Tt=38     lg2nc(c)=13.834   lg2nc=17.009   pc=0.80808   nprops=3 */
+std::map<std::string, std::string> get_txt_seq_dict(){
+return {
+  
+{"filenames_list", "A list of the names of files to read from. The files should either be FASTA formatted, although not restricted to nucleotide (ACTG) or amino acid bases, they can be ordinary text files: each line is considered a sequence (could be ordinary words / sentences etc)."},
+  
+{"outfilename", "where to write the clustering results."}, 
+  
+{"costfilename", R"(
+   where to obtain the indel and switch costs. file format, either:
+
+* * v1
+* v2
+
+   for a global indel cost of v2 and global swap cost of v1, or:
+
+X Y cost_swap_XY
+.
+.
+.
+Q W cost_swap_QW
+A cost_indel_A
+.
+.
+.
+S cost_indel_S
+
+
+   where:
+   cost_swam_XY is the cost of swapping X and Y,  
+   cost_indel_S is the cost of indel A, etc.
+)"}
+};
+
+}
+
+std::map<std::string, std::string> txt_seq_dict = get_txt_seq_dict();
 
 
 std::map<std::string, std::string> get_output_keys(){
   return {{"R",  "round (where a round is defined by 1 or several centers changing)"},
   {"mE",  "mean energy over samples"},
-  {"Ti", "time [in milliseconds] taken for initialising the center indices, i.e. to run one of {kmeans++-INT, afk-mc2-INT, uniform, etc}."},
+  {"Tp", "time [in milliseconds] taken for everything before center index initialisation (including any data transformation/pre-proprocessing) "},
+  {"Ti", "time taken for initialising the center indices, i.e. to run one of {kmeans++-INT, afk-mc2-INT, uniform, etc}."},
   {"Tb", "time placing samples in clusters, initialising necessary cluster statistics. This is the time after Ti, but before the main loop."},
   {"Tc", "time spent in center update. For clarans, this is the time spent evaluating proposals. For Voronoi, this is time in updating assignments"},
   {"Tu", "time spent in updating. For clarans, this is the time spent determining the nearest and second nearest centers following a swap. For voronoi, this is time spent determining medoids."},
@@ -110,10 +176,6 @@ std::map<std::string, std::tuple<std::string, std::string> > get_parameter_info_
 
   pim["(out) output"] = std::make_tuple("A string containing the times, floating point operations, etc, performed in each part of the algorithm, iteration-by-iteration.", "none");
 
-  //pim["(out) indices_init"] = std::make_tuple("The indices used to initialise voronoi/clarans. That is, the indices after running one the initialisers (kmeans-++-INT, afk-mc2-INT, uniform, etc) ", "none");
-  
-
-
   return pim;
   
 
@@ -173,6 +235,13 @@ std::string squish_shift(std::string s, size_t n_chars_per_line = 82, size_t ind
   return ss.str();  
 }
 
+
+/* ************************************** *
+ * ************************************** *
+ * T H E    S T R I N G S    T O    U S E * 
+ * ************************************** *
+ * ************************************** */
+
 std::string get_equals_line(size_t n){
   std::stringstream ss;
   for (size_t i = 0; i < n; ++i){
@@ -183,80 +252,91 @@ std::string get_equals_line(size_t n){
 }
 
 
-std::string get_output_info_string(){
 
-  std::vector<std::string> oks = {"R", "mE", "Ti", "Tb", "Tc", "Tu", "Tr", "Tt", "lg2nc(c)", "lg2nc", "pc", "nprops"};
 
+std::string get_output_verbose_string(){
+  std::vector<std::string> oks = {"R", "mE", "Tp", "Ti", "Tb", "Tc", "Tu", "Tr", "Tt", "lg2nc(c)", "lg2nc", "pc", "nprops"};
   std::stringstream ss;
-  ss << get_equals_line(82);
+  ss << get_equals_line(77);
   ss << "The output string contains the following statistics\n";
-  ss << get_equals_line(82);     
+  ss << get_equals_line(77);     
   for (auto & ok : oks){
     std::string val = output_keys.at(ok);
-    //std::string key = std::get<0>(x);
-    //std::string val = std::get<1>(x);
     ss << ok << ":\n";
-    ss << squish_shift(val, 82, 2);
+    ss << squish_shift(val, 77, 2);
     ss << "\n";
   }
-  //ss << get_equals_line(82);
   return ss.str();
-
 }
 
-
-  
-std::string get_python_paramater_string(){
+std::string get_python_init_string(){
   
   std::stringstream ss;
   ss << get_equals_line(82);
   ss << squish_shift(get_basic_info(), 82, 0);
   ss << get_equals_line(82);
-  ss << "Constructor parameters (and default)\n";
+  ss << "Constructor parameters and (default) values\n";
   ss << get_equals_line(82);
 
-  
   for (auto & x : python_constructor_parms){
     ss << x  << " (" << get_parameter_default_string(x) << ")\n";
     ss << squish_shift(get_parameter_info_string(x));
     ss << "\n";
   }
-  ss << get_equals_line(82);
-  ss << "Output dict, after calling a clustering function\n";
-  ss << get_equals_line(82);
+  return ss.str();
+}
 
-
+std::string get_python_outdict_string(){
+  std::stringstream ss;
+  ss << get_equals_line(82);
+  ss << "Output dict\n";
+  ss << get_equals_line(82);
   std::vector<std::string> python_output_parms = {"(out) indices_final", "(out) labels", "(out) output"};
   for (auto & x : python_output_parms){
     ss << x << "\n";
     ss << squish_shift(get_parameter_info_string(x));
     ss << "\n";
   }
-  
-  
-  ss << get_output_info_string();
-
-
-    
-
-  
-  
   return ss.str();
-  
 }
 
-std::string get_python_function_decl(){
+std::string get_cluster_func_string(std::vector<std::string> dict_keys, std::map<std::string, std::string> & dict_map){
 
   std::stringstream ss;
-  for (auto & x : python_constructor_parms){
-    ss << x << " = " << get_parameter_default_string(x) << ", ";
-    ss << "\n";
+  ss << get_equals_line(82);
+  ss << squish_shift("Input parameters", 82, 0);
+  ss << get_equals_line(82);
+  
+  for (auto & x : dict_keys){
+    
+    if (dict_map.count(x) == 0){
+      std::stringstream ss;
+      ss << "unrecognised key " << x <<  ".";
+      throw zentas::zentas_error(ss.str());
+    }
+    ss << x << "\n" << squish_shift(dict_map.at(x)) << "\n";
   }
+  ss << "\n" << get_python_outdict_string();
   return ss.str();
-
-
 }
 
+  
+std::string get_python_txt_seq_string(){
+  return get_cluster_func_string({"filenames_list", "outfilename", "costfilename"}, txt_seq_dict);
+}
+
+std::string get_python_seq_string(){
+  return get_cluster_func_string({"sizes", "values", "cost_indel", "cost_switch"}, seq_dict);
+}
+
+
+std::string get_python_spa_string(){
+  return get_cluster_func_string({"sizes", "indices", "values"}, spa_dict);
+}
+
+std::string get_python_den_string(){
+  return get_cluster_func_string({"X", "do_vdimap"}, den_dict);
+}
 
   
 
