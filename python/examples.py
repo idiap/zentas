@@ -15,6 +15,7 @@ import numpy.random as npr
 sys.path.append("../build/python")
 import pyzentas
 
+from IPython.core.debugger import Tracer 
 
 
 def dense_data_example():
@@ -22,10 +23,15 @@ def dense_data_example():
   cluster dense data ndata points in dimension `dimension'.
   """
   ndata = 1e5
-  dimension = 4
-  data = npr.randn(ndata, dimension)
-  z = pyzentas.pyzen(K = 1e3, metric = 'li', energy = 'exp', exponent_coeff = 1,  max_time = 2, with_tests = False)
-  tangerine =  z.den(data)
+  dimension = 60
+  npr.seed(1011)
+  data = np.array(npr.randn(ndata, dimension), dtype = np.float32)
+  data[:, 5:-5] *= 0.01
+  
+  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 10, max_rounds = 5, seed = 1011, patient = False)
+  
+  do_vdimap = False
+  tangerine =  z.den(data, do_vdimap)
 
 def sparse_data_example():
 
@@ -48,10 +54,10 @@ def generated_sequence_example():
   """
   generate random sequences of chars/ints and cluster using levenshtein
   """
-  ndata = 5000
+  ndata = 10000
   
   #the lengths of the sequences
-  sizes = np.array(npr.randint(3,10, size = ndata), dtype = np.uint64)
+  sizes = np.array(npr.randint(2,8, size = ndata), dtype = np.uint64)
   
   #the values of the sequences
   data = []
@@ -70,19 +76,19 @@ def generated_sequence_example():
   
   
   #The cost of mutating chars/ints (a 4x4 matrix)
-  cost_switch = 1*np.array(
-  [[ 0.,   5,    6,   10],
-  [ 5,     0.,   8,   9],
-  [ 6,     8,    0.,  10],
-  [ 10,     9,    10,   0. ]], dtype = np.float64)
+  cost_switch = np.array(
+  [[ 0.,   10,   8, 11],
+  [ 10,     0.,   10, 9],
+  [ 8,   10,   0,   10],
+  [ 11, 9, 10,   0. ]], dtype = np.float64)
   
   
   #The cost of inserting or deleting a char/int
-  cost_indel = 1*np.array([6,5,7,6], dtype = np.float64)
+  cost_indel = np.array([10, 11, 10, 9], dtype = np.float64)
   
-  z = pyzentas.pyzen(K = 100, metric = 'levenshtein', max_proposals = 100000, energy = 'quadratic', seed = npr.randint(1000))
+  z = pyzentas.pyzen(K = 400, metric = 'levenshtein', max_proposals = 100000, energy = 'quadratic', seed = npr.randint(1000), with_tests = False)
   tangerine =  z.seq(sizes = sizes, values = data, cost_indel = cost_indel, cost_switch = cost_switch) 
-  
+
 
 def from_file_example():
   """
