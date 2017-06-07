@@ -23,21 +23,15 @@ def dense_data_example():
   cluster dense data ndata points in dimension `dimension'.
   """
   
-  import numpy as np
-  import mnist
-  reload(mnist)
   
-  ndata = int(1e4)
-  X = mnist.read_MNIST(dataset = "original", ndata = ndata)
-  dimension = X[0].shape[-1]
+  ndata = int(1e5)
+  dimension = 4
   npr.seed(1011)
-  #data = np.array(npr.randn(ndata, dimension), dtype = np.float32)
-  #data[:, 5:-5] *= 0.01
-  
-  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 10000, max_rounds = 4, seed = 1011, patient = True, nthreads = 1)
+  data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
+  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 2, seed = 1011, nthreads = 1)
   
   do_vdimap = True
-  tangerine =  z.den(X, do_vdimap)
+  tangerine =  z.den(data, do_vdimap)
 
 def sparse_data_example():
 
