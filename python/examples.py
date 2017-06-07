@@ -54,10 +54,10 @@ def generated_sequence_example():
   """
   generate random sequences of chars/ints and cluster using levenshtein
   """
-  ndata = 10000
+  ndata = 2000
   
   #the lengths of the sequences
-  sizes = np.array(npr.randint(2,8, size = ndata), dtype = np.uint64)
+  sizes = np.array(npr.randint(10, 30, size = ndata), dtype = np.uint64)
   
   #the values of the sequences
   data = []

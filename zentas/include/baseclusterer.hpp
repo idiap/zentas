@@ -763,7 +763,7 @@ class BaseClusterer{
       
       /* experiments so far show that multithreading does not help here, can hurt. what's weird is that even if nthreads = 1 in 
        * the pll version, it's sig slower than the serial version.  */
-      bool multithread_kmpp = false;
+      bool multithread_kmpp = true;
       
       double a_distance;
 
@@ -827,7 +827,7 @@ class BaseClusterer{
         
 
         /* update nearest info from 0 to k0 of this bin*/        
-        if (multithread_kmpp == false){
+        if (nthreads == 1 || multithread_kmpp == false){
           update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
         }
 
@@ -861,7 +861,7 @@ class BaseClusterer{
         size_t k1 = ((bin + 1)*non_tail_k)/n_bins;
 
         
-        if (multithread_kmpp == false){
+        if (nthreads == 1 || multithread_kmpp == false){
           update_nearest_info(bin, k1, non_tail_k, 0, p2buns[bin].get_ndata());
         }
         
@@ -1226,7 +1226,7 @@ class BaseClusterer{
     
     void go(){
 
-      if (with_tests == false){
+      if (with_tests == true){
         mowri << "\n\nRUNNING WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
 
