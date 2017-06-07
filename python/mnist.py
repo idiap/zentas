@@ -6,7 +6,6 @@
 """
 
 Making and loading all things MNIST (without labels) for clustering tasks.
-See pythongold if you're interested in labeled data.
 
 * Standard mnist dataset
 * Enlarged mnist datasets
@@ -27,15 +26,14 @@ from IPython.core.debugger import Tracer
 import numpy as np
 import numpy.random as npr
 
+import datapaths
+reload(datapaths)
 
-infiexec = "/idiap/user/jnewling/infimnist/infimnist"
-
-infidpath = "/idiap/temp/jnewling/infimnist/"
 
 paths = {
-'original' : os.path.join(infidpath, 'generateddata/original'), 
-'projected' : os.path.join(infidpath, 'generateddata/projected'),
-'concatenated' : os.path.join(infidpath, 'generateddata/concatenated')}
+'original' : os.path.join(datapaths.datapaths['infidpath'], 'generateddata/original'), 
+'projected' : os.path.join(datapaths.datapaths['infidpath'], 'generateddata/projected'),
+'concatenated' : os.path.join(datapaths.datapaths['infidpath'], 'generateddata/concatenated')}
 
 
 
@@ -45,7 +43,7 @@ def make_MNIST(dataset = "original", ndata = 100000, dimension = None):
   print "in make MNIST ( ", dataset, ", ", ndata, ", ", dimension, " ) "
   if dataset == "original":
     cwd = os.getcwd()
-    os.chdir(infiexec)
+    os.chdir(datapaths.datapaths['infiexec'])
     datafn = os.path.join(paths['original'], 'original-%d-ubyte'%(ndata,))
     print commands.getstatusoutput('infimnist pat 0 %d > %s'%(ndata, datafn))
     os.chdir(cwd)
