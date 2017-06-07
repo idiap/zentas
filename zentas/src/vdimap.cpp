@@ -455,9 +455,10 @@ void vdimap(std::vector<T> & v_mapped, const T * const ptr_datain, size_t ndata,
   
   auto t5 = std::chrono::high_resolution_clock::now();
   auto time_total = std::chrono::duration_cast<std::chrono::microseconds>(t5 - t0).count();
-  std::cout << "Total time in vdimap : " <<  std::to_string(time_total/1000) << std::endl;
+  (void)time_total;
+  //std::cout << "Total time in vdimap : " <<  std::to_string(time_total/1000) << std::endl;
 
-  std::cout << "dim_nz : " << dim_nz << "   neigs : " << neigs << std::endl;
+  //std::cout << "dim_nz : " << dim_nz << "   neigs : " << neigs << std::endl;
   //throw zentas::zentas_error("that's all for now.");
 }
   

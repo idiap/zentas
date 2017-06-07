@@ -763,7 +763,7 @@ class BaseClusterer{
       
       /* experiments so far show that multithreading does not help here, can hurt. what's weird is that even if nthreads = 1 in 
        * the pll version, it's sig slower than the serial version.  */
-      bool multithread_kmpp = false;
+      bool multithread_kmpp = true;
       
       double a_distance;
 
@@ -827,7 +827,14 @@ class BaseClusterer{
         
 
         /* update nearest info from 0 to k0 of this bin*/        
-        if (multithread_kmpp == false){
+        if (nthreads == 1 || multithread_kmpp == false){
+          
+          //auto ndat = p2buns[bin].get_ndata();
+          //std::thread t([bin, k0, ndat, &update_nearest_info](){
+            //update_nearest_info(bin, 0, k0, 0, ndat);
+          //});
+          //t.join();
+          
           update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
         }
 
@@ -861,7 +868,14 @@ class BaseClusterer{
         size_t k1 = ((bin + 1)*non_tail_k)/n_bins;
 
         
-        if (multithread_kmpp == false){
+        if (nthreads == 1 || multithread_kmpp == false){
+          //auto ndat = p2buns[bin].get_ndata();
+          //std::thread t([bin, k1, non_tail_k, ndat, &update_nearest_info](){
+            //update_nearest_info(bin, k1, non_tail_k, 0, ndat);
+          //});
+          //t.join();
+          
+          
           update_nearest_info(bin, k1, non_tail_k, 0, p2buns[bin].get_ndata());
         }
         
@@ -1357,11 +1371,12 @@ R"((The prevent output to terminal, set capture_output to false)
       size_t ncalcs2;
       
   
+
       //initialisation
       set_center_center_info();
       put_samples_in_clusters();                  
       set_all_cluster_statistics();
-      
+
       /* (CHECK POINT) all assignments and cluster statistics must be correct. Tests to pass : all */
       if (with_tests == true){
         post_initialisation_test();
@@ -1380,13 +1395,7 @@ R"((The prevent output to terminal, set capture_output to false)
 
 
       mowri << get_round_summary() << zentas::Endl;
-      
-      //auto dummy_line = get_output_info_string();      
-      //mowri << get_equals_line(dummy_line.size());
 
-      
-        
-      //mowri << time_total << "   " << max_time MM zentas::Endl;
       while (halt() == false){
     
         t0 = std::chrono::high_resolution_clock::now();
@@ -1627,6 +1636,8 @@ R"((The prevent output to terminal, set capture_output to false)
       for (auto & t : threads){
         t.join();
       }
+      
+      up_kmoo_bundle.reset();
 
     }
       
@@ -1652,7 +1663,7 @@ R"((The prevent output to terminal, set capture_output to false)
         }
       }
       
-      up_kmoo_bundle.reset();
+      
     }
   
 
