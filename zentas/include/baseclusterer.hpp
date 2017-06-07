@@ -828,6 +828,13 @@ class BaseClusterer{
 
         /* update nearest info from 0 to k0 of this bin*/        
         if (multithread_kmpp == false){
+          
+          //auto ndat = p2buns[bin].get_ndata();
+          //std::thread t([bin, k0, ndat, &update_nearest_info](){
+            //update_nearest_info(bin, 0, k0, 0, ndat);
+          //});
+          //t.join();
+          
           update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
         }
 
@@ -862,6 +869,14 @@ class BaseClusterer{
 
         
         if (multithread_kmpp == false){
+
+          //auto ndat = p2buns[bin].get_ndata();
+          //std::thread t([bin, k1, non_tail_k, ndat, &update_nearest_info](){
+            //update_nearest_info(bin, k1, non_tail_k, 0, ndat);
+          //});
+          //t.join();
+          
+          
           update_nearest_info(bin, k1, non_tail_k, 0, p2buns[bin].get_ndata());
         }
         

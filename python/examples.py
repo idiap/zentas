@@ -22,16 +22,22 @@ def dense_data_example():
   """
   cluster dense data ndata points in dimension `dimension'.
   """
-  ndata = 1e5
-  dimension = 60
+  
+  import numpy as np
+  import mnist
+  reload(mnist)
+  
+  ndata = int(1e4)
+  X = mnist.read_MNIST(dataset = "original", ndata = ndata)
+  dimension = X[0].shape[-1]
   npr.seed(1011)
-  data = np.array(npr.randn(ndata, dimension), dtype = np.float32)
-  data[:, 5:-5] *= 0.01
+  #data = np.array(npr.randn(ndata, dimension), dtype = np.float32)
+  #data[:, 5:-5] *= 0.01
   
-  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 10, max_rounds = 5, seed = 1011, patient = False)
+  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 10000, max_rounds = 4, seed = 1011, patient = True, nthreads = 1)
   
-  do_vdimap = False
-  tangerine =  z.den(data, do_vdimap)
+  do_vdimap = True
+  tangerine =  z.den(X, do_vdimap)
 
 def sparse_data_example():
 
@@ -54,10 +60,10 @@ def generated_sequence_example():
   """
   generate random sequences of chars/ints and cluster using levenshtein
   """
-  ndata = 10000
+  ndata = 2000
   
   #the lengths of the sequences
-  sizes = np.array(npr.randint(2,8, size = ndata), dtype = np.uint64)
+  sizes = np.array(npr.randint(50, 80, size = ndata), dtype = np.uint64)
   
   #the values of the sequences
   data = []
@@ -86,7 +92,7 @@ def generated_sequence_example():
   #The cost of inserting or deleting a char/int
   cost_indel = np.array([10, 11, 10, 9], dtype = np.float64)
   
-  z = pyzentas.pyzen(K = 400, metric = 'levenshtein', max_proposals = 100000, energy = 'quadratic', seed = npr.randint(1000), with_tests = False)
+  z = pyzentas.pyzen(K = 400, metric = 'levenshtein', max_proposals = 100000, max_rounds = 2, energy = 'quadratic', seed = npr.randint(1000), nthreads = 1, init = "kmeans++-2")
   tangerine =  z.seq(sizes = sizes, values = data, cost_indel = cost_indel, cost_switch = cost_switch) 
 
 
