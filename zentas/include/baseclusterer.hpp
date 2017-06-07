@@ -1226,7 +1226,7 @@ class BaseClusterer{
     
     void go(){
 
-      if (with_tests == true){
+      if (with_tests == false){
         mowri << "\n\nRUNNING WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
 
@@ -1329,6 +1329,7 @@ R"((The prevent output to terminal, set capture_output to false)
         cluster_datas.emplace_back(*ptr_datain, true);
       }
   
+      std::cout << "entering post_initialise_centers_test" << std::endl;
       /* if the indices are from the user or in debug mode, we run a test that initialising indices look fine. */
       if (with_tests || initialisation_method == "from_indices_init"){
         post_initialise_centers_test();
@@ -1357,11 +1358,21 @@ R"((The prevent output to terminal, set capture_output to false)
       size_t ncalcs2;
       
   
+
       //initialisation
+
+      std::cout << "entering set_center_center_info" << std::endl;
       set_center_center_info();
-      put_samples_in_clusters();                  
-      set_all_cluster_statistics();
       
+      
+      std::cout << "entering put_samples_in_clusters" << std::endl;
+      put_samples_in_clusters();                  
+
+
+      std::cout << "entering set_all_cluster_statistics" << std::endl;
+      set_all_cluster_statistics();
+
+      std::cout << "entering post_initialisation_test" << std::endl;      
       /* (CHECK POINT) all assignments and cluster statistics must be correct. Tests to pass : all */
       if (with_tests == true){
         post_initialisation_test();
@@ -1385,7 +1396,8 @@ R"((The prevent output to terminal, set capture_output to false)
       //mowri << get_equals_line(dummy_line.size());
 
       
-        
+      std::cout << "entering main loop" << std::endl;      
+ 
       //mowri << time_total << "   " << max_time MM zentas::Endl;
       while (halt() == false){
     
@@ -1627,6 +1639,8 @@ R"((The prevent output to terminal, set capture_output to false)
       for (auto & t : threads){
         t.join();
       }
+      
+      up_kmoo_bundle.reset();
 
     }
       
@@ -1652,7 +1666,7 @@ R"((The prevent output to terminal, set capture_output to false)
         }
       }
       
-      up_kmoo_bundle.reset();
+      
     }
   
 
