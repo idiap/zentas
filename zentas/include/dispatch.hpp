@@ -1,7 +1,11 @@
 #ifndef ZEN_DISPATCH_HPP
 #define ZEN_DISPATCH_HPP
 
+#include "energyinit.hpp"
+
 namespace nszen{
+
+void scrutinize_input_1(const EnergyInitialiser & energy_initialiser, std::string energy, size_t K, std::string algorithm, size_t level, size_t ndata);
 
 template <typename TData, typename TMetric>
 void dispatch(std::string algorithm, size_t level, const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string initialisation_method, size_t max_proposals, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser, std::chrono::time_point<std::chrono::high_resolution_clock> bigbang){
@@ -59,8 +63,7 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
   /* used during experiments to see if openblas worth the effort. Decided not. 
   //openblas_set_num_threads(1);
   */
-  
-  
+
   #ifndef COMPILE_FOR_R
   std::stringstream buffer;
   auto cout_buff = std::cout.rdbuf();
@@ -69,50 +72,9 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
   }
   std::ofstream nowhere;
   #endif
-
-  if (energy_initialiser.get_critical_radius() <= 0 && energy.compare("squarepotential") == 0){
-    throw zentas::zentas_error("critical radius <= 0 is not allowed for squarepotential energy");
-  }
-  
-  else if (energy_initialiser.get_critical_radius() > 0 && energy.compare("squarepotential") != 0){
-    throw zentas::zentas_error("critical radius > 0 is only allowed of with squarepotential energy");
-  }
-
-  if (energy_initialiser.get_exponent_coeff() <= 0 && energy.compare("exp") == 0){
-    throw zentas::zentas_error("exponent_coeff <= 0 is not allowed for exp energy");
-  }
-  
-  else if (energy_initialiser.get_exponent_coeff() > 0 && energy.compare("exp") != 0){
-    throw zentas::zentas_error("exponent_coeff > 0 is only allowed with exp energy");
-  }
-  
-  if (K <= 1){
-    throw zentas::zentas_error("K > 1 is a strict requirement");
-  }
-  
-  if (K >= datain_ib.ndata){
-    throw zentas::zentas_error("K < ndata is a strict requirement");
-  }
-
-  /* checking for (algorithm, level) compatibility */
-  bool algorithm_level_ok = false;  
-  if (algorithm.compare("voronoi") == 0){
-    if (level == 0){
-      algorithm_level_ok = true;
-    }
-  }
-  
-  else if (algorithm.compare("clarans") == 0){
-    if (level == 0 || level == 1 || level == 2 || level == 3){
-      algorithm_level_ok = true;
-    }
-  }
-    
-  if (algorithm_level_ok == false){
-    throw zentas::zentas_error("Something wrong with algorithm : " + algorithm + "  level : " + std::to_string(level));
-  }  
   
   
+  scrutinize_input_1(energy_initialiser, energy, K, algorithm, level, datain_ib.ndata);
 
   
   if (initialisation_method == "from_init_indices" && indices_init == nullptr){
