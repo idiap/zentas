@@ -21,6 +21,7 @@ the GNU General Public License along with zentas. If not, see
 #include "outputwriter.hpp"
 #include "initialisation.hpp"
 #include "zentasinfo.hpp"
+#include "energyinit.hpp"
 
 #include <algorithm>
 #include <type_traits>
@@ -111,25 +112,6 @@ class P2Bundle{
 
  
  
-struct EnergyInitialiser{
-
-  private:
-    double critical_radius;
-    double exponent_coeff;
-    
-  public: 
-    EnergyInitialiser():critical_radius(0), exponent_coeff(0) {}
-    EnergyInitialiser(double critical_radius, double exponent_coeff):critical_radius(critical_radius), exponent_coeff(exponent_coeff) {}
-    
-    double get_critical_radius () const{
-      return critical_radius;
-    }
-    
-    double get_exponent_coeff() const{
-      return exponent_coeff;
-    }
-   
-};
 
 
 /* The choice to store (a,d,e) contiguously for a sample was more for ease of coding than performance. 
@@ -1026,7 +1008,11 @@ class BaseClusterer{
     
     inline void swap_center_with_sample(size_t k, size_t j){
       cluster_has_changed[k] = true;
-      center_IDs[k] = sample_IDs[k][j]; //just added.
+      
+      size_t c_id_k = center_IDs[k];
+      center_IDs[k] = sample_IDs[k][j];
+      /* jn : bug fix, voronoi 11 june 2017. the following was missing: */
+      sample_IDs[k][j] = c_id_k; 
       
       nszen::swap<TData>(centers_data, k, cluster_datas[k], j);
       
@@ -1244,14 +1230,11 @@ class BaseClusterer{
         mowri << "\n\nRUNNING WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
       }
 
-
       mowri << 
 R"((The prevent output to terminal, set capture_output to false)
 (For a description of column statistics, consider function get_output_verbose_string())
 )";      
       mowri << get_equals_line(get_round_summary().size());
-
-      
       
       if (with_tests == true){
         fundamental_triangle_inequality_test();
@@ -1279,8 +1262,6 @@ R"((The prevent output to terminal, set capture_output to false)
         
       };
 
-
-
       auto populate_labels = [this](){
         for (size_t k = 0; k < K; ++k){
           labels[center_IDs[k]] = k;
@@ -1296,17 +1277,8 @@ R"((The prevent output to terminal, set capture_output to false)
         return (do_not_halt == false);
       };
 
-      
-
-
-      //mowri << get_output_info_string();
-
-
-      tstart_initialise_centers = std::chrono::high_resolution_clock::now(); 
-      
+      tstart_initialise_centers = std::chrono::high_resolution_clock::now();       
       time_prehistory = std::chrono::duration_cast<std::chrono::microseconds>(tstart_initialise_centers - bigbang).count();
-
-
       
       /* initialisation from indices. */
       if (initialisation_method == "from_indices_init"){
@@ -1424,7 +1396,6 @@ R"((The prevent output to terminal, set capture_output to false)
           time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - bigbang).count();
           ncalcs_total = metric.get_ncalcs();
           mowri << get_round_summary() << zentas::Endl;
-          
           break;
         }
         
@@ -1857,47 +1828,62 @@ R"((The prevent output to terminal, set capture_output to false)
     
     
     void post_initialisation_test(){
-      mowri << "--post initialisation test... " << zentas::Flush;
-      mowri << " (injective) " << zentas::Flush;
+      mowri << "((post_initialisation_test):" << zentas::Flush;
+      mowri << "(injective)" << zentas::Flush;
       injective_ID_test();
-      mowri << " (ndata) " << zentas::Flush;
+      mowri << "(ndata)" << zentas::Flush;
       ndata_tests();
-      mowri << " (info) " << zentas::Flush;
+      mowri << "(info)" << zentas::Flush;
       info_tests();
-      mowri << " (statistics) " << zentas::Flush;
+      mowri << "(statistics)" << zentas::Flush;
+      mowri << ")" << zentas::Endl;
       cluster_statistics_test();
-      mowri << "initialised object looks ok." << zentas::Endl;
     }
     
     virtual void center_center_info_test(){}
     
     
     void post_center_update_test(){
-      mowri << "--post center update test... " << zentas::Flush;
+      mowri << "((post_center_update_test):" << zentas::Flush;
+      mowri << "(injective)" << zentas::Flush;
+      injective_ID_test();
+      mowri << "(ndata)" << zentas::Flush;
       ndata_tests();
+      mowri << "(center_center_info)" << zentas::Flush;
       center_center_info_test();
-      mowri << "done." << zentas::Flush;
+      mowri << ")" << zentas::Endl;
     }
     
     void post_sample_update_test(){
-      mowri << "--post sample update test... " << zentas::Flush;
+      mowri << "(post_sample_update_test)" << zentas::Flush;
+      mowri << "(ndata)" << zentas::Flush;
       ndata_tests();
+      mowri << "(info)" << zentas::Flush;
       info_tests();
+      mowri << "(to_leave_cluster)" << zentas::Flush;
       to_leave_cluster_test();
-      mowri << "done." << zentas::Flush;
+      mowri << "(injective)" << zentas::Flush;
+      injective_ID_test();
+      mowri << ")" << zentas::Endl;
     }
     
     void post_redistribute_test(){
-      mowri << "--post redistribute test... " << zentas::Flush;
+      mowri << "(post_redistribute_test)" << zentas::Flush;
+      mowri << "(ndata)" << zentas::Flush;
       ndata_tests();
+      mowri << "(injective)" << zentas::Flush;
+      injective_ID_test();
+      mowri << "(as_assigned_test)" << zentas::Flush;
       as_assigned_test();  
-        mowri << "done." << zentas::Flush;
-
+      mowri << ")" << zentas::Endl;
     }
     
     void post_update_statistics_test(){
+      mowri << "(injective)" << zentas::Flush;
       injective_ID_test();
+      mowri << "(cluster_statistics)" << zentas::Flush;
       cluster_statistics_test();
+      mowri << ")" << zentas::Endl;
     }
     
     void to_leave_cluster_test(){
@@ -2082,6 +2068,7 @@ R"((The prevent output to terminal, set capture_output to false)
     
 
     void injective_ID_test(){
+      //mowri << "(injective_ID_test)" << zentas::Flush;
       for (size_t i = 0; i < ndata; ++i){
         size_t count_i = 0;
         std::vector<size_t> as_center_ID;
@@ -2102,18 +2089,19 @@ R"((The prevent output to terminal, set capture_output to false)
           }
         }
         if (count_i != 1){
-          std::string errstring = "Error caught. ID " + std::to_string(i) + " appears not exactly once. ";
-          errstring = errstring + "It appears as centers of [";
+          std::stringstream errm;
+          errm <<  "Error caught. ID "  << i << " appears not exactly once. ";
+          errm <<  "It appears as centers of [";
           for (auto & x : as_center_ID){
-            errstring = errstring + " " + std::to_string(x) + " ";
+            errm <<  " `" << x << "' ";
           }
-          errstring = errstring + " ], as well as as member (k,j {size of k}) in [";
+          errm <<  " ], as well as member (k,j) {size of k}) in [";
           for (size_t q = 0; q < in_cluster.size(); ++ q){
-            errstring = errstring + " (" + std::to_string(in_cluster[q]) + "," + std::to_string(at_index[q]) + " {" + std::to_string(get_ndata(in_cluster[q]))+ "}) ";
+            errm <<   " ("  << in_cluster[q] << "," << at_index[q] <<  " {"  << get_ndata(in_cluster[q]) <<  "}) ";
           }
           
-          errstring = errstring + "].";
-          throw zentas::zentas_error(errstring);
+          errm << "].";
+          throw zentas::zentas_error(errm.str());
         }
       }
     }

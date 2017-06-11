@@ -627,6 +627,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       move_center_into_its_own_cluster(k_to);
       overwrite_center_with_sample(k_to, k_from, j_from);
       remove_with_tail_pull(k_from, j_from);      
+      // jn, june 2017: it looks like the old center is now on the tail. is this not violating randomness with cluster?
     }
 
     virtual std::string get_round_summary() override final{
