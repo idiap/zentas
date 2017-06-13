@@ -39,6 +39,7 @@ class TDataIn{
 */
 
 
+
 namespace nszen{
 
 /* For vector data : array of size ndata x dimension */
@@ -57,6 +58,7 @@ struct VariableLengthSample{ /* Used for strings */
     }
     
 };
+
 
 template <typename TAtomic>
 struct SparseVectorSample{ /* Sparse vector sample */
@@ -218,6 +220,7 @@ struct DenseVectorDataRootedIn : public BaseDataIn<TAtomic> {
   public:
     typedef typename BaseDataIn<TAtomic>::InitBundle InitBundle;
     typedef typename BaseDataIn<TAtomic>::Sample Sample;
+
     
     DenseVectorDataRootedIn(const InitBundle & ib):BaseDataIn<TAtomic>(ib) {}
     

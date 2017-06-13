@@ -70,7 +70,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
       (void)e2;
     }
 
-    virtual void initialise_with_kmeanspp() override final{
+    virtual void initialise_with_kmeanspp() override final {
       default_initialise_with_kmeanspp();
     }
 
@@ -135,7 +135,6 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
         if (E_old > E_prop_best){
           modified = true;
           swap_center_with_sample(k, j_prop_best);
-          //zzzzzzzzzzzzzzzz
         }
       }
       

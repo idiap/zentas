@@ -24,11 +24,11 @@ def dense_data_example():
   """
   
   
-  ndata = int(1e5)
+  ndata = int(2e3)
   dimension = 4
   npr.seed(1011)
   data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
-  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 2, seed = 1011, nthreads = 1)
+  z = pyzentas.pyzen(K = 1e2, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 2, seed = 1011, nthreads = 1, with_tests = False)
   
   do_vdimap = True
   tangerine =  z.den(data, do_vdimap)

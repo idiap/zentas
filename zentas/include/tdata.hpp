@@ -35,21 +35,49 @@ class TData{
 //#include "outputwriter.hpp"
 
 #include <sstream>
+#include <vector>
+#include "zentaserror.hpp"
+
 
 namespace nszen{  
+
+class NoRefinementPossible {
+
+  public:
+  template<typename T>
+  NoRefinementPossible(const T & t, bool as_empty){(void)as_empty; (void)t;}
+    
+};
+
+template <typename TDinz>
+class SparseRefinementCenterData{
+
+  public:
+  template<typename T>
+  SparseRefinementCenterData(const T & t, bool as_empty){(void)as_empty; (void)t;}
+
+};
 
 
 template <typename TDinz>
 class VData{
   
+  public: // if the TData, VData then so is RefinementCenterData
+    typedef VData<TDinz> RefinementCenterData;
+
   private:
     typedef typename TDinz::Sample Sample;
     typedef typename std::remove_const<typename std::remove_pointer<Sample>::type>::type NP_Sample;
-
+    
+    
+    
   public:
     typedef TDinz DataIn;
     typedef typename TDinz::InitBundle InitBundle;
   
+    
+    
+    
   private:
     size_t ndata;    
     const size_t dimension;
@@ -118,11 +146,15 @@ class VData{
 
 template <typename TSDataIn>
 class SData{
+  
+  public:
+    typedef NoRefinementPossible RefinementCenterData;
 
   public:
     typedef typename TSDataIn::Sample Sample;
     typedef typename TSDataIn::AtomicType AtomicType;
     typedef TSDataIn DataIn;
+    
     typedef typename TSDataIn::InitBundle InitBundle;
     
     
@@ -133,15 +165,11 @@ class SData{
     size_t dimension;
     std::vector<AtomicType> data;
     std::vector<size_t> sizes;
-
-
     
-    //zentas::outputwriting::OutputWriter amowri; //(true, false, "");
-  
    public: 
 
     
-    SData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){//, mowri(true, false, ""){
+    SData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){  //, mowri(true, false, ""){
       if (as_empty == false){
         throw zentas::zentas_error("Currently, there is no implementation for constructing SData from SDataIn with data, due to the lack of any apparent need");
       }
@@ -208,12 +236,17 @@ class SData{
 
 template <typename TSDataIn>
 class SparseVectorData{
+  
 
   public:
     typedef typename TSDataIn::Sample Sample;
     typedef typename TSDataIn::AtomicType AtomicType;
     typedef TSDataIn DataIn;
     typedef typename TSDataIn::InitBundle InitBundle;
+
+  public:
+    typedef SparseRefinementCenterData<AtomicType> RefinementCenterData;
+
    
    private: 
     size_t ndata;
@@ -361,7 +394,11 @@ class BaseDataRooted{
 
 template <typename TDinz>
 class VDataRooted : public  BaseDataRooted <TDinz>{
-    
+
+  public:
+    typedef VData<TDinz> RefinementCenterData;
+
+        
   public:
     using BaseDataRooted<TDinz>::ptr_datain;
     using BaseDataRooted<TDinz>::IDs;
@@ -369,6 +406,7 @@ class VDataRooted : public  BaseDataRooted <TDinz>{
 
   public:
     typedef typename TDinz::Sample Sample;
+    
     typedef TDinz DataIn;
 
     VDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDinz> (datain, as_empty) {}
@@ -383,6 +421,9 @@ class VDataRooted : public  BaseDataRooted <TDinz>{
 template <typename TDinz>
 class SDataRooted : public BaseDataRooted<TDinz> {
 
+  public:
+    typedef NoRefinementPossible RefinementCenterData;
+    
   public: 
     using BaseDataRooted<TDinz>::ptr_datain;
     using BaseDataRooted<TDinz>::IDs;
@@ -390,6 +431,7 @@ class SDataRooted : public BaseDataRooted<TDinz> {
 
   public:
     typedef typename TDinz::Sample Sample;
+    
     typedef TDinz DataIn;
 
     SDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDinz> (datain, as_empty) {}
@@ -399,8 +441,10 @@ class SDataRooted : public BaseDataRooted<TDinz> {
   
 };
 
+
 template <typename TDinz>
 class SparseVectorDataRooted : public BaseDataRooted<TDinz>{
+
 
   public: 
     using BaseDataRooted<TDinz>::ptr_datain;
@@ -410,6 +454,10 @@ class SparseVectorDataRooted : public BaseDataRooted<TDinz>{
   public:
     typedef typename TDinz::Sample Sample;
     typedef TDinz DataIn;
+
+  public:
+    typedef SparseRefinementCenterData<TDinz> RefinementCenterData;
+
 
     SparseVectorDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDinz> (datain, as_empty) {}
     
