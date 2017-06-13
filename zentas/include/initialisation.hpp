@@ -40,7 +40,7 @@ void populate_afk_mc2(std::string initialisation_method, size_t * const center_i
   
   /* set raw energies and Z (E0_sum) */
   for (size_t i = 0; i < ndata; ++i){
-    metric.set_distance(datain.at_for_metric(index0), datain.at_for_metric(i), adistance);
+    metric.set_distance(datain.at_for_metric(index0), datain.at_for_metric(i), std::numeric_limits<double>::max(), adistance);
     e0[i] = f_energy(adistance);
     e0_sum += e0[i];
   }
@@ -103,6 +103,7 @@ void populate_afk_mc2(std::string initialisation_method, size_t * const center_i
     for (size_t kp = 0; kp < k; ++kp){
       metric.set_distance(datain.at_for_metric(sample_index_current), 
                           datain.at_for_metric(center_indices_init[kp]), 
+                          std::numeric_limits<double>::max(), 
                           adistance);
       e_current = std::min<double>(e_current, f_energy(adistance));
     }
@@ -120,6 +121,7 @@ void populate_afk_mc2(std::string initialisation_method, size_t * const center_i
       for (size_t kp = 0; kp < k; ++kp){
         metric.set_distance(datain.at_for_metric(sample_index_proposal), 
                             datain.at_for_metric(center_indices_init[kp]), 
+                            std::numeric_limits<double>::max(), 
                             adistance);
         e_proposal = std::min<double>(e_proposal, f_energy(adistance));
       }

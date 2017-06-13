@@ -95,7 +95,28 @@ struct BaseClustererInitBundle{
 };
 
 
+      template <class TData>
+      class Aq2Pack{
+ 
+        
+        public: 
+        
+          typedef typename TData::DataIn DataIn;
 
+
+
+          std::vector<TData> p2buns_dt;
+          std::vector<std::vector<size_t>> original_indices;
+          std::vector<P2Bundle> p2buns;
+          Aq2Pack(const DataIn * ptr_datain ): p2buns_dt(0,{*ptr_datain, true}), original_indices(0), p2buns(0) {}
+          
+          void reset(const DataIn * ptr_datain, size_t n_bins){
+
+            p2buns_dt = std::vector<TData> (n_bins,{*ptr_datain, true}) ;
+            original_indices = std::vector<std::vector<size_t>> (n_bins);
+            p2buns = std::vector<P2Bundle> (n_bins);
+          }
+      };
 
 
 template <class TMetric, class TData>
@@ -117,6 +138,7 @@ class BaseClusterer : public SkeletonClusterer{
 
   private:
 
+    Aq2Pack<TData> aq2p;
     //CommonBase cb;
     TData centers_data;
     RefinementCenterData rf_data;
@@ -125,6 +147,8 @@ class BaseClusterer : public SkeletonClusterer{
     TMetric metric;
     std::unique_ptr<KmooBundle<TData>> up_kmoo_bundle;
   
+    bool km_is_exhausted;
+    
   public: 
 
 
@@ -152,6 +176,7 @@ class BaseClusterer : public SkeletonClusterer{
     
     SkeletonClusterer(K, bigbang, center_indices_init_, datain.get_ndata(), init_method, max_time, min_mE, indices_final, labels, nthreads, max_rounds, energy, with_tests, random_sd, energy_initialiser),
     
+    aq2p(&datain), 
     centers_data(datain, true), rf_data(datain, true), ptr_datain(& datain), metric(datain, nthreads, metric_initializer), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain)) {}
 
     BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.max_time, ib.min_mE, ib.indices_final, ib.labels, ib.nthreads, ib.max_rounds, ib.energy, ib.with_tests, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser), ib.bigbang) {}
@@ -280,16 +305,29 @@ class BaseClusterer : public SkeletonClusterer{
      * p2bun stores a1,d1,a2,d2,ori of data used for kmeanspp.
      * p2bun_d2 (const) is the data used for kmeanpp.
      * get centers [k0, k1).
-     * is_exhausted reports whether the every sample has a center a distance 0 (when samples duplicated). 
+     * km_is_exhausted reports whether the every sample has a center a distance 0 (when samples duplicated). 
      *  */
 
-    void triangular_kmeanspp_after_initial(TData & c_dt, size_t * const c_ind, double * const cc, P2Bundle & p2bun, const TData * const ptr_p2bun_dt, size_t k0, size_t k1, bool from_full_data, bool & is_exhausted){
+ 
+    //void triangular_kmeanspp_after_initial(P2Bundle & p2bun, const TData * const ptr_p2bun_dt, size_t k0, size_t k1, bool from_full_data){
+
     
-      if (from_full_data != (ptr_p2bun_dt == nullptr)){
-        throw zentas::zentas_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (ptr_p2bun_dt == nullptr)");
-      }
+
+    void triangular_kmeanspp_after_initial(P2Bundle & p2bun, size_t aq2p_bin, size_t k0, size_t k1, bool from_full_data){
       
-      size_t kmeanspp_ndata = from_full_data ? ndata : ptr_p2bun_dt->get_ndata();
+      //if (from_full_data != (ptr_p2bun_dt == nullptr)){
+        //throw zentas::zentas_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (ptr_p2bun_dt == nullptr)");
+      //}
+
+      if (from_full_data != (aq2p_bin == std::numeric_limits<size_t>::max())){
+        throw zentas::zentas_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (aq2p_bin == std::numeric_limits<size_t>::max()");
+      }
+            
+            
+            
+      size_t kmeanspp_ndata = from_full_data ? ndata : aq2p.p2buns_dt[aq2p_bin].get_ndata();
+      
+      //ptr_p2bun_dt->get_ndata();
       
       if (kmeanspp_ndata -1 < k1 - k0){
         std::stringstream ss;
@@ -328,17 +366,17 @@ class BaseClusterer : public SkeletonClusterer{
 
       if (from_full_data == true) {
   
-        set_distance_kk = [this, &c_ind, &cc](size_t k, size_t kp){
-          set_sampleID_sampleID_distance(c_ind[k], c_ind[kp], cc[k*K + kp]);  
+        set_distance_kk = [this](size_t k, size_t kp){
+          set_sampleID_sampleID_distance(center_indices_init[k], center_indices_init[kp], up_kmoo_bundle->cc[k*K + kp]);  
         };
         
-        set_distance_ik = [this, &a_distance, &p2bun, &c_ind](size_t i, size_t k){
-          set_sampleID_sampleID_distance(c_ind[k], i, p2bun.d_2(i), a_distance);
+        set_distance_ik = [this, &a_distance, &p2bun](size_t i, size_t k){
+          set_sampleID_sampleID_distance(center_indices_init[k], i, p2bun.d_2(i), a_distance);
         };
         
-        update_c_ind_c_dt = [this, &c_ind, &c_dt, &v_cum_nearest_energies](size_t k){
-          c_ind[k] = get_sample_from(v_cum_nearest_energies);
-          c_dt.append(ptr_datain->at_for_move(c_ind[k]));
+        update_c_ind_c_dt = [this, &v_cum_nearest_energies](size_t k){
+          center_indices_init[k] = get_sample_from(v_cum_nearest_energies);
+          up_kmoo_bundle->c_dt.append(ptr_datain->at_for_move(center_indices_init[k]));
         };
         
         /* we can handle the exhausted case here */
@@ -347,18 +385,19 @@ class BaseClusterer : public SkeletonClusterer{
       
       else{
 
-        set_distance_kk = [this, &c_ind, &cc, &c_dt](size_t k, size_t kp){
-          metric.set_distance(c_dt.at_for_metric(k), c_dt.at_for_metric(kp), cc[k*K + kp]);
+        set_distance_kk = [this](size_t k, size_t kp){
+          metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k), up_kmoo_bundle->c_dt.at_for_metric(kp), std::numeric_limits<double>::max(), up_kmoo_bundle->cc[k*K + kp]);
+        };
+
+        
+        set_distance_ik = [this, &a_distance, &p2bun, aq2p_bin](size_t i, size_t k){
+          metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k), aq2p.p2buns_dt[aq2p_bin].at_for_metric(i), p2bun.d_2(i), a_distance);
         };
         
-        set_distance_ik = [this, &a_distance, &p2bun, &c_ind, &c_dt, &ptr_p2bun_dt](size_t i, size_t k){
-          metric.set_distance(c_dt.at_for_metric(k), ptr_p2bun_dt->at_for_metric(i), p2bun.d_2(i), a_distance);
-        };
-        
-        update_c_ind_c_dt = [this, &c_ind, &c_dt, &v_cum_nearest_energies, &ptr_p2bun_dt, &p2bun](size_t k){
+        update_c_ind_c_dt = [this, &v_cum_nearest_energies, &p2bun, aq2p_bin](size_t k){
           size_t sami = get_sample_from(v_cum_nearest_energies);
-          c_ind[k] = p2bun.ori(sami);
-          c_dt.append(ptr_p2bun_dt->at_for_move(sami));
+          center_indices_init[k] = p2bun.ori(sami);
+          up_kmoo_bundle->c_dt.append(aq2p.p2buns_dt[aq2p_bin].at_for_move(sami));
         };
 
         /* handling the exhausted case here is too complex (cross batch indices needed, argh)
@@ -373,12 +412,12 @@ class BaseClusterer : public SkeletonClusterer{
       for (size_t k = k0; k < k1; ++k){
         
         if (v_cum_nearest_energies.back() != 0){
-          is_exhausted = false;
+          km_is_exhausted = false;
           update_c_ind_c_dt(k);
         }
         
         else{
-          is_exhausted = true;
+          km_is_exhausted = true;
           if (try_uniform_when_exhausted == false){
             /* bailing, because 
              * (1) every sample has a center a distance 0 : k-means++ fails
@@ -395,26 +434,26 @@ class BaseClusterer : public SkeletonClusterer{
             }
 
             size_t new_index = dis(gen)%(K);
-            while (std::find(c_ind, c_ind+k, new_index) != c_ind+k){
+            while (std::find(center_indices_init, center_indices_init+k, new_index) != center_indices_init+k){
               new_index = dis(gen)%(K);
             }
-            c_ind[k] = new_index;
-            c_dt.append(ptr_datain->at_for_move(c_ind[k]));
+            center_indices_init[k] = new_index;
+            up_kmoo_bundle->c_dt.append(ptr_datain->at_for_move(center_indices_init[k]));
           }
         }
  
         
         /* update cc */
-        cc[k*K + k] = 0.;
+        up_kmoo_bundle->cc[k*K + k] = 0.;
         for (size_t kp = 0; kp < k; ++kp){
           set_distance_kk(k, kp);
-          cc[kp*K + k] = cc[k*K + kp];
+          up_kmoo_bundle->cc[kp*K + k] = up_kmoo_bundle->cc[k*K + kp];
         }
  
         /* update nearest distances, second nearest distances, and centers */
         for (size_t i = 0; i < kmeanspp_ndata; ++i){
           /* note that if k0 = 0, k_1(i) is 0 so this is fine. */
-          if (cc[p2bun.k_1(i)*K + k] < p2bun.d_1(i) + p2bun.d_2(i)){
+          if (up_kmoo_bundle->cc[p2bun.k_1(i)*K + k] < p2bun.d_1(i) + p2bun.d_2(i)){
             set_distance_ik(i,k);
             kmpp_inner(i, k, a_distance, p2bun);
           }
@@ -426,17 +465,17 @@ class BaseClusterer : public SkeletonClusterer{
 
     
 
-    void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, bool & is_exhausted){
-
+    
+    void triangular_kmeanspp(){//bool & km_is_exhausted){
 
       for (size_t i = 0; i < ndata; ++i){
-        p2bun.ori(i) = i;
+        up_kmoo_bundle->p2bun.ori(i) = i;
       }
       
       size_t k0 = 0;
       size_t k1 = K;
     
-      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, k0, k1, true, is_exhausted);
+      triangular_kmeanspp_after_initial(up_kmoo_bundle->p2bun, std::numeric_limits<size_t>::max(), k0, k1, true);//, km_is_exhausted);
     }
 
 
@@ -444,7 +483,12 @@ class BaseClusterer : public SkeletonClusterer{
 
     
         
-    void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, size_t n_bins, bool & is_exhausted){
+    //void triangular_kmeanspp_aq2(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, size_t n_bins, bool & km_is_exhausted){
+
+    void triangular_kmeanspp_aq2(size_t n_bins){//, bool & km_is_exhausted){
+      
+      //center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins, km_is_exhausted);
+
 
       
       /* experiments so far show that multithreading does not help here, can hurt. what's weird is that even if nthreads = 1 in 
@@ -468,10 +512,15 @@ class BaseClusterer : public SkeletonClusterer{
       /* tail_k is how many k's have use all the data (at the end) */
       size_t tail_k = K - non_tail_k;
       
+
       /* the data will be copied randomly into bins */
-      std::vector<TData> p2buns_dt (n_bins, {*ptr_datain, true});
-      std::vector<std::vector<size_t>> original_indices(n_bins);
-      std::vector<P2Bundle> p2buns(n_bins);
+      aq2p.reset(ptr_datain, n_bins);
+      
+
+      
+      //std::vector<TData> p2buns_dt (nbins,{*ptr_datain, true}) ;
+      //std::vector<std::vector<size_t>> original_indices(n_bins);
+      //std::vector<P2Bundle> p2buns(n_bins);
 
       
       std::vector<size_t> bin_indices (n_bins);
@@ -486,21 +535,26 @@ class BaseClusterer : public SkeletonClusterer{
           }
         } 
         size_t bin = bin_indices[i%n_bins];
-        p2buns_dt[bin].append(ptr_datain->at_for_move(i));
-        original_indices[bin].push_back(i);
+        aq2p.p2buns_dt[bin].append(ptr_datain->at_for_move(i));
+        aq2p.original_indices[bin].push_back(i);
       }
       
       for (size_t bin = 0; bin < n_bins; ++bin){
-        p2buns[bin] = P2Bundle(original_indices[bin]);
+        aq2p.p2buns[bin] = P2Bundle(aq2p.original_indices[bin]);
       }
 
-        auto update_nearest_info = [&p2buns, &p2buns_dt, &c_dt, &cc, &a_distance, this](size_t bin, size_t k_start, size_t k_end, size_t i0, size_t i1)
+
+      //center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins, km_is_exhausted);
+
+      //&c_dt, &cc, 
+
+        auto update_nearest_info = [&a_distance, this](size_t bin, size_t k_start, size_t k_end, size_t i0, size_t i1)
         {
           for (size_t i = i0; i < i1; ++i){
             for (size_t k = k_start; k < k_end; ++k){
-              if (cc[p2buns[bin].k_1(i)*K + k] < p2buns[bin].d_1(i) + p2buns[bin].d_2(i)){
-                metric.set_distance(c_dt.at_for_metric(k), p2buns_dt[bin].at_for_metric(i), p2buns[bin].d_2(i), a_distance);
-                kmpp_inner(i, k, a_distance, p2buns[bin]);
+              if (up_kmoo_bundle->cc[aq2p.p2buns[bin].k_1(i)*K + k] < aq2p.p2buns[bin].d_1(i) + aq2p.p2buns[bin].d_2(i)){
+                metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k), aq2p.p2buns_dt[bin].at_for_metric(i), aq2p.p2buns[bin].d_2(i), a_distance);
+                kmpp_inner(i, k, a_distance, aq2p.p2buns[bin]);
               }
             }
           }
@@ -521,17 +575,17 @@ class BaseClusterer : public SkeletonClusterer{
           //});
           //t.join();
           
-          update_nearest_info(bin, 0, k0, 0, p2buns[bin].get_ndata());
+          update_nearest_info(bin, 0, k0, 0, aq2p.p2buns[bin].get_ndata());
         }
 
         else{
           std::vector<std::thread> threads;
           for (size_t ti = 0; ti < get_nthreads(); ++ti){
-            threads.emplace_back([this, ti, bin, &p2buns, k0, &update_nearest_info] () {
+            threads.emplace_back([this, ti, bin, k0, &update_nearest_info] () {
               update_nearest_info(
               bin, 0, k0, 
-              get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
-              get_end(ti, get_nthreads(), 0, p2buns[bin].get_ndata()));});
+              get_start(ti, get_nthreads(), 0, aq2p.p2buns[bin].get_ndata()),
+              get_end(ti, get_nthreads(), 0, aq2p.p2buns[bin].get_ndata()));});
           }
           
           for (auto & t : threads){
@@ -541,9 +595,9 @@ class BaseClusterer : public SkeletonClusterer{
                 
         
         /* we don't even try to parallelize to center by center kmeans++ part, too many syncs. */
-        triangular_kmeanspp_after_initial(c_dt, centers, cc, p2buns[bin], &p2buns_dt[bin], k0, k1, false, is_exhausted);
-        /* is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
-        if (is_exhausted){
+        triangular_kmeanspp_after_initial(aq2p.p2buns[bin], bin, k0, k1, false);//, km_is_exhausted); //&aq2p.p2buns_dt[bin]
+        /* km_is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
+        if (km_is_exhausted){
           return;
         }
         
@@ -562,16 +616,16 @@ class BaseClusterer : public SkeletonClusterer{
           //t.join();
           
           
-          update_nearest_info(bin, k1, non_tail_k, 0, p2buns[bin].get_ndata());
+          update_nearest_info(bin, k1, non_tail_k, 0, aq2p.p2buns[bin].get_ndata());
         }
         
         else{
           std::vector<std::thread> threads;
           for (size_t ti = 0; ti < get_nthreads(); ++ti){
-            threads.emplace_back([this, ti, bin, &p2buns, k1, non_tail_k, & update_nearest_info] () {update_nearest_info(
+            threads.emplace_back([this, ti, bin, k1, non_tail_k, & update_nearest_info] () {update_nearest_info(
               bin, k1, non_tail_k, 
-              get_start(ti, get_nthreads(), 0, p2buns[bin].get_ndata()),
-              get_end(ti, get_nthreads(), 0, p2buns[bin].get_ndata()));});
+              get_start(ti, get_nthreads(), 0, aq2p.p2buns[bin].get_ndata()),
+              get_end(ti, get_nthreads(), 0, aq2p.p2buns[bin].get_ndata()));});
           }
           
           for (auto & t : threads){
@@ -583,20 +637,20 @@ class BaseClusterer : public SkeletonClusterer{
       
       //get p2bun up to date. 
       for (size_t bin = 0; bin < n_bins; ++bin){
-        for (size_t i = 0; i < p2buns[bin].get_ndata(); ++i){
-          size_t index0 = p2buns[bin].ori(i);
-          p2bun.d_1(index0) = p2buns[bin].d_1(i);
-          p2bun.d_2(index0) = p2buns[bin].d_2(i);          
-          p2bun.k_1(index0) = p2buns[bin].k_1(i);
-          p2bun.k_2(index0) = p2buns[bin].k_2(i);
-          p2bun.ori(index0) = index0;
+        for (size_t i = 0; i < aq2p.p2buns[bin].get_ndata(); ++i){
+          size_t index0 = aq2p.p2buns[bin].ori(i);
+          up_kmoo_bundle->p2bun.d_1(index0) = aq2p.p2buns[bin].d_1(i);
+          up_kmoo_bundle->p2bun.d_2(index0) = aq2p.p2buns[bin].d_2(i);          
+          up_kmoo_bundle->p2bun.k_1(index0) = aq2p.p2buns[bin].k_1(i);
+          up_kmoo_bundle->p2bun.k_2(index0) = aq2p.p2buns[bin].k_2(i);
+          up_kmoo_bundle->p2bun.ori(index0) = index0;
         }
       }
       
       //set the tail k's
-      triangular_kmeanspp_after_initial(c_dt, centers, cc, p2bun, nullptr, K - tail_k, K, true, is_exhausted);
-      /* is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
-      if (is_exhausted){
+      triangular_kmeanspp_after_initial(up_kmoo_bundle->p2bun, std::numeric_limits<size_t>::max(), K - tail_k, K, true);//, km_is_exhausted);
+      /* km_is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
+      if (km_is_exhausted){
         return;
       }
 
@@ -733,25 +787,37 @@ class BaseClusterer : public SkeletonClusterer{
       return dis(gen)%get_ndata(k);
     }
     
-    //set the distance from center k to the j1'th element of cluster k1.
-     void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) {
-      metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), distance);
-    }
 
-     void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
+    void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
     }
-        
-     void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
+
+    void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
     }
 
-     void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
+    void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
       metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), threshold, distance);
     }
 
-     void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
-      metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), distance);
+    void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) {
+      metric.set_distance(cluster_datas[k1].at_for_metric(j1), cluster_datas[k2].at_for_metric(j2), threshold, adistance);
+    }
+    
+     void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) {
+      metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
+    }
+    
+    
+
+    //set the distance from center k to the j1'th element of cluster k1.
+     void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) {
+      set_center_sample_distance(k, k1, j1, std::numeric_limits<double>::max(), distance);
+    }
+
+
+    void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
+       set_sampleID_sampleID_distance(i1, i2, std::numeric_limits<double>::max(), distance);
     }
         
         
@@ -763,20 +829,13 @@ class BaseClusterer : public SkeletonClusterer{
     
      double get_sample_sample_distance(size_t k , size_t j1, size_t j2) {
       double adistance;
-      metric.set_distance(cluster_datas[k].at_for_metric(j1), cluster_datas[k].at_for_metric(j2), adistance);
+      set_sample_sample_distance(k, j1, k, j2, std::numeric_limits<double>::max(), adistance);
       return adistance;
     }
     
-     void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) {
-      metric.set_distance(cluster_datas[k1].at_for_metric(j1), cluster_datas[k2].at_for_metric(j2), threshold, adistance);
-    }
-    
-    
-     void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) {
-      metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
-    }
+
      void set_center_center_distance(size_t k1, size_t k2, double & adistance) {
-      metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), adistance);
+       set_center_center_distance(k1, k2, std::numeric_limits<double>::max(), adistance);
     }
     
 
@@ -818,21 +877,25 @@ class BaseClusterer : public SkeletonClusterer{
       
       up_kmoo_bundle->reset(K, ndata);
       
-      bool is_exhausted = false;
+      km_is_exhausted = false;
 
       if (n_bins != 1){
-        triangular_kmeanspp_aq2(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins, is_exhausted);
-        if (is_exhausted){
+        triangular_kmeanspp_aq2(n_bins);//, km_is_exhausted);
+        
+        //center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, n_bins, km_is_exhausted);
+        
+        if (km_is_exhausted){
           mowri << "exhausted in " << initialisation_method << ", will revert to kmeans++-1" << zentas::Endl;
           up_kmoo_bundle->reset(K, ndata);
         }
       }
 
       
-      if (is_exhausted == true || n_bins == 1){
-        is_exhausted = false;
-        triangular_kmeanspp(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, is_exhausted);
-        if (is_exhausted){
+      if (km_is_exhausted == true || n_bins == 1){
+        km_is_exhausted = false;
+        //triangular_kmeanspp(center_indices_init, up_kmoo_bundle->cc.data(), up_kmoo_bundle->p2bun, up_kmoo_bundle->c_dt, km_is_exhausted);
+        triangular_kmeanspp();//km_is_exhausted);
+        if (km_is_exhausted){
           mowri << "exhausted in kmeans++-1, used uniform sampling to complete initialisation" << zentas::Endl;
         }
       }

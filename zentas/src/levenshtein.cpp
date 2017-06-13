@@ -423,9 +423,9 @@ class LevenshteinMetric_X{
       distance = static_cast<double>(static_cast<float> (distance));
     }
           
-     void set_distance(const Sample & a, const Sample & b, double & distance) {
-      set_distance(a, b, std::numeric_limits<double>::max(), distance);
-    }
+     //void set_distance(const Sample & a, const Sample & b, double & distance) {
+      //set_distance(a, b, std::numeric_limits<double>::max(), distance);
+    //}
     
     
     
@@ -467,10 +467,10 @@ void LevenshteinMetric<TSDataIn>::set_distance(const Sample & v_vertical, const 
   lvsm->set_distance(v_vertical, v_horizontal, threshold, distance);
 }
 
-template <typename TSDataIn>
-void LevenshteinMetric<TSDataIn>::set_distance(const Sample & a, const Sample & b, double & distance){
-  lvsm->set_distance(a,b,distance);
-}
+//template <typename TSDataIn>
+//void LevenshteinMetric<TSDataIn>::set_distance(const Sample & a, const Sample & b, double & distance){
+  //lvsm->set_distance(a,b,distance);
+//}
 
 template <typename TSDataIn>
 size_t LevenshteinMetric<TSDataIn>::get_ncalcs(){

@@ -36,7 +36,7 @@ class MET1{
 
 /* here, tell Base (via TOPT) how TMET is used for f */
 template <class TMET, class TOPT>
-class X : public P{
+class X : public TOPT{
   public:
     
     template <class ... T>

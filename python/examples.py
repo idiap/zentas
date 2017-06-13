@@ -29,6 +29,7 @@ def dense_data_example():
   npr.seed(1011)
   data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
   z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_rounds = 50, seed = 1011, nthreads = 1, with_tests = False, patient = False)
+  #, init = "kmeans++-100"
   
   do_vdimap = True
   tangerine =  z.den(data, do_vdimap)

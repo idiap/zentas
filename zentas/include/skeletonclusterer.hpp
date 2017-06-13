@@ -181,6 +181,27 @@ class SkeletonClusterer{
     virtual double get_rel_calccosts() = 0;
     virtual size_t get_ncalcs() = 0;
 
+
+    //virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance);
+
+     //void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
+      //metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
+    //}
+        
+     //void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
+      //metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
+    //}
+
+     //void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
+      //metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), threshold, distance);
+    //}
+
+     //void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
+      //metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), distance);
+    //}
+
+
+
     /* data virtuals */
 
 

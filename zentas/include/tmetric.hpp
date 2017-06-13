@@ -197,10 +197,10 @@ class LpMetric{
     }
     
     
-    template <typename T>
-     void set_distance(const T & a, const T & b, double & distance){
-      set_distance(a, b, std::numeric_limits<double>::max(), distance); 
-    }
+    //template <typename T>
+     //void set_distance(const T & a, const T & b, double & distance){
+      //set_distance(a, b, std::numeric_limits<double>::max(), distance); 
+    //}
     
      size_t get_ncalcs() const{
       return uptr_lpdistance->ncalcs;
@@ -254,7 +254,7 @@ class LevenshteinMetric{
     typedef LevenshteinInitializer Initializer;  
     LevenshteinMetric(const TSDataIn & datain, size_t nthreads, const LevenshteinInitializer & li);
     void set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance);
-    void set_distance(const Sample & a, const Sample & b, double & distance);
+    //void set_distance(const Sample & a, const Sample & b, double & distance);
     size_t get_ncalcs();
     double get_rel_calccosts();
     /* destructor declared elsewhere as unique_ptr to undefined class, as described at
