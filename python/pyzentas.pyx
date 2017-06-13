@@ -133,7 +133,37 @@ class pyzen(object):
     patient = True, 
     rooted = False, 
     seed = 1011, 
-    with_tests = False):
+    with_tests = False, 
+    # kwargs used just to give hints for the bad input argument message
+    **kwargs):
+      
+    
+    if kwargs.keys():
+      argstring = ""
+      for x in kwargs.keys():
+        argstring += ("\'" + x + "\'")
+      argstring += ". "
+      for x in kwargs.keys():
+        if "test" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'with_tests\'? "
+        if "coeff" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'energy_coeff\'? "
+        if "thread" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'nthreads\'? "
+        if "proposal" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'max_proposals\'? "
+        if "round" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'max_rounds\'? "
+        if "time" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'max_time\'? "
+        if "init" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'init\'? "
+        if "verbose" in x or "output" in x or "capture" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'capture_output\'? "
+
+      
+      
+      raise TypeError("Got unexpected argument(s) in pyzen.__init__ : " + argstring)
 
     
     self.set_init_string()
