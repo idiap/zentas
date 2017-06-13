@@ -157,7 +157,7 @@ class BaseClusterer : public SkeletonClusterer{
     BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.max_time, ib.min_mE, ib.indices_final, ib.labels, ib.nthreads, ib.max_rounds, ib.energy, ib.with_tests, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser), ib.bigbang) {}
 
     
-    std::string string_for_sample(size_t k, size_t j){
+    std::string string_for_sample(size_t k, size_t j) {
       return cluster_datas[k].string_for_sample(j);
     }
     
@@ -1165,8 +1165,8 @@ R"((The prevent output to terminal, set capture_output to false)
       //mowri << k << "--" << j << " " << zentas::Flush;
       reset_sample_infos_basic(k,j);
       if (k != nearest_1_infos[k][j].a_x){
-        std::lock_guard<std::mutex> lock (mutex0);
-        to_leave_cluster[k].push_back(j); //haha!
+        std::lock_guard<std::mutex> lock(mutex0);
+        to_leave_cluster[k].push_back(j);
       }
     }
     

@@ -176,16 +176,16 @@ class SkeletonClusterer{
     size_t get_end(size_t ti, size_t nthreads, size_t j_A, size_t j_Z);
     size_t get_sample_from(std::vector<double> & v_cum_nearest_energies);
     std::string get_base_summary_string();    
+    
+    /* metric virtuals */
     virtual double get_rel_calccosts() = 0;
     virtual size_t get_ncalcs() = 0;
 
+    /* data virtuals */
 
 
     /* rule : functions with suffix 'basic' will not touch to_leave_cluster */
-    // 
     void reset_nearest_info_basic(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest);
-    
-    //
     void reset_nearest_info(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest);
 
 
