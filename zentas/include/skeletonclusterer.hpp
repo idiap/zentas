@@ -180,46 +180,25 @@ class SkeletonClusterer{
     /* metric virtuals */
     virtual double get_rel_calccosts() = 0;
     virtual size_t get_ncalcs() = 0;
-
-
-
     virtual void set_cc_pp_distance(size_t k1, size_t k2) = 0;
-
     virtual void set_center_sample_pp_distance(size_t k, size_t bin, size_t i, double & adistance) = 0;
-
     virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) = 0;
-
     virtual void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) = 0;
-
     virtual void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) = 0;
-
     virtual void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) = 0;
-    
     virtual void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) = 0;
-
     virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) = 0;
 
-     //void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
-      //metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
-    //}
-        
-     //void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
-      //metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
-    //}
-
-     //void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
-      //metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), threshold, distance);
-    //}
-
-     //void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
-      //metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), distance);
-    //}
-
-
-
     /* data virtuals */
-
-
+    virtual std::string string_for_sample(size_t k, size_t j) = 0;
+    virtual std::string string_for_center(size_t k) = 0;
+    virtual void append_from_ID(size_t k, size_t i) = 0;
+    virtual void append_pp_from_ID(size_t i) = 0;
+    virtual void append_pp_from_bin(size_t bin, size_t j) = 0;
+    virtual void append_aq2p_p2buns(size_t bin, size_t i) = 0;
+    virtual size_t get_ndata(size_t k) = 0;
+    virtual void swap_center_data(size_t k, size_t j) = 0;
+    
     /* rule : functions with suffix 'basic' will not touch to_leave_cluster */
     void reset_nearest_info_basic(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest);
     void reset_nearest_info(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest);

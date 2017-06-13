@@ -182,22 +182,13 @@ class BaseClusterer : public SkeletonClusterer{
     BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.max_time, ib.min_mE, ib.indices_final, ib.labels, ib.nthreads, ib.max_rounds, ib.energy, ib.with_tests, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser), ib.bigbang) {}
 
     
-    std::string string_for_sample(size_t k, size_t j) {
-      return cluster_datas[k].string_for_sample(j);
-    }
-    
-    std::string string_for_center(size_t k){
-      return centers_data.string_for_sample(k);
-    }
 
 
      void final_push_into_cluster_basic(size_t i, size_t nearest_center, double min_distance){
-      cluster_datas[nearest_center].append(ptr_datain->at_for_move(i));
+      append_from_ID(nearest_center, i);      
       nearest_1_infos[nearest_center].emplace_back(nearest_center, min_distance, f_energy(min_distance));
       sample_IDs[nearest_center].push_back(i);      
     }
-
-    
 
     void reset_multiple_sample_infos(size_t k_to, size_t j_a, size_t j_z){
       for (size_t j = j_a; j < j_z; ++j){
@@ -206,8 +197,6 @@ class BaseClusterer : public SkeletonClusterer{
     }
     
     
-
-
 
     
     void base_put_sample_in_cluster(size_t i) {
@@ -233,6 +222,8 @@ class BaseClusterer : public SkeletonClusterer{
       }
       final_push_into_cluster(i, nearest_center, min_distance, up_distances.get());
     }      
+
+
     
     void triangular_put_sample_in_cluster(size_t i, const double * const cc) {
       std::unique_ptr<double []> up_distances (new double [K]);
@@ -278,6 +269,8 @@ class BaseClusterer : public SkeletonClusterer{
 
 
 
+
+
      void kmpp_inner(size_t i, size_t k, double a_distance, P2Bundle & p2bun){
     
       if (a_distance < p2bun.d_2(i)){
@@ -310,6 +303,9 @@ class BaseClusterer : public SkeletonClusterer{
 
  
     //void triangular_kmeanspp_after_initial(P2Bundle & p2bun, const TData * const ptr_p2bun_dt, size_t k0, size_t k1, bool from_full_data){
+
+
+
 
     
 
@@ -369,7 +365,8 @@ class BaseClusterer : public SkeletonClusterer{
         
         update_c_ind_c_dt = [this, &v_cum_nearest_energies](size_t k){
           center_indices_init[k] = get_sample_from(v_cum_nearest_energies);
-          up_kmoo_bundle->c_dt.append(ptr_datain->at_for_move(center_indices_init[k]));
+          //up_kmoo_bundle->c_dt.append(ptr_datain->at_for_move(center_indices_init[k]));
+          append_pp_from_ID(center_indices_init[k]);          
         };
         
         /* we can handle the exhausted case here */
@@ -389,7 +386,11 @@ class BaseClusterer : public SkeletonClusterer{
         update_c_ind_c_dt = [this, &v_cum_nearest_energies, &p2bun, aq2p_bin](size_t k){
           size_t sami = get_sample_from(v_cum_nearest_energies);
           center_indices_init[k] = p2bun.ori(sami);
-          up_kmoo_bundle->c_dt.append(aq2p.p2buns_dt[aq2p_bin].at_for_move(sami));
+          //up_kmoo_bundle->c_dt.append(aq2p.p2buns_dt[aq2p_bin].at_for_move(sami));
+          append_pp_from_bin(aq2p_bin, sami);
+          
+          
+          
         };
 
         /* handling the exhausted case here is too complex (cross batch indices needed, argh)
@@ -397,7 +398,7 @@ class BaseClusterer : public SkeletonClusterer{
         try_uniform_when_exhausted = false;
       
       }
-      
+
       
       
       /* k-means++, at last */
@@ -430,7 +431,8 @@ class BaseClusterer : public SkeletonClusterer{
               new_index = dis(gen)%(K);
             }
             center_indices_init[k] = new_index;
-            up_kmoo_bundle->c_dt.append(ptr_datain->at_for_move(center_indices_init[k]));
+            //up_kmoo_bundle->c_dt.append(ptr_datain->at_for_move(center_indices_init[k]));
+            append_pp_from_ID(center_indices_init[k]);
           }
         }
  
@@ -454,6 +456,8 @@ class BaseClusterer : public SkeletonClusterer{
       }
     }
 
+
+      
 
     
 
@@ -527,7 +531,10 @@ class BaseClusterer : public SkeletonClusterer{
           }
         } 
         size_t bin = bin_indices[i%n_bins];
-        aq2p.p2buns_dt[bin].append(ptr_datain->at_for_move(i));
+        //aq2p.p2buns_dt[bin].append(ptr_datain->at_for_move(i));
+        append_aq2p_p2buns(bin, i);
+        
+        
         aq2p.original_indices[bin].push_back(i);
       }
       
@@ -650,13 +657,6 @@ class BaseClusterer : public SkeletonClusterer{
     }
     
 
-    virtual double get_rel_calccosts() override final{
-      return metric.get_rel_calccosts();
-    }
-    
-    virtual size_t get_ncalcs() override final{
-      return metric.get_ncalcs();
-    }
     
       
         
@@ -676,10 +676,7 @@ class BaseClusterer : public SkeletonClusterer{
       return nearest_1_infos[k].back().e_x;
     }
     
-     size_t get_ndata(size_t k){
-      return cluster_datas[k].get_ndata();
-    }
-    
+
      size_t get_nthreads(){
       return nthreads;
     }
@@ -690,7 +687,38 @@ class BaseClusterer : public SkeletonClusterer{
     
     
     
+
+    virtual std::string string_for_sample(size_t k, size_t j) override final {
+      return cluster_datas[k].string_for_sample(j);
+    }
     
+    virtual std::string string_for_center(size_t k) override final {
+      return centers_data.string_for_sample(k);
+    }
+    
+    virtual void append_from_ID(size_t k, size_t i) override final {
+      cluster_datas[k].append(ptr_datain->at_for_move(i));
+    }
+
+    virtual void append_pp_from_ID(size_t i) override final {
+      up_kmoo_bundle->c_dt.append(ptr_datain->at_for_move(i));
+    }
+
+    virtual void append_pp_from_bin(size_t bin, size_t j) override final{
+      up_kmoo_bundle->c_dt.append(aq2p.p2buns_dt[bin].at_for_move(j));
+    }
+    
+    virtual void append_aq2p_p2buns(size_t bin, size_t i) override final{
+      aq2p.p2buns_dt[bin].append(ptr_datain->at_for_move(i));
+    }
+
+    virtual size_t get_ndata(size_t k) override final{
+      return cluster_datas[k].get_ndata();
+    }
+    
+    virtual void swap_center_data(size_t k, size_t j) override final{
+      nszen::swap<TData>(centers_data, k, cluster_datas[k], j);
+    }
     
     
      void swap_center_with_sample(size_t k, size_t j){
@@ -701,7 +729,8 @@ class BaseClusterer : public SkeletonClusterer{
       /* jn : bug fix, voronoi 11 june 2017. the following was missing: */
       sample_IDs[k][j] = c_id_k; 
       
-      nszen::swap<TData>(centers_data, k, cluster_datas[k], j);
+      swap_center_data(k,j);
+      
       
       
       reset_sample_infos_basic(k, j);
@@ -780,6 +809,15 @@ class BaseClusterer : public SkeletonClusterer{
       return dis(gen)%get_ndata(k);
     }
 
+
+    /* metric only appears in these functions */
+    virtual double get_rel_calccosts() override final{
+      return metric.get_rel_calccosts();
+    }
+    
+    virtual size_t get_ncalcs() override final{
+      return metric.get_ncalcs();
+    }
 
     virtual void set_cc_pp_distance(size_t k1, size_t k2)  override final  {
       metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k1), up_kmoo_bundle->c_dt.at_for_metric(k2), std::numeric_limits<double>::max(), up_kmoo_bundle->cc[k1*K + k2]);
@@ -993,14 +1031,14 @@ class BaseClusterer : public SkeletonClusterer{
 
     void set_t_ncalcs_update_centers_start(){
       t_update_centers_start = std::chrono::high_resolution_clock::now();
-      ncalcs_update_centers_start = metric.get_ncalcs();
+      ncalcs_update_centers_start = get_ncalcs();
     }
 
 
     void update_t_ncalcs_center_end(){
       t_update_centers_end = std::chrono::high_resolution_clock::now();
       time_in_update_centers += std::chrono::duration_cast<std::chrono::microseconds>(t_update_centers_end - t_update_centers_start).count();
-      ncalcs_update_centers_end = metric.get_ncalcs();
+      ncalcs_update_centers_end = get_ncalcs();
       ncalcs_in_update_centers += ncalcs_update_centers_end - ncalcs_update_centers_start;
     }
 
@@ -1008,7 +1046,7 @@ class BaseClusterer : public SkeletonClusterer{
     void update_t_ncalcs_sample_update_end(){
       t_update_sample_info_end = std::chrono::high_resolution_clock::now();
       time_in_update_sample_info += std::chrono::duration_cast<std::chrono::microseconds>(t_update_sample_info_end - t_update_centers_end).count();
-      ncalcs_update_sample_info_end = metric.get_ncalcs();
+      ncalcs_update_sample_info_end = get_ncalcs();
       ncalcs_in_update_sample_info += ncalcs_update_sample_info_end - ncalcs_update_centers_end;
     }
  
@@ -1191,7 +1229,7 @@ R"((The prevent output to terminal, set capture_output to false)
 
       auto t1 = std::chrono::high_resolution_clock::now();
       time_initialising = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
-      ncalcs_initialising = metric.get_ncalcs();
+      ncalcs_initialising = get_ncalcs();
       //time_total = time_prehistory + time_initialising + time_to_initialise_centers;
       mowri << get_round_summary() << zentas::Endl;
     }
