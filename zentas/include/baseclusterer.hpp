@@ -13,104 +13,25 @@ the GNU General Public License along with zentas. If not, see
 #ifndef ZENTAS_BASECLUSTERER_HPP
 #define ZENTAS_BASECLUSTERER_HPP
 
+#include "skeletonclusterer.hpp"
+
+
 #include "tdata.hpp"
 #include "tdatain.hpp"
 #include "tmetric.hpp"
-#include "tenergyfunc.hpp"
 
-#include "outputwriter.hpp"
-#include "initialisation.hpp"
+
+
+
 #include "zentasinfo.hpp"
-#include "energyinit.hpp"
-
-#include <algorithm>
-#include <type_traits>
-#include <chrono>
-#include <random>
 
 
 
-#include <sstream>
-#include <iomanip>
-#include <thread>
-#include <mutex>
+
 
 
 
 namespace nszen{
-
-
-/* k-means++ helper class */
-class P2Bundle{
-
-  private:
-    size_t ndata;
-    /* also tried with d1 and d2 separate, slower (as always used together). */
-    std::unique_ptr <std::array<double, 2 > [] > d12_;    
-    std::unique_ptr <size_t []> k_1_;
-    std::unique_ptr <size_t []> k_2_;
-    std::unique_ptr <size_t []> ori_;
-  
-  public:
-    inline size_t & k_1(size_t i){
-      return k_1_[i];
-    }
-    
-    inline size_t & k_2(size_t i){
-      return k_2_[i];
-    }
-    
-    inline double & d_1(size_t i ){
-      return std::get<0>(d12_[i]);
-    }
-
-    inline double & d_2(size_t i){
-      return std::get<1>(d12_[i]);
-    }
-    
-    inline size_t & ori(size_t i){
-      return ori_[i];
-    }
-    
-    inline size_t get_ndata() const{
-      return ndata;
-    }
-  
-    void initialise_data(size_t n);
-    
-    
-    P2Bundle() = default;
-    
-    P2Bundle(size_t n);
-    
-    P2Bundle(const std::vector<size_t> & ori);
-};
-
- 
- 
-
-
-/* The choice to store (a,d,e) contiguously for a sample was more for ease of coding than performance. 
- * However, I have implemented a version with a,d and e stored as separate vectors, with no speed-up */
-struct XNearestInfo{
-  // the assigned center of the data point
-  size_t a_x;
-  // the distance to the assigned center
-  double d_x;
-  // the energy of d_x
-  double e_x;
-  
-  void reset(size_t new_a_x, double new_d_x, double new_e_x);
-  
-  void reset(XNearestInfo & nearest_x_infos);
-
-  XNearestInfo(size_t a_x, double d_x, double e_x);
-
-  std::string get_string();
-  
-};
-
-
 
 /* Another k-means++ helper class */
 template <typename TData>
@@ -174,20 +95,13 @@ struct BaseClustererInitBundle{
 };
 
 
-//template <class TData>
-//set_mean(TData & mean){
-  
-//}
 
 
-//class CommonBase{
-  //public:
-    //std::string initialisation_method;
-  
-//};
 
 template <class TMetric, class TData>
-class BaseClusterer{
+class BaseClusterer : public SkeletonClusterer{
+
+
   
   /* A comment to put somewhere : when two clusters are equally near to a sample, the cluster to which it is assigned is unpredictable. One might have a statement that it goes to the one with lower index for example, but this would mean that if a center is at equal distance to the nearest it cannot be eliminated. This is less efficient, and well, I don't want to go back and change vast swathes of code. 
    * 
@@ -210,80 +124,8 @@ class BaseClusterer{
     const DataIn * const ptr_datain;
     TMetric metric;
     std::unique_ptr<KmooBundle<TData>> up_kmoo_bundle;
-
-
-  public:    
-    /* generic */
-
-    zentas::outputwriting::OutputWriter mowri;    
-    const size_t K;
-    const size_t ndata;
-    std::function<double(double)> f_energy;    
-    
-
-  private:    
-    
-    /* generic */
-    //CommonBase cb;
-    std::string initialisation_method;
-    size_t * center_IDs;
-    std::vector<std::vector<XNearestInfo>> nearest_1_infos;
-    std::vector<std::vector<size_t>> sample_IDs;
-    std::vector<std::vector<size_t>> to_leave_cluster;
-    std::vector<bool> cluster_has_changed;
-    std::vector<double> cluster_energies;
-    std::vector<double> cluster_mean_energies;
-    double E_total;
-    double old_E_total;
-    size_t round;
-    std::vector<size_t> v_center_indices_init;
-    size_t * const center_indices_init;    
-    size_t time_prehistory = 0;
-    size_t time_in_update_centers = 0;
-    size_t time_in_update_sample_info = 0;
-    size_t time_in_redistribute = 0;
-    size_t time_initialising = 0;
-    size_t time_in_update_all_cluster_statistics = 0;
-    size_t time_total = 0;
-    size_t time_to_initialise_centers = 0;
-    std::chrono::time_point<std::chrono::high_resolution_clock> tstart;
-    std::chrono::time_point<std::chrono::high_resolution_clock> tstart_initialise_centers;
-    size_t ncalcs_in_update_centers = 0;
-    size_t ncalcs_in_update_sample_info = 0;
-    size_t ncalcs_initialising = 0;
-    size_t ncalcs_total = 0;
-
-    /* passed in through constructor */
-    std::chrono::time_point<std::chrono::high_resolution_clock> bigbang;
-    std::chrono::time_point<std::chrono::high_resolution_clock> 
-    t_update_centers_start, 
-    t_update_centers_end, 
-    t_update_sample_info_end, 
-    t_redistribute_end, 
-    t_update_all_cluster_statistics_end;
-
-    size_t 
-    ncalcs_update_centers_start, 
-    ncalcs_update_centers_end, 
-    ncalcs_update_sample_info_end;    
-    
-    bool in_refinement {false};
-    size_t max_time_micros;
-    double min_mE;
-    size_t * const labels;
-    std::mutex mutex0;
-    size_t nthreads;
-    size_t nthreads_fl;
-    size_t max_rounds;
-    std::string energy;
-    bool with_tests;
-
-  protected:  
-    std::uniform_int_distribution<size_t> dis;
-    /* generates [0,1] uniform, will use to sample centers */
-    std::uniform_real_distribution<double> dis_uni01;          
-    std::default_random_engine gen;
   
+  public: 
 
 
 /////////////////////////////////////
@@ -293,8 +135,8 @@ class BaseClusterer{
     BaseClusterer(size_t K, /* number of clusters */
      const DataIn & datain, /* initialisating data */
      const size_t * const center_indices_init_, /* The K sample indices to initialise with (if initialisation_method is from_indices_init)*/
-     std::string initialisation_method, /* */
-     size_t seed, /* starting seed for generating random numbers, uses a custom "std::default_random_engine"  */
+     std::string init_method, /* */
+     size_t random_sd, /* starting seed for generating random numbers, uses a custom "std::default_random_engine"  */
      double max_time, /* will stop in go ( ) at first opportunity after max_time */
      double min_mE, /* will stop in go ( ) at first opportunity if mE is less than min_mE */
      size_t * const indices_final, /* the K final indices (to populate) */
@@ -307,103 +149,13 @@ class BaseClusterer{
      const EnergyInitialiser & energy_initialiser,
      std::chrono::time_point<std::chrono::high_resolution_clock> bigbang): 
     
-    centers_data(datain, true), rf_data(datain, true), ptr_datain(& datain), metric(datain, nthreads, metric_initializer), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain)),
     
+    SkeletonClusterer(K, bigbang, center_indices_init_, datain.get_ndata(), init_method, max_time, min_mE, indices_final, labels, nthreads, max_rounds, energy, with_tests, random_sd, energy_initialiser),
     
-    mowri(true, false, ""), K(K), ndata(datain.get_ndata()), initialisation_method(initialisation_method), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0), round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), bigbang(bigbang), max_time_micros(static_cast<size_t>(max_time*1000000.)), min_mE(min_mE), labels(labels), nthreads(nthreads), nthreads_fl(static_cast<double> (nthreads)), max_rounds(max_rounds), energy(energy), with_tests(with_tests), gen(seed)
-    
-    
+    centers_data(datain, true), rf_data(datain, true), ptr_datain(& datain), metric(datain, nthreads, metric_initializer), up_kmoo_bundle(new KmooBundle<TData>(ptr_datain)) {}
 
-    {
-      
-      /* TODO here: set-up the center refiner function. 
-       * Takes in center by reference and samples by const reference? */ 
-      
-      if (energy.compare("identity") == 0){
-        f_energy = nszen::Identity(); 
-      } 
-       
-      else if (energy.compare("quadratic") == 0){
-        f_energy = nszen::Quadratic();
-      }
-      
-      else if (energy.compare("cubic") == 0){
-        f_energy = nszen::Cubic();
-      }
-      
-      else if (energy.compare("squarepotential") == 0){
-        f_energy = nszen::SquarePotential(energy_initialiser.get_critical_radius());
-      }
-      
-      else if (energy.compare("log") == 0){
-        f_energy = nszen::Log();
-      }
-      
-      else if (energy.compare("exp") == 0){
-        f_energy = nszen::Exponential(energy_initialiser.get_exponent_coeff());
-      }
-      
-      else if (energy.compare("sqrt") == 0){
-        f_energy = nszen::SquareRoot();
-      }
-      
-      else{
-        throw zentas::zentas_error(std::string("Unrecognised energy function, ") + energy);
-      }
-      
-      
-      /* confirm that f_energy(0) is 0 */
-      if (f_energy(0) != 0){
-        std::stringstream ss;
-        ss << "the energy function, f_energy, has f_energy(0) = ";
-        ss << f_energy(0) << ". This is a problem for k-means++ initialisation.";
-        ss << "If you're not using k-means++ initialisation, this should not cause any problems, ";
-        ss << "but as k-means++ is the default, we are being cautious and throwing an error.";
-        throw zentas::zentas_error(ss.str());
-        
-      }
-
-      /* initialisation from indices. */
-      if (initialisation_method == "from_indices_init"){
-        populate_from_indices_init(center_indices_init_, center_indices_init, K, ndata);
-      }
-      
-      else{
-        //will do in go ( )
-      }
-
-      center_IDs = indices_final;
-
-    }
-
-
-
-
-
-
-
-  
     BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.K, *(ib.ptr_datain), ib.center_indices_init, ib.initialisation_method, ib.seed, ib.max_time, ib.min_mE, ib.indices_final, ib.labels, ib.nthreads, ib.max_rounds, ib.energy, ib.with_tests, *(ib.ptr_metric_initializer), *(ib.ptr_energy_initialiser), ib.bigbang) {}
 
-    size_t get_time_in_update_centers(){
-      return time_in_update_centers;
-    }
-    
-    size_t get_time_in_update_sample_info(){
-      return time_in_update_sample_info;
-    }
-    
-    double get_time_remaining(){
-      auto t1 = std::chrono::high_resolution_clock::now();
-      time_total = std::chrono::duration_cast<std::chrono::microseconds>(t1 - bigbang).count();        
-      
-      if (max_time_micros > time_total){
-        return max_time_micros - time_total;
-      }
-      else{
-        return -1;
-      }
-    }
     
     std::string string_for_sample(size_t k, size_t j){
       return cluster_datas[k].string_for_sample(j);
@@ -414,7 +166,7 @@ class BaseClusterer{
     }
 
 
-    inline void final_push_into_cluster_basic(size_t i, size_t nearest_center, double min_distance){
+    /*     inline     */ void final_push_into_cluster_basic(size_t i, size_t nearest_center, double min_distance){
       cluster_datas[nearest_center].append(ptr_datain->at_for_move(i));
       nearest_1_infos[nearest_center].emplace_back(nearest_center, min_distance, f_energy(min_distance));
       sample_IDs[nearest_center].push_back(i);      
@@ -428,19 +180,6 @@ class BaseClusterer{
       }
     }
     
-    size_t get_start(size_t ti, size_t nthreads, size_t j_A, size_t j_Z){
-      size_t n_js = j_Z - j_A;
-      double t_fl = static_cast<double>(ti);
-      size_t j_a = j_A + (t_fl / static_cast<double> (nthreads)) * n_js;
-      return j_a;
-    }
-
-    size_t get_end(size_t ti, size_t nthreads, size_t j_A, size_t j_Z){
-      size_t n_js = j_Z - j_A;
-      double t_fl = static_cast<double>(ti);
-      size_t j_z = j_A + ( ( t_fl + 1.) / static_cast<double> (nthreads)) * n_js;
-      return j_z;
-    }
     
 
 
@@ -480,7 +219,6 @@ class BaseClusterer{
       //double xi = (1 - 1e-6);
       for (size_t k = 0; k < K; ++k){
         up_distances[k] = std::numeric_limits<double>::max();
-        //  !!!!!! xi*
         if (cc[nearest_center*K + k] < second_min_distance + min_distance){
           set_center_sampleID_distance(k, i, second_min_distance, up_distances[k]);
           if (up_distances[k] < second_min_distance){
@@ -513,21 +251,9 @@ class BaseClusterer{
     }
 
 
-    size_t get_sample_from(std::vector<double> & v_cum_nearest_energies){ //, const size_t * c_ind, size_t k){
-      
-      /* kmeans++ is exhausted : everything sample has a center at distance 0 (obviously duplicated data)
-       * however, this case should have been caught upstream, so throwing an error. */
-      if (v_cum_nearest_energies.back() == 0){
-        throw zentas::zentas_error("exhausted in get_sample_from (kmeans++). in particular, the cumulative energy is zero. this should have been caught upstream: logic error in zentas");  
-      }
-      
-      return std::distance(
-      v_cum_nearest_energies.begin(), 
-      std::lower_bound(v_cum_nearest_energies.begin(), v_cum_nearest_energies.end(), dis_uni01(gen)*v_cum_nearest_energies.back())) - 1;
-    }
 
 
-    inline void kmpp_inner(size_t i, size_t k, double a_distance, P2Bundle & p2bun){
+    /*     inline     */ void kmpp_inner(size_t i, size_t k, double a_distance, P2Bundle & p2bun){
     
       if (a_distance < p2bun.d_2(i)){
         if (a_distance < p2bun.d_1(i)){
@@ -700,7 +426,7 @@ class BaseClusterer{
 
     
 
-    void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, bool & is_exhausted){      
+    void triangular_kmeanspp(size_t * const centers, double * const cc, P2Bundle & p2bun, TData & c_dt, bool & is_exhausted){
 
 
       for (size_t i = 0; i < ndata; ++i){
@@ -876,118 +602,51 @@ class BaseClusterer{
 
     }
     
-    
-      
-    std::string get_base_summary_string(){
-      
-      auto t_now = std::chrono::high_resolution_clock::now();
-      time_total = std::chrono::duration_cast<std::chrono::microseconds>(t_now - bigbang).count();
-      ncalcs_total = metric.get_ncalcs();
-                
-      
-      std::string st_round = "R=" + std::to_string(round);
-      st_round.resize(3 + 6, ' ');
-      
-      std::stringstream st_mE_ss;
-      st_mE_ss << "mE=" << std::setprecision(7) << E_total / static_cast<double>(ndata);
-      std::string st_mE = st_mE_ss.str();
-      st_mE.resize(std::max<size_t>(st_mE.size() + 1,3 + 11), ' ');
 
-      std::string st_Tp = "Tp=" + std::to_string(time_prehistory/1000);
-      st_Tp += "  ";
-
-      std::string st_Ti = "Ti=" + std::to_string(time_to_initialise_centers/1000);
-      st_Ti += "  ";
-      
-      std::string st_Tb = "Tb=" + std::to_string(time_initialising/1000);
-      st_Tb += "  ";
-      
-      std::string st_Tc = "Tc=" + std::to_string(time_in_update_centers/1000);
-      st_Tc.resize(3 + 8, ' ');
-      
-      std::string st_Tu = "Tu=" + std::to_string(time_in_update_sample_info/1000);
-      st_Tu.resize(3 + 7, ' ');
-      
-      std::string st_Tr = "Tr=" + std::to_string(time_in_redistribute/1000);
-      st_Tr.resize(3 + 5, ' ');
-
-      
-      std::string st_Tt = "Tt="  + std::to_string(time_total/1000);
-      st_Tt.resize(3 + 8, ' ');
-
-
-      std::stringstream ncc_ss;
-      ncc_ss <<  "lg2nc(c)="  << std::setprecision(5) << std::log2(ncalcs_in_update_centers);
-      std::string ncc = ncc_ss.str();
-      ncc.resize(9+9, ' ');
-
-
-      std::stringstream nc_ss;
-      nc_ss <<  "lg2nc="  << std::setprecision(5) << std::log2(ncalcs_total);
-      std::string nc = nc_ss.str();
-      nc.resize(6+9, ' ');
-
-
-      std::stringstream pc_ss;
-      pc_ss <<  "pc="  << std::setprecision(5) << static_cast<double> (metric.get_rel_calccosts());
-      std::string pc = pc_ss.str();
-      pc.resize(3+10, ' ');
-
-      
-      std::ostringstream out;
-      out << st_round << st_mE << st_Tp << st_Ti << st_Tb << st_Tc << st_Tu << st_Tr << st_Tt << ncc << nc << pc;
-      return out.str();
-    
-
+    virtual double get_rel_calccosts() override final{
+      return metric.get_rel_calccosts();
     }
+    
+    virtual size_t get_ncalcs() override final{
+      return metric.get_ncalcs();
+    }
+    
+      
         
-    inline size_t get_a1(size_t k, size_t j) const{
+    /*     inline     */ size_t get_a1(size_t k, size_t j) const{
       return nearest_1_infos[k][j].a_x;
     }
     
-    inline double get_d1(size_t k, size_t j){
+    /*     inline     */ double get_d1(size_t k, size_t j){
       return nearest_1_infos[k][j].d_x;
     }
     
-    inline double get_e1(size_t k, size_t j){
+    /*     inline     */ double get_e1(size_t k, size_t j){
       return nearest_1_infos[k][j].e_x;
     }
     
-    inline double get_e1_tail(size_t k){
+    /*     inline     */ double get_e1_tail(size_t k){
       return nearest_1_infos[k].back().e_x;
     }
     
-    inline size_t get_ndata(size_t k){
+    /*     inline     */ size_t get_ndata(size_t k){
       return cluster_datas[k].get_ndata();
     }
     
-    inline size_t get_nthreads(){
+    /*     inline     */ size_t get_nthreads(){
       return nthreads;
     }
     
-    inline double get_nthreads_fl(){
+    /*     inline     */ double get_nthreads_fl(){
       return nthreads_fl;
     }
     
     
     
-    /* rule : functions with suffix 'basic' will not touch to_leave_cluster */
-    inline void reset_nearest_info_basic(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest){
-      nearest_1_infos[k][j].reset(k_nearest, d_nearest, e_nearest);      
-      cluster_has_changed[k] = true;
-    }
-    
-    inline void reset_nearest_info(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest){
-      reset_nearest_info_basic(k, j, k_nearest, d_nearest, e_nearest);      
-      if (k != k_nearest){
-        std::lock_guard<std::mutex> lock(mutex0);
-        to_leave_cluster[k].push_back(j);
-      }
-    }
     
     
     
-    inline void swap_center_with_sample(size_t k, size_t j){
+    /*     inline     */ void swap_center_with_sample(size_t k, size_t j){
       cluster_has_changed[k] = true;
       
       size_t c_id_k = center_IDs[k];
@@ -1002,11 +661,11 @@ class BaseClusterer{
     }
           
     
-    inline double get_E_total(){
+    /*     inline     */ double get_E_total(){
       return E_total;
     }
     
-    inline double get_cluster_energy(size_t k){
+    /*     inline     */ double get_cluster_energy(size_t k){
       return cluster_energies[k];
     }
     
@@ -1026,7 +685,7 @@ class BaseClusterer{
     }
 
     //remove the j'th sample from cluster k, and (if it is not the last element) fill the hole with the tail (size drops by 1) 
-    inline void remove_with_tail_pull(size_t k, size_t j){
+    /*     inline     */ void remove_with_tail_pull(size_t k, size_t j){
       if (j != get_ndata(k) - 1){
         nearest_1_infos[k][j] = *(nearest_1_infos[k].end() - 1);
         sample_IDs[k][j] = *(sample_IDs[k].end() - 1);
@@ -1066,7 +725,7 @@ class BaseClusterer{
       return k_below;
     }
     
-    inline void signal_cluster_change(size_t k){
+    /*     inline     */ void signal_cluster_change(size_t k){
       cluster_has_changed[k] = true;
     }
     
@@ -1075,48 +734,48 @@ class BaseClusterer{
     }
     
     //set the distance from center k to the j1'th element of cluster k1.
-    inline void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) {
+    /*     inline     */ void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), distance);
     }
 
-    inline void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
+    /*     inline     */ void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
     }
         
-    inline void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
+    /*     inline     */ void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
     }
 
-    inline void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
+    /*     inline     */ void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
       metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), threshold, distance);
     }
 
-    inline void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
+    /*     inline     */ void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
       metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), distance);
     }
         
         
-    inline double get_center_sample_distance(size_t k, size_t k1, size_t j1) {
+    /*     inline     */ double get_center_sample_distance(size_t k, size_t k1, size_t j1) {
       double distance;
       set_center_sample_distance(k, k1, j1, distance);
       return distance;
     }
     
-    inline double get_sample_sample_distance(size_t k , size_t j1, size_t j2) {
+    /*     inline     */ double get_sample_sample_distance(size_t k , size_t j1, size_t j2) {
       double adistance;
       metric.set_distance(cluster_datas[k].at_for_metric(j1), cluster_datas[k].at_for_metric(j2), adistance);
       return adistance;
     }
     
-    inline void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) {
+    /*     inline     */ void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) {
       metric.set_distance(cluster_datas[k1].at_for_metric(j1), cluster_datas[k2].at_for_metric(j2), threshold, adistance);
     }
     
     
-    inline void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) {
+    /*     inline     */ void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) {
       metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
     }
-    inline void set_center_center_distance(size_t k1, size_t k2, double & adistance) {
+    /*     inline     */ void set_center_center_distance(size_t k1, size_t k2, double & adistance) {
       metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), adistance);
     }
     
@@ -1522,37 +1181,35 @@ R"((The prevent output to terminal, set capture_output to false)
 
     virtual void initialise_with_kmeanspp() = 0;
         
-    /* called from put_sample_in_clusters (virtual inline functions are not nonsensical) */    
-    //virtual inline void put_sample_custom_in_cluster(size_t i, size_t a_x, const double * const distances) = 0;
-    virtual inline void put_sample_custom_in_cluster(size_t, size_t, const double * const) {}
+    /* called from put_sample_in_clusters (virtual functions are not nonsensical) */    
+    virtual /*     inline     */ void put_sample_custom_in_cluster(size_t, size_t, const double * const) {}
 
     
     /* when implementing this, one must guarantee that cluster_has_changed is correctly set in this function */
-    /* lowest and second lowest values in distances are reliable */
-    virtual inline void reset_sample_custom(size_t, size_t, size_t, const double * const) {}
+    virtual /*     inline     */ void reset_sample_custom(size_t, size_t, size_t, const double * const) {}
     
     virtual bool update_centers() = 0;
          
     virtual void update_sample_info() = 0;
       
     /* functions called from within redistribute */
-    virtual inline void custom_append(size_t, size_t, size_t) {}
+    virtual /*     inline     */ void custom_append(size_t, size_t, size_t) {}
     
-    virtual inline void custom_replace_with_last(size_t, size_t) {}
+    virtual /*     inline     */ void custom_replace_with_last(size_t, size_t) {}
     
-    virtual inline void custom_replace_with(size_t, size_t, size_t, size_t) {};
+    virtual /*     inline     */ void custom_replace_with(size_t, size_t, size_t, size_t) {};
     
-    virtual inline void custom_remove_last(size_t) {};
+    virtual /*     inline     */ void custom_remove_last(size_t) {};
 
     /* functions called from within set_cluster_statistics */
-    virtual inline void increment_custom_cluster_statistics(size_t, size_t) {};
+    virtual /*     inline     */ void increment_custom_cluster_statistics(size_t, size_t) {};
 
     virtual void set_normalised_custom_cluster_statistics(size_t k) = 0;
     virtual void set_to_zero_custom_cluster_statistics(size_t k) = 0;
 
     virtual std::string get_round_summary() = 0;    
 
-    inline void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
+    /*     inline     */ void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
       //get your lock on, time for polyphonics. 
       std::lock_guard<std::mutex> lockraii(mutex0);
       
@@ -1567,7 +1224,7 @@ R"((The prevent output to terminal, set capture_output to false)
     }
     
     
-    inline void final_push_into_cluster_post_kmeanspp(size_t i, size_t k1, size_t k2, double d1, double d2){
+    /*     inline     */ void final_push_into_cluster_post_kmeanspp(size_t i, size_t k1, size_t k2, double d1, double d2){
       std::lock_guard<std::mutex> lockraii(mutex0);
       final_push_into_cluster_basic(i, k1, d1);
       put_nearest_2_infos_margin_in_cluster_post_kmeanspp(k1, k2, d2, f_energy(d2));
@@ -2124,6 +1781,9 @@ R"((The prevent output to terminal, set capture_output to false)
         }
       }
     }
+
+
+
 };
 
 

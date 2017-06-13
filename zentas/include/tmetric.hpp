@@ -64,11 +64,11 @@ class LpDistance{
   
     LpDistance(size_t dimension):dimension(dimension) {}
   
-    inline size_t get_ncalcs(){
+    /*     inline     */ size_t get_ncalcs(){
       return ncalcs;
     }
     
-    inline size_t get_calccosts(){
+    /*     inline     */ size_t get_calccosts(){
       return calccosts;
     }
   
@@ -188,7 +188,7 @@ class LpMetric{
     }
     
     template <typename T>
-    inline void set_distance(const T & a, const T & b, double threshold, double & distance){
+    /*     inline     */ void set_distance(const T & a, const T & b, double threshold, double & distance){
       /* This virtual function call costs 
        * about 2% when dimension = 2. 2% 
        * slowdown is negligible, I'm going
@@ -198,15 +198,15 @@ class LpMetric{
     
     
     template <typename T>
-    inline void set_distance(const T & a, const T & b, double & distance){
+    /*     inline     */ void set_distance(const T & a, const T & b, double & distance){
       set_distance(a, b, std::numeric_limits<double>::max(), distance); 
     }
     
-    inline size_t get_ncalcs() const{
+    /*     inline     */ size_t get_ncalcs() const{
       return uptr_lpdistance->ncalcs;
     }
     
-    inline double get_rel_calccosts() const{
+    /*     inline     */ double get_rel_calccosts() const{
       return static_cast<double> (uptr_lpdistance->calccosts)  / static_cast<double> (uptr_lpdistance->ncalcs);
     }
   

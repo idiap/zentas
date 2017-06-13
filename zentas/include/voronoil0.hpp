@@ -28,6 +28,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::mowri;
     using BaseClusterer<TMetric, TData>::K;
     using BaseClusterer<TMetric, TData>::ndata;
+    using BaseClusterer<TMetric, TData>::get_ndata;
     using BaseClusterer<TMetric, TData>::f_energy;
     using BaseClusterer<TMetric, TData>::set_center_sample_distance;
     using BaseClusterer<TMetric, TData>::get_center_sample_distance;
@@ -38,20 +39,19 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::reset_nearest_info;
     using BaseClusterer<TMetric, TData>::get_e1;
     using BaseClusterer<TMetric, TData>::get_d1;
-    using BaseClusterer<TMetric, TData>::get_ndata;
     using BaseClusterer<TMetric, TData>::get_base_summary_string;
     using BaseClusterer<TMetric, TData>::base_put_sample_in_cluster;
     using BaseClusterer<TMetric, TData>::default_initialise_with_kmeanspp;    
 
    
    private:     
-    virtual inline void put_sample_custom_in_cluster(size_t, size_t, const double * const) final override{}
-    virtual inline void reset_sample_custom(size_t, size_t, size_t, const double * const) final override{}
-    virtual inline void custom_append(size_t, size_t, size_t) final override{}
-    virtual inline void custom_replace_with_last(size_t, size_t) final override{}
-    virtual inline void custom_replace_with(size_t, size_t, size_t, size_t) final override{}
-    virtual inline void custom_remove_last(size_t) final override{}
-    virtual inline void increment_custom_cluster_statistics(size_t, size_t) final override{}
+    virtual /*     inline     */ void put_sample_custom_in_cluster(size_t, size_t, const double * const) final override{}
+    virtual /*     inline     */ void reset_sample_custom(size_t, size_t, size_t, const double * const) final override{}
+    virtual /*     inline     */ void custom_append(size_t, size_t, size_t) final override{}
+    virtual /*     inline     */ void custom_replace_with_last(size_t, size_t) final override{}
+    virtual /*     inline     */ void custom_replace_with(size_t, size_t, size_t, size_t) final override{}
+    virtual /*     inline     */ void custom_remove_last(size_t) final override{}
+    virtual /*     inline     */ void increment_custom_cluster_statistics(size_t, size_t) final override{}
     virtual void set_normalised_custom_cluster_statistics(size_t) final override{}
     virtual void set_to_zero_custom_cluster_statistics(size_t) final override{}
     virtual void set_center_center_info() final override{}

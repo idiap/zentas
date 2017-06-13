@@ -15,21 +15,23 @@ the GNU General Public License along with zentas. If not, see
 #ifndef ZENTAS_ENERGYFUNCS_H
 #define ZENTAS_ENERGYFUNCS_H
 
+#include <cmath>
 
+//TODO : how important are the /*     inline     */s here? Can we move to cpp?
 namespace nszen{
   
 
   
 class Cubic{
   public:
-   inline double operator() (double distance) const{
+   /*     inline     */ double operator() (double distance) const{
      return distance*distance*distance;
    }
 };
 
 class Quadratic{
   public:
-   inline double operator() (double distance) const{
+   /*     inline     */ double operator() (double distance) const{
      return distance*distance;
    }
 };
@@ -37,7 +39,7 @@ class Quadratic{
 
 class Identity{
   public:
-   inline double operator() (double distance) const{
+   /*     inline     */ double operator() (double distance) const{
      return distance;
    }
 };
@@ -45,14 +47,14 @@ class Identity{
 
 class Log{
   public:
-   inline double operator() (double distance) const{
+   /*     inline     */ double operator() (double distance) const{
      return std::log(1. + distance);
    }
 };
 
 class SquareRoot{
   public:
-   inline double operator() (double distance) const{
+   /*     inline     */ double operator() (double distance) const{
      return std::sqrt(distance);
    }
 };
@@ -63,7 +65,7 @@ class Exponential{
   
     Exponential(double lambda_in): lambda(lambda_in) {}
     
-    inline double operator() (double distance) const{
+    /*     inline     */ double operator() (double distance) const{
       return std::exp(lambda * distance) - 1.;
     }
     
@@ -78,7 +80,7 @@ class SquarePotential{
   
     SquarePotential(double critical_radius_in): critical_radius(critical_radius_in) {}
     
-    inline double operator() (double distance) const{
+    /*     inline     */ double operator() (double distance) const{
       /* for clarans, return distance > critical_radius would be fine. But for 
        * voronoi, there needs to be some infinitesimally small gradient for
        * centers to move. We thus give the |__| potential a very slight gradient. */

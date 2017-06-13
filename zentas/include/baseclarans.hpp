@@ -49,7 +49,7 @@ struct ClaransStatistics{
       m_star = 0;  
     }
     
-    inline void increment(double d_first_nearest, double e_first_nearest, double d_second_nearest, double e_second_nearest){
+    /*     inline     */ void increment(double d_first_nearest, double e_first_nearest, double d_second_nearest, double e_second_nearest){
       M = std::max(M, e_second_nearest - e_first_nearest);
       M_star += (e_second_nearest - e_first_nearest);
       R1 = std::max(R1, d_first_nearest);
@@ -127,20 +127,20 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     
     
     
-    inline size_t get_max_proposals(){
+    /*     inline     */ size_t get_max_proposals(){
       return max_proposals;
     }
 
-    inline size_t get_a2(size_t k, size_t j){
+    /*     inline     */ size_t get_a2(size_t k, size_t j){
       return nearest_2_infos[k][j].a_x;
     }
 
-    inline double get_d2(size_t k, size_t j){
+    /*     inline     */ double get_d2(size_t k, size_t j){
       return nearest_2_infos[k][j].d_x;
     }    
 
 
-    inline double get_e2(size_t k, size_t j){
+    /*     inline     */ double get_e2(size_t k, size_t j){
       return nearest_2_infos[k][j].e_x;
     }
       
@@ -322,7 +322,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
         
 
-    inline void set_center_center_distances(size_t k, double * const distances){
+    /*     inline     */ void set_center_center_distances(size_t k, double * const distances){
       for (size_t kp = 0; kp < K; ++kp){
         set_center_center_distance(k, kp, distances[kp]);
       }
@@ -451,7 +451,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
 
 
     /* Determine the nearest and second nearest of sample j1 of cluster k1, given that distance to center a1 is d1 and distance to a2 is d2. It is not necessary that d1 < d2 at entry. */
-    inline void set_nearest_12_warmstart(size_t k1, size_t j1, size_t & a1, size_t & a2, double & d1, double & d2, const double * const cc){
+    /*     inline     */ void set_nearest_12_warmstart(size_t k1, size_t j1, size_t & a1, size_t & a2, double & d1, double & d2, const double * const cc){
 
       double adist;
 
@@ -492,7 +492,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       }
     }
     
-    inline void reset_sample_info_direct(size_t k, size_t j, size_t a1, size_t a2, double d1, double d2){
+    /*     inline     */ void reset_sample_info_direct(size_t k, size_t j, size_t a1, size_t a2, double d1, double d2){
       reset_nearest_info(k, j, a1, d1, f_energy(d1));
       reset_second_nearest_info(k, j, a2, d2, f_energy(d2)); 
       refresh_energy_margins(k, j);                          
@@ -636,7 +636,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       return ss.str();
     }
 
-    inline void reset_second_nearest_info(size_t k, size_t j, size_t k_second_nearest, double d_second_nearest, double e_second_nearest){
+    /*     inline     */ void reset_second_nearest_info(size_t k, size_t j, size_t k_second_nearest, double d_second_nearest, double e_second_nearest){
       if (nearest_2_infos[k][j].a_x != k_second_nearest || nearest_2_infos[k][j].d_x != d_second_nearest){
         signal_cluster_change(k);
       }      
@@ -754,7 +754,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
 
 
-    virtual inline void increment_custom_cluster_statistics(size_t k, size_t j) final override{
+    virtual /*     inline     */ void increment_custom_cluster_statistics(size_t k, size_t j) final override{
       cluster_statistics[k].increment(get_d1(k,j), get_e1(k,j), nearest_2_infos[k][j].d_x, nearest_2_infos[k][j].e_x);
       
       if (nearest_2_infos[k][j].e_x - get_e1(k,j) != energy_margins[k][j]){
@@ -772,7 +772,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
 
   
-    inline void set_second_nearest(size_t k_first_nearest, const double * const distances, size_t & k_second_nearest, double & d_second_nearest){
+    /*     inline     */ void set_second_nearest(size_t k_first_nearest, const double * const distances, size_t & k_second_nearest, double & d_second_nearest){
       d_second_nearest = std::numeric_limits<double>::max();
       for (size_t k = 0; k < k_first_nearest; ++k){
         if (distances[k] < d_second_nearest){
@@ -789,7 +789,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       }
     }
 
-    inline void refresh_energy_margins(size_t k, size_t j){
+    /*     inline     */ void refresh_energy_margins(size_t k, size_t j){
       energy_margins[k][j] = get_e2(k,j) - get_e1(k,j);
     }
 
@@ -887,7 +887,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
 
 
-    inline void put_nearest_2_infos_margin_in_cluster_final(size_t k_first_nearest, size_t k_second_nearest, double d_second_nearest, double e_second_nearest){
+    /*     inline     */ void put_nearest_2_infos_margin_in_cluster_final(size_t k_first_nearest, size_t k_second_nearest, double d_second_nearest, double e_second_nearest){
       
       nearest_2_infos[k_first_nearest].emplace_back(k_second_nearest, d_second_nearest, e_second_nearest);
       energy_margins[k_first_nearest].push_back(e_second_nearest - get_e1_tail(k_first_nearest));
@@ -898,7 +898,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
 
 
-    inline void put_nearest_2_infos_margin_in_cluster(size_t i, size_t k_first_nearest, const double * const distances){
+    /*     inline     */ void put_nearest_2_infos_margin_in_cluster(size_t i, size_t k_first_nearest, const double * const distances){
       
       //quelch warning
       i += 0;
@@ -914,7 +914,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
 
     
     
-    inline void reset_sample_nearest_2_infos_margin(size_t k, size_t j, size_t nearest_center, const double * const distances){
+    /*     inline     */ void reset_sample_nearest_2_infos_margin(size_t k, size_t j, size_t nearest_center, const double * const distances){
       size_t k_second_nearest;
       double d_second_nearest;
       set_second_nearest(nearest_center, distances, k_second_nearest, d_second_nearest);
@@ -926,23 +926,23 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
 
 
-    inline void nearest_2_infos_margin_append(size_t k_new, size_t k, size_t j){
+    /*     inline     */ void nearest_2_infos_margin_append(size_t k_new, size_t k, size_t j){
       nearest_2_infos[k_new].push_back(nearest_2_infos[k][j]);
       energy_margins[k_new].push_back(energy_margins[k][j]);
     }
     
-    inline void nearest_2_infos_margin_replace_with_last(size_t k, size_t j){
+    /*     inline     */ void nearest_2_infos_margin_replace_with_last(size_t k, size_t j){
       nearest_2_infos[k][j] = *(nearest_2_infos[k].end() - 1);
       energy_margins[k][j] = energy_margins[k].back();
     }
 
 
-    inline void nearest_2_infos_margin_replace_with(size_t k1, size_t j1, size_t k2, size_t j2){
+    /*     inline     */ void nearest_2_infos_margin_replace_with(size_t k1, size_t j1, size_t k2, size_t j2){
       nearest_2_infos[k1][j1] = nearest_2_infos[k2][j2];
       energy_margins[k1][j1] = energy_margins[k2][j2];
     }
         
-    inline void nearest_2_infos_margin_remove_last(size_t k){
+    /*     inline     */ void nearest_2_infos_margin_remove_last(size_t k){
       nearest_2_infos[k].pop_back();
       energy_margins[k].pop_back();
     }
@@ -1185,7 +1185,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     }
     
 
-    inline double get_delta_E_l1(size_t k1, size_t k2, size_t j2, double d_nearest_k1, bool serial){
+    /*     inline     */ double get_delta_E_l1(size_t k1, size_t k2, size_t j2, double d_nearest_k1, bool serial){
       double delta_E = 0;
       
       std::unique_ptr<double []> up_dists_centers_j2 (new double [K]);
