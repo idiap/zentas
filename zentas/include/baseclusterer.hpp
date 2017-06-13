@@ -313,22 +313,15 @@ class BaseClusterer : public SkeletonClusterer{
 
     
 
-    void triangular_kmeanspp_after_initial(P2Bundle & p2bun, size_t aq2p_bin, size_t k0, size_t k1, bool from_full_data){
-      
-      //if (from_full_data != (ptr_p2bun_dt == nullptr)){
-        //throw zentas::zentas_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (ptr_p2bun_dt == nullptr)");
-      //}
+    void triangular_kmeanspp_after_initial(size_t aq2p_bin, size_t k0, size_t k1, bool from_full_data){
 
       if (from_full_data != (aq2p_bin == std::numeric_limits<size_t>::max())){
         throw zentas::zentas_error("logic error in triangular_kmeanspp_after_initial : from_full_data != (aq2p_bin == std::numeric_limits<size_t>::max()");
       }
             
-            
-            
+      P2Bundle & p2bun = from_full_data ? up_kmoo_bundle->p2bun : aq2p.p2buns[aq2p_bin];
       size_t kmeanspp_ndata = from_full_data ? ndata : aq2p.p2buns_dt[aq2p_bin].get_ndata();
-      
-      //ptr_p2bun_dt->get_ndata();
-      
+            
       if (kmeanspp_ndata -1 < k1 - k0){
         std::stringstream ss;
         ss << "triangular_kmeanspp_after_initial, attempting to find more centers than data - 1 : ";
@@ -386,12 +379,11 @@ class BaseClusterer : public SkeletonClusterer{
       else{
 
         set_distance_kk = [this](size_t k, size_t kp){
-          metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k), up_kmoo_bundle->c_dt.at_for_metric(kp), std::numeric_limits<double>::max(), up_kmoo_bundle->cc[k*K + kp]);
+          set_cc_pp_distance(k, kp);
         };
-
-        
+                
         set_distance_ik = [this, &a_distance, &p2bun, aq2p_bin](size_t i, size_t k){
-          metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k), aq2p.p2buns_dt[aq2p_bin].at_for_metric(i), p2bun.d_2(i), a_distance);
+          set_center_sample_pp_distance(k, aq2p_bin, i, a_distance);
         };
         
         update_c_ind_c_dt = [this, &v_cum_nearest_energies, &p2bun, aq2p_bin](size_t k){
@@ -475,7 +467,7 @@ class BaseClusterer : public SkeletonClusterer{
       size_t k0 = 0;
       size_t k1 = K;
     
-      triangular_kmeanspp_after_initial(up_kmoo_bundle->p2bun, std::numeric_limits<size_t>::max(), k0, k1, true);//, km_is_exhausted);
+      triangular_kmeanspp_after_initial(std::numeric_limits<size_t>::max(), k0, k1, true);//, km_is_exhausted);
     }
 
 
@@ -553,14 +545,14 @@ class BaseClusterer : public SkeletonClusterer{
           for (size_t i = i0; i < i1; ++i){
             for (size_t k = k_start; k < k_end; ++k){
               if (up_kmoo_bundle->cc[aq2p.p2buns[bin].k_1(i)*K + k] < aq2p.p2buns[bin].d_1(i) + aq2p.p2buns[bin].d_2(i)){
-                metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k), aq2p.p2buns_dt[bin].at_for_metric(i), aq2p.p2buns[bin].d_2(i), a_distance);
+                set_center_sample_pp_distance(k, bin, i, a_distance);
                 kmpp_inner(i, k, a_distance, aq2p.p2buns[bin]);
               }
             }
           }
         };
-      
-
+ 
+ 
       for (size_t bin = 0; bin < n_bins; ++bin){
         size_t k0 = (bin*non_tail_k)/n_bins;
         size_t k1 = ((bin + 1)*non_tail_k)/n_bins;        
@@ -595,7 +587,7 @@ class BaseClusterer : public SkeletonClusterer{
                 
         
         /* we don't even try to parallelize to center by center kmeans++ part, too many syncs. */
-        triangular_kmeanspp_after_initial(aq2p.p2buns[bin], bin, k0, k1, false);//, km_is_exhausted); //&aq2p.p2buns_dt[bin]
+        triangular_kmeanspp_after_initial(bin, k0, k1, false);//, km_is_exhausted); //&aq2p.p2buns_dt[bin]
         /* km_is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
         if (km_is_exhausted){
           return;
@@ -647,8 +639,9 @@ class BaseClusterer : public SkeletonClusterer{
         }
       }
       
+      
       //set the tail k's
-      triangular_kmeanspp_after_initial(up_kmoo_bundle->p2bun, std::numeric_limits<size_t>::max(), K - tail_k, K, true);//, km_is_exhausted);
+      triangular_kmeanspp_after_initial(std::numeric_limits<size_t>::max(), K - tail_k, K, true);//, km_is_exhausted);
       /* km_is_exhausted is true, we will bail as handling this here (with n_bins > 1) is too complex. Will try again with n_bins = 1 */
       if (km_is_exhausted){
         return;
@@ -786,32 +779,38 @@ class BaseClusterer : public SkeletonClusterer{
     size_t draw_j_uniform(size_t k){
       return dis(gen)%get_ndata(k);
     }
-    
 
-    void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
+
+    virtual void set_cc_pp_distance(size_t k1, size_t k2)  override final  {
+      metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k1), up_kmoo_bundle->c_dt.at_for_metric(k2), std::numeric_limits<double>::max(), up_kmoo_bundle->cc[k1*K + k2]);
+    }
+
+    virtual void set_center_sample_pp_distance(size_t k, size_t bin, size_t i, double & adistance)  override final  {
+      metric.set_distance(up_kmoo_bundle->c_dt.at_for_metric(k), aq2p.p2buns_dt[bin].at_for_metric(i), aq2p.p2buns[bin].d_2(i), adistance);
+    }
+
+    virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance)  override final   {
       metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
     }
 
-    void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
+    virtual void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance)  override final  {
       metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
     }
 
-    void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
+    virtual void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance)  override final  {
       metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), threshold, distance);
     }
 
-    void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) {
+    virtual void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance)  override final   {
       metric.set_distance(cluster_datas[k1].at_for_metric(j1), cluster_datas[k2].at_for_metric(j2), threshold, adistance);
     }
     
-     void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) {
+    virtual void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance)  override final  {
       metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
     }
     
-    
-
     //set the distance from center k to the j1'th element of cluster k1.
-     void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) {
+    void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance){
       set_center_sample_distance(k, k1, j1, std::numeric_limits<double>::max(), distance);
     }
 
@@ -834,7 +833,7 @@ class BaseClusterer : public SkeletonClusterer{
     }
     
 
-     void set_center_center_distance(size_t k1, size_t k2, double & adistance) {
+    void set_center_center_distance(size_t k1, size_t k2, double & adistance) {
        set_center_center_distance(k1, k2, std::numeric_limits<double>::max(), adistance);
     }
     
