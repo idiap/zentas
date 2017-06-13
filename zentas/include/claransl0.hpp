@@ -41,28 +41,28 @@ class ClaransL0 : public BaseClarans<TMetric, TData> {
      * monitor for a Sample other than those 
      * defined in BaseClarans, use functions 
      * defined in BaseClarans */
-    virtual /*     inline     */ void put_sample_custom_in_cluster(size_t i, size_t k_nearest, const double * const distances) final override{
+    virtual  void put_sample_custom_in_cluster(size_t i, size_t k_nearest, const double * const distances) final override{
       put_nearest_2_infos_margin_in_cluster(i, k_nearest, distances);
     }
     
-    virtual /*     inline     */ void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
+    virtual  void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
       reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
     }
 
-    virtual /*     inline     */ void custom_append(size_t k_new, size_t k, size_t j) final override{
+    virtual  void custom_append(size_t k_new, size_t k, size_t j) final override{
       nearest_2_infos_margin_append(k_new, k, j);
     }
     
-    virtual /*     inline     */ void custom_replace_with_last(size_t k, size_t j) final override{
+    virtual  void custom_replace_with_last(size_t k, size_t j) final override{
       nearest_2_infos_margin_replace_with_last(k, j);
     }
 
-    virtual /*     inline     */ void custom_replace_with(size_t k1, size_t j1, size_t k2, size_t j2) final override{
+    virtual  void custom_replace_with(size_t k1, size_t j1, size_t k2, size_t j2) final override{
       nearest_2_infos_margin_replace_with(k1, j1, k2, j2);
     }
 
     
-    virtual /*     inline     */ void custom_remove_last(size_t k) final override{
+    virtual  void custom_remove_last(size_t k) final override{
       nearest_2_infos_margin_remove_last(k);
     }
 

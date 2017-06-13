@@ -166,7 +166,7 @@ class BaseClusterer : public SkeletonClusterer{
     }
 
 
-    /*     inline     */ void final_push_into_cluster_basic(size_t i, size_t nearest_center, double min_distance){
+     void final_push_into_cluster_basic(size_t i, size_t nearest_center, double min_distance){
       cluster_datas[nearest_center].append(ptr_datain->at_for_move(i));
       nearest_1_infos[nearest_center].emplace_back(nearest_center, min_distance, f_energy(min_distance));
       sample_IDs[nearest_center].push_back(i);      
@@ -253,7 +253,7 @@ class BaseClusterer : public SkeletonClusterer{
 
 
 
-    /*     inline     */ void kmpp_inner(size_t i, size_t k, double a_distance, P2Bundle & p2bun){
+     void kmpp_inner(size_t i, size_t k, double a_distance, P2Bundle & p2bun){
     
       if (a_distance < p2bun.d_2(i)){
         if (a_distance < p2bun.d_1(i)){
@@ -613,31 +613,31 @@ class BaseClusterer : public SkeletonClusterer{
     
       
         
-    /*     inline     */ size_t get_a1(size_t k, size_t j) const{
+     size_t get_a1(size_t k, size_t j) const{
       return nearest_1_infos[k][j].a_x;
     }
     
-    /*     inline     */ double get_d1(size_t k, size_t j){
+     double get_d1(size_t k, size_t j){
       return nearest_1_infos[k][j].d_x;
     }
     
-    /*     inline     */ double get_e1(size_t k, size_t j){
+     double get_e1(size_t k, size_t j){
       return nearest_1_infos[k][j].e_x;
     }
     
-    /*     inline     */ double get_e1_tail(size_t k){
+     double get_e1_tail(size_t k){
       return nearest_1_infos[k].back().e_x;
     }
     
-    /*     inline     */ size_t get_ndata(size_t k){
+     size_t get_ndata(size_t k){
       return cluster_datas[k].get_ndata();
     }
     
-    /*     inline     */ size_t get_nthreads(){
+     size_t get_nthreads(){
       return nthreads;
     }
     
-    /*     inline     */ double get_nthreads_fl(){
+     double get_nthreads_fl(){
       return nthreads_fl;
     }
     
@@ -646,7 +646,7 @@ class BaseClusterer : public SkeletonClusterer{
     
     
     
-    /*     inline     */ void swap_center_with_sample(size_t k, size_t j){
+     void swap_center_with_sample(size_t k, size_t j){
       cluster_has_changed[k] = true;
       
       size_t c_id_k = center_IDs[k];
@@ -661,11 +661,11 @@ class BaseClusterer : public SkeletonClusterer{
     }
           
     
-    /*     inline     */ double get_E_total(){
+     double get_E_total(){
       return E_total;
     }
     
-    /*     inline     */ double get_cluster_energy(size_t k){
+     double get_cluster_energy(size_t k){
       return cluster_energies[k];
     }
     
@@ -685,7 +685,7 @@ class BaseClusterer : public SkeletonClusterer{
     }
 
     //remove the j'th sample from cluster k, and (if it is not the last element) fill the hole with the tail (size drops by 1) 
-    /*     inline     */ void remove_with_tail_pull(size_t k, size_t j){
+     void remove_with_tail_pull(size_t k, size_t j){
       if (j != get_ndata(k) - 1){
         nearest_1_infos[k][j] = *(nearest_1_infos[k].end() - 1);
         sample_IDs[k][j] = *(sample_IDs[k].end() - 1);
@@ -725,7 +725,7 @@ class BaseClusterer : public SkeletonClusterer{
       return k_below;
     }
     
-    /*     inline     */ void signal_cluster_change(size_t k){
+     void signal_cluster_change(size_t k){
       cluster_has_changed[k] = true;
     }
     
@@ -734,48 +734,48 @@ class BaseClusterer : public SkeletonClusterer{
     }
     
     //set the distance from center k to the j1'th element of cluster k1.
-    /*     inline     */ void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) {
+     void set_center_sample_distance(size_t k, size_t k1, size_t j1, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), distance);
     }
 
-    /*     inline     */ void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
+     void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
     }
         
-    /*     inline     */ void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
+     void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance) {
       metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
     }
 
-    /*     inline     */ void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
+     void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) {
       metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), threshold, distance);
     }
 
-    /*     inline     */ void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
+     void set_sampleID_sampleID_distance(size_t i1, size_t i2, double & distance) {
       metric.set_distance(ptr_datain->at_for_metric(i1), ptr_datain->at_for_metric(i2), distance);
     }
         
         
-    /*     inline     */ double get_center_sample_distance(size_t k, size_t k1, size_t j1) {
+     double get_center_sample_distance(size_t k, size_t k1, size_t j1) {
       double distance;
       set_center_sample_distance(k, k1, j1, distance);
       return distance;
     }
     
-    /*     inline     */ double get_sample_sample_distance(size_t k , size_t j1, size_t j2) {
+     double get_sample_sample_distance(size_t k , size_t j1, size_t j2) {
       double adistance;
       metric.set_distance(cluster_datas[k].at_for_metric(j1), cluster_datas[k].at_for_metric(j2), adistance);
       return adistance;
     }
     
-    /*     inline     */ void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) {
+     void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) {
       metric.set_distance(cluster_datas[k1].at_for_metric(j1), cluster_datas[k2].at_for_metric(j2), threshold, adistance);
     }
     
     
-    /*     inline     */ void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) {
+     void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) {
       metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
     }
-    /*     inline     */ void set_center_center_distance(size_t k1, size_t k2, double & adistance) {
+     void set_center_center_distance(size_t k1, size_t k2, double & adistance) {
       metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), adistance);
     }
     
@@ -1182,34 +1182,34 @@ R"((The prevent output to terminal, set capture_output to false)
     virtual void initialise_with_kmeanspp() = 0;
         
     /* called from put_sample_in_clusters (virtual functions are not nonsensical) */    
-    virtual /*     inline     */ void put_sample_custom_in_cluster(size_t, size_t, const double * const) {}
+    virtual  void put_sample_custom_in_cluster(size_t, size_t, const double * const) {}
 
     
     /* when implementing this, one must guarantee that cluster_has_changed is correctly set in this function */
-    virtual /*     inline     */ void reset_sample_custom(size_t, size_t, size_t, const double * const) {}
+    virtual  void reset_sample_custom(size_t, size_t, size_t, const double * const) {}
     
     virtual bool update_centers() = 0;
          
     virtual void update_sample_info() = 0;
       
     /* functions called from within redistribute */
-    virtual /*     inline     */ void custom_append(size_t, size_t, size_t) {}
+    virtual  void custom_append(size_t, size_t, size_t) {}
     
-    virtual /*     inline     */ void custom_replace_with_last(size_t, size_t) {}
+    virtual  void custom_replace_with_last(size_t, size_t) {}
     
-    virtual /*     inline     */ void custom_replace_with(size_t, size_t, size_t, size_t) {};
+    virtual  void custom_replace_with(size_t, size_t, size_t, size_t) {};
     
-    virtual /*     inline     */ void custom_remove_last(size_t) {};
+    virtual  void custom_remove_last(size_t) {};
 
     /* functions called from within set_cluster_statistics */
-    virtual /*     inline     */ void increment_custom_cluster_statistics(size_t, size_t) {};
+    virtual  void increment_custom_cluster_statistics(size_t, size_t) {};
 
     virtual void set_normalised_custom_cluster_statistics(size_t k) = 0;
     virtual void set_to_zero_custom_cluster_statistics(size_t k) = 0;
 
     virtual std::string get_round_summary() = 0;    
 
-    /*     inline     */ void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
+     void final_push_into_cluster(size_t i, size_t nearest_center, double min_distance, const double * const distances){
       //get your lock on, time for polyphonics. 
       std::lock_guard<std::mutex> lockraii(mutex0);
       
@@ -1224,7 +1224,7 @@ R"((The prevent output to terminal, set capture_output to false)
     }
     
     
-    /*     inline     */ void final_push_into_cluster_post_kmeanspp(size_t i, size_t k1, size_t k2, double d1, double d2){
+     void final_push_into_cluster_post_kmeanspp(size_t i, size_t k1, size_t k2, double d1, double d2){
       std::lock_guard<std::mutex> lockraii(mutex0);
       final_push_into_cluster_basic(i, k1, d1);
       put_nearest_2_infos_margin_in_cluster_post_kmeanspp(k1, k2, d2, f_energy(d2));

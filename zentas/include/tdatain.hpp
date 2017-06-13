@@ -107,7 +107,7 @@ struct BaseDataIn{
     BaseDataIn(size_t ndata, size_t dimension, const TAtomic * const data): ndata(ndata), dimension(dimension), data(data) {}
     BaseDataIn(const InitBundle & ib): BaseDataIn(ib.ndata, ib.dimension, ib.data) {}
     
-    /*     inline     */ size_t get_ndata() const {
+     size_t get_ndata() const {
       return ndata;
     }
     
@@ -164,16 +164,16 @@ class BaseVarLengthDataIn {
     
     BaseVarLengthDataIn(const InitBundle & ib): BaseVarLengthDataIn(ib.ndata, ib.sizes, ib.data) {}
 
-    /*     inline     */ size_t get_ndata() const{
+     size_t get_ndata() const{
       return ndata;
     }
     
 
-    /*     inline     */ size_t get_size(size_t i) const{
+     size_t get_size(size_t i) const{
       return sizes[i];
     }
     
-    /*     inline     */ const TAtomic * get_data(size_t i) const{
+     const TAtomic * get_data(size_t i) const{
       return data + c_sizes[i];
     }
         
@@ -333,7 +333,7 @@ class SparseVectorDataUnrootedInBase : public BaseVarLengthDataIn<TAtomic> {
   public:
     SparseVectorDataUnrootedInBase(const InitBundle & ib): BaseVarLengthDataIn<TAtomic>(ib.ndata, ib.sizes, ib.data), indices_s(ib.indices_s) {}
         
-    /*     inline     */ const size_t * get_indices_s(size_t i) const{
+     const size_t * get_indices_s(size_t i) const{
       return indices_s + c_sizes[i];
     }
     

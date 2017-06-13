@@ -103,7 +103,7 @@ class MultiIndel{
     MultiIndel(const double * const values):values(values) {}
     MultiIndel() {}
     
-    /*     inline     */ double operator() (size_t i) const {
+     double operator() (size_t i) const {
       return values[i];
     }
 };
@@ -117,7 +117,7 @@ class MultiSwitch{
   public:
     MultiSwitch(const double * const values, size_t dict_size):values(values), dict_size(dict_size) {}
     
-    /*     inline     */ double operator() (size_t i, size_t j) const {
+     double operator() (size_t i, size_t j) const {
       return values[i*dict_size + j];
     }
 };
@@ -130,7 +130,7 @@ class ConstIndel{
     ConstIndel(double value):value(value) {}
     ConstIndel() {}
     
-    /*     inline     */ double operator() (size_t) const {
+     double operator() (size_t) const {
       return value;
     }
 };
@@ -144,7 +144,7 @@ class ConstSwitch{
     ConstSwitch(double value):value(value) {
     }
     
-    /*     inline     */ double operator() (int i, int j) const {
+     double operator() (int i, int j) const {
       return value*(i!=j);
     }
 };
@@ -155,7 +155,7 @@ class ConstSwitch{
 
 /* Random comment. The use of min_c_indel might not be the optimal strategy in Levenshtein */
 template <class TSample, class TIndelCost, class TSwitchCost>
-/*     inline     */ void set_levenshtein_distance(const TSample & v_vertical, const TSample & v_horizontal, double threshold,
+ void set_levenshtein_distance(const TSample & v_vertical, const TSample & v_horizontal, double threshold,
                                      size_t dict_size, const TIndelCost f_c_indel, double min_c_indel, 
                                      double max_c_indel,  const TSwitchCost f_c_switch, double * A_prev, 
                                      double *  A_acti, int nrows, int ncols, size_t & n_cells_visited_local, 
@@ -321,13 +321,13 @@ class LevenshteinMetric_X{
       }
     }
     
-    /*     inline     */ void set_distance_simple_test(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance){
+     void set_distance_simple_test(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance){
       (void)threshold;      
       distance = std::abs(int(v_vertical.size) - int(v_horizontal.size));
     }
     
 
-    /*     inline     */ void set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance){      
+     void set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance){      
       
       /* make sure the shorter vector comes first */
       if (v_vertical.size < v_horizontal.size) {
@@ -353,7 +353,7 @@ class LevenshteinMetric_X{
       }
     }
 
-    /*     inline     */ void set_distance_tiffany(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance) {
+     void set_distance_tiffany(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance) {
       
  
       /* numerical issues */
@@ -423,14 +423,14 @@ class LevenshteinMetric_X{
       distance = static_cast<double>(static_cast<float> (distance));
     }
           
-    /*     inline     */ void set_distance(const Sample & a, const Sample & b, double & distance) {
+     void set_distance(const Sample & a, const Sample & b, double & distance) {
       set_distance(a, b, std::numeric_limits<double>::max(), distance);
     }
     
     
     
     
-    /*     inline     */ size_t get_ncalcs() const{
+     size_t get_ncalcs() const{
       size_t ncalcs = 0;
       for (auto & x : v_ncalcs){
         ncalcs += x;
@@ -438,7 +438,7 @@ class LevenshteinMetric_X{
       return ncalcs;
     }
     
-    /*     inline     */ double get_rel_calccosts() const{
+     double get_rel_calccosts() const{
       
       /* How well have we done as compared to the O(row*column) algorithm ?*/
       size_t n_cells_visited = 0;

@@ -36,27 +36,27 @@ class P2Bundle{
     std::unique_ptr <size_t []> ori_;
   
   public:
-    /*     inline     */ size_t & k_1(size_t i){
+     size_t & k_1(size_t i){
       return k_1_[i];
     }
     
-    /*     inline     */ size_t & k_2(size_t i){
+     size_t & k_2(size_t i){
       return k_2_[i];
     }
     
-    /*     inline     */ double & d_1(size_t i ){
+     double & d_1(size_t i ){
       return std::get<0>(d12_[i]);
     }
 
-    /*     inline     */ double & d_2(size_t i){
+     double & d_2(size_t i){
       return std::get<1>(d12_[i]);
     }
     
-    /*     inline     */ size_t & ori(size_t i){
+     size_t & ori(size_t i){
       return ori_[i];
     }
     
-    /*     inline     */ size_t get_ndata() const{
+     size_t get_ndata() const{
       return ndata;
     }
   
@@ -182,10 +182,10 @@ class SkeletonClusterer{
 
 
     /* rule : functions with suffix 'basic' will not touch to_leave_cluster */
-    ///*     inline     */ 
+    // 
     void reset_nearest_info_basic(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest);
     
-    ///*     inline     */
+    //
     void reset_nearest_info(size_t k, size_t j, size_t k_nearest, double d_nearest, double e_nearest);
 
 

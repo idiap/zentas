@@ -48,11 +48,11 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
     BaseClarans<TMetric, TData> (ib, clib), 
     up_dists_centers_old_k_to(new double [ib.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_cc(new double [ib.K*ib.K]), cc(up_cc.get()), up_d_min_cc(new double [ib.K*ib.K]), d_min_cc(up_d_min_cc.get()), up_a_min_cc(new size_t [ib.K*ib.K]), a_min_cc(up_a_min_cc.get()) {}
       
-    /*     inline     */ double * get_cc(){
+     double * get_cc(){
       return cc;
     }
     
-    /*     inline     */ double get_d_min_cc(size_t k){
+     double get_d_min_cc(size_t k){
       return d_min_cc[k];
     }
     
@@ -62,28 +62,28 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
     /* ********************************************************************************************************
      * *************** no additional properties of samples, so default operators defined **********************
      * ********************************************************************************************************/
-    virtual /*     inline     */ void put_sample_custom_in_cluster(size_t i, size_t k_first_nearest, const double * const distances) final override{
+    virtual  void put_sample_custom_in_cluster(size_t i, size_t k_first_nearest, const double * const distances) final override{
       put_nearest_2_infos_margin_in_cluster(i, k_first_nearest, distances);
     }
     
     
-    virtual /*     inline     */ void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
+    virtual  void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
       reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
     }
 
-    virtual /*     inline     */ void custom_append(size_t k_to, size_t k, size_t j) final override{
+    virtual  void custom_append(size_t k_to, size_t k, size_t j) final override{
       nearest_2_infos_margin_append(k_to, k, j);
     }
     
-    virtual /*     inline     */ void custom_replace_with_last(size_t k, size_t j) final override{
+    virtual  void custom_replace_with_last(size_t k, size_t j) final override{
       nearest_2_infos_margin_replace_with_last(k, j);
     }
     
-    virtual /*     inline     */ void custom_replace_with(size_t k1, size_t j1, size_t k2, size_t j2) final override{
+    virtual  void custom_replace_with(size_t k1, size_t j1, size_t k2, size_t j2) final override{
       nearest_2_infos_margin_replace_with(k1, j1, k2, j2);
     }
     
-    virtual /*     inline     */ void custom_remove_last(size_t k) final override{
+    virtual  void custom_remove_last(size_t k) final override{
       nearest_2_infos_margin_remove_last(k);
     }
 
@@ -98,7 +98,7 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
      * ************************************************************/
      
     /* set cc[k,kp] for all k,kp, and set min_cc */ 
-    /*     inline     */ virtual void set_center_center_info() override final {
+     virtual void set_center_center_info() override final {
       set_center_center_info_l2(cc, d_min_cc, a_min_cc);
     }
 

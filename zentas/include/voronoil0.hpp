@@ -45,13 +45,13 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
 
    
    private:     
-    virtual /*     inline     */ void put_sample_custom_in_cluster(size_t, size_t, const double * const) final override{}
-    virtual /*     inline     */ void reset_sample_custom(size_t, size_t, size_t, const double * const) final override{}
-    virtual /*     inline     */ void custom_append(size_t, size_t, size_t) final override{}
-    virtual /*     inline     */ void custom_replace_with_last(size_t, size_t) final override{}
-    virtual /*     inline     */ void custom_replace_with(size_t, size_t, size_t, size_t) final override{}
-    virtual /*     inline     */ void custom_remove_last(size_t) final override{}
-    virtual /*     inline     */ void increment_custom_cluster_statistics(size_t, size_t) final override{}
+    virtual  void put_sample_custom_in_cluster(size_t, size_t, const double * const) final override{}
+    virtual  void reset_sample_custom(size_t, size_t, size_t, const double * const) final override{}
+    virtual  void custom_append(size_t, size_t, size_t) final override{}
+    virtual  void custom_replace_with_last(size_t, size_t) final override{}
+    virtual  void custom_replace_with(size_t, size_t, size_t, size_t) final override{}
+    virtual  void custom_remove_last(size_t) final override{}
+    virtual  void increment_custom_cluster_statistics(size_t, size_t) final override{}
     virtual void set_normalised_custom_cluster_statistics(size_t) final override{}
     virtual void set_to_zero_custom_cluster_statistics(size_t) final override{}
     virtual void set_center_center_info() final override{}
