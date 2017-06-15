@@ -17,7 +17,10 @@ void dispatch(std::string algorithm, size_t level, const typename TData::InitBun
   
   DataIn datain(datain_ib);
 
-  BaseClustererInitBundle<DataIn, TMetric> ib(K, &datain, indices_init, initialisation_method, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, energy, with_tests, metric_initializer, energy_initialiser, bigbang);
+
+  nszen::SkeletonClustererInitBundle sc(K, datain_ib.ndata, bigbang, indices_init, initialisation_method, max_time, min_mE, max_rounds, nthreads, seed, energy, with_tests, indices_final, labels, &energy_initialiser);
+  
+  BaseClustererInitBundle<DataIn, TMetric> ib(sc, datain, metric_initializer);
   
   BaseClaransInitBundle clib(max_proposals, patient);
   
@@ -80,11 +83,7 @@ const typename TData::InitBundle & datain_ib, size_t K, const size_t * const ind
   if (initialisation_method == "from_init_indices" && indices_init == nullptr){
     throw zentas::zentas_error(R"(initialisation_method == "from_init_indices" && indices_init == nullptr) is true)");
   }
-  
-  //if (initialisation_method != "from_init_indices"){  
-    //indices_init = nullptr;
-  //}
-  
+    
 
   dispatch <TData, TMetric> (algorithm, level, datain_ib, K, indices_init, initialisation_method, max_proposals, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, patient, energy, with_tests, metric_initializer, energy_initialiser, bigbang);
   

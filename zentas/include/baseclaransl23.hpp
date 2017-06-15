@@ -46,7 +46,7 @@ class BaseClaransL23 : public BaseClarans<TMetric, TData> {
   
     BaseClaransL23(const BaseClustererInitBundle<DataIn, TMetric> & ib, const BaseClaransInitBundle & clib): 
     BaseClarans<TMetric, TData> (ib, clib), 
-    up_dists_centers_old_k_to(new double [ib.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_cc(new double [ib.K*ib.K]), cc(up_cc.get()), up_d_min_cc(new double [ib.K*ib.K]), d_min_cc(up_d_min_cc.get()), up_a_min_cc(new size_t [ib.K*ib.K]), a_min_cc(up_a_min_cc.get()) {}
+    up_dists_centers_old_k_to(new double [ib.sc.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_cc(new double [ib.sc.K*ib.sc.K]), cc(up_cc.get()), up_d_min_cc(new double [ib.sc.K*ib.sc.K]), d_min_cc(up_d_min_cc.get()), up_a_min_cc(new size_t [ib.sc.K*ib.sc.K]), a_min_cc(up_a_min_cc.get()) {}
       
      double * get_cc(){
       return cc;

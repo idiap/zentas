@@ -29,7 +29,6 @@ struct ClaransStatistics{
     double R1;
     // max_{j in k} (d_second_nearest)
     double R2;    
-    
     // M / ndata in cluster k
     double m;
     // M_star / ndata in cluster k
@@ -86,7 +85,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     typedef typename TData::DataIn DataIn;
  
   private:
-    static constexpr double small_delta_E = 0.000001242354239862345234859234653745923847564657893459827645235;
+    //static constexpr double small_delta_E = 0.000001242354239862345234859234653745923847564657893459827645235;
     std::vector<std::vector<XNearestInfo>> nearest_2_infos;
     
   
@@ -114,11 +113,8 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     
     BaseClarans(const BaseClustererInitBundle<DataIn, TMetric> & ib, size_t max_proposals, bool patient): 
     BaseClusterer<TMetric, TData>(ib),
-    nearest_2_infos(ib.K), energy_margins(ib.K), cluster_statistics(ib.K), n_proposals(0), max_proposals(max_proposals), patient(patient) {//gen(rd()) {
+    nearest_2_infos(ib.sc.K), energy_margins(ib.sc.K), cluster_statistics(ib.sc.K), n_proposals(0), max_proposals(max_proposals), patient(patient) {//gen(rd()) {
       
-       //gen(1011)
-    //mowri << max_proposals << zentas::Endl;
-    //std::abort();
     }
     
 

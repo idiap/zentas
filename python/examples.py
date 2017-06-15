@@ -18,17 +18,32 @@ import pyzentas
 from IPython.core.debugger import Tracer 
 
 
+def tests():
+  
+  ndata = int(1e3)
+  K = 1e1
+  dimension = 4
+  npr.seed(1011)
+  data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
+  
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
+  tangerine =  z.den(data, True)
+
+  z = pyzentas.pyzen(init = np.arange(K), K = K, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
+  tangerine =  z.den(data, True)
+
+
 def dense_data_example():
   """
   cluster dense data ndata points in dimension `dimension'.
   """
   
   
-  ndata = int(1e6)
+  ndata = int(1e5)
   dimension = 4
   npr.seed(1011)
   data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
-  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_rounds = 50, seed = 1011, nthreads = 1, with_tests = False, patient = False)
+  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_rounds = 1000, seed = 1011, nthreads = 1, with_tests = False, patient = False)
   #, , 
   
   do_vdimap = True

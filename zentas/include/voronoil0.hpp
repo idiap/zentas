@@ -24,6 +24,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     typedef typename TData::DataIn DataIn;
     VoronoiL0(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer<TMetric, TData> (ib) {}
   
+       
   public:
     using BaseClusterer<TMetric, TData>::mowri;
     using BaseClusterer<TMetric, TData>::K;

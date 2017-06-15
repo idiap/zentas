@@ -41,7 +41,7 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
     
     ClaransL1(const BaseClustererInitBundle<DataIn,  TMetric> & ib, const BaseClaransInitBundle & clib): 
     BaseClarans<TMetric, TData> (ib, clib),
-    up_dists_centers_old_k_to(new double [ib.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_dists_centers_new_k_to(new double [ib.K]), dists_centers_new_k_to(up_dists_centers_new_k_to.get()){}
+    up_dists_centers_old_k_to(new double [ib.sc.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_dists_centers_new_k_to(new double [ib.sc.K]), dists_centers_new_k_to(up_dists_centers_new_k_to.get()){}
         
   private: 
 

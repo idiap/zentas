@@ -8,7 +8,7 @@
 
 namespace nszen{
 
-
+namespace init{
 
 size_t extract_INT(std::string initialisation_method, size_t prefix_length){
   
@@ -74,4 +74,5 @@ void populate_uniformly(size_t * const center_indices_init, size_t K, size_t nda
   }
 }
 
+}
 }
