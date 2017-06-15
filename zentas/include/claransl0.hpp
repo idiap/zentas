@@ -23,16 +23,14 @@ the GNU General Public License along with zentas. If not, see
 namespace nszen{
 
  
-template <class TMetric, class TData>
-class ClaransL0 : public BaseClarans<TMetric, TData> {
+//template <class TMetric, class TData>
+class ClaransL0 : public BaseClarans{//BaseClarans<TMetric, TData> {
 
-  typedef typename TData::DataIn DataIn;  
-  
   public:
     
     
-    ClaransL0(const BaseClustererInitBundle<DataIn, TMetric> & ib, const BaseClaransInitBundle & clib): 
-    BaseClarans<TMetric, TData> (ib, clib) {} 
+    ClaransL0(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): 
+    BaseClarans (sb, eb) {} 
     
     
    private: 
@@ -103,24 +101,7 @@ class ClaransL0 : public BaseClarans<TMetric, TData> {
     virtual void put_sample_in_cluster(size_t i) override final {
       //BaseClusterer<TMetric, TData>::base_put_sample_in_cluster(i); 
       base_put_sample_in_cluster(i);
-    }
-  
-  
-   
-   public: 
-    using BaseClarans<TMetric, TData>::put_nearest_2_infos_margin_in_cluster;   
-    using BaseClarans<TMetric, TData>::reset_sample_nearest_2_infos_margin;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_append;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_replace_with_last;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_replace_with;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_remove_last;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_test;
-    using BaseClarans<TMetric, TData>::basic_clarans_update_sample_info;
-    //using BaseClarans<TMetric, TData>::basic_clarans_evaluate_proposal;
-    using BaseClarans<TMetric, TData>::update_centers_greedy;
-    using BaseClarans<TMetric, TData>::get_delta_E_l0;
-    using BaseClusterer<TMetric, TData>::base_put_sample_in_cluster;
-   
+    }   
 };
 
 } //namespace nszen

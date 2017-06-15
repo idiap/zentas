@@ -20,42 +20,20 @@ the GNU General Public License along with zentas. If not, see
 namespace nszen{
 
  
-template <class TMetric, class TData>
-class ClaransL2 : public BaseClaransL23<TMetric, TData> {
+//template <class TMetric, class TData>
+class ClaransL2 : public BaseClaransL23 {
 
 
   public:
 
-    typedef typename TData::DataIn DataIn;
-    
-      
-    ClaransL2(const BaseClustererInitBundle<DataIn, TMetric> & ib, const BaseClaransInitBundle & clib): BaseClaransL23<TMetric, TData> (ib, clib) {}
-
-
-
+  ClaransL2(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): BaseClaransL23 (sb, eb) {}
 
   private:
     
-    //virtual bool evaluate_proposal(size_t k1, size_t k2, size_t j2) override final {
-      //return evaluate_proposal_l2(k1, k2, j2, get_d_min_cc(k1), get_cc());
-    //}
 
-    virtual double get_delta_E(size_t k1, size_t k2, size_t j2, bool serial){
-      return get_delta_E_l2(k1, k2, j2, get_d_min_cc(k1), get_cc(), serial);
-    }
-
-
-
-    //virtual bool update_centers() override final {
-      //return update_centers_greedy();
-    //}
-        
-  public:
-    using BaseClaransL23<TMetric, TData>::get_cc;
-    using BaseClaransL23<TMetric, TData>::get_d_min_cc;
-    //using BaseClarans<TMetric, TData>::evaluate_proposal_l2;
-    using BaseClarans<TMetric, TData>::update_centers_greedy;      
-    using BaseClarans<TMetric, TData>::get_delta_E_l2;
+  virtual double get_delta_E(size_t k1, size_t k2, size_t j2, bool serial){
+    return get_delta_E_l2(k1, k2, j2, get_d_min_cc(k1), get_cc(), serial);
+  }
 
 };
 

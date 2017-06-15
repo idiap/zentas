@@ -2,7 +2,6 @@
 #include <string>
 
 #include "zentaserror.hpp"
-
 #include "outputwriter.hpp"
 
 namespace zentas{

@@ -17,12 +17,10 @@ the GNU General Public License along with zentas. If not, see
 #include "claransl3.hpp"
 #include "voronoil0.hpp"
 #include "outputwriter.hpp"
-
 #include "dispatch.hpp"
-
 #include "zentaserror.hpp"
-
 #include "vdimap.hpp"
+#include "tmetric.hpp"
 
 namespace nszen{
 

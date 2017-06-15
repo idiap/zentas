@@ -1,10 +1,11 @@
 #include "zentasinfo.hpp"
 #include "zentaserror.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <tuple>
-
 #include <map>
+
 namespace nszen{
   
 

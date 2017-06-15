@@ -12,7 +12,6 @@
 #include <vector>
 #include <chrono>
 #include <cmath>
-
 #include <algorithm>
 #include <type_traits>
 #include <random>

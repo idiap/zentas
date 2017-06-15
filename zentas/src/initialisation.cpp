@@ -1,9 +1,5 @@
 #include "initialisation.hpp"
 
-
-#include "tdatain.hpp"
-#include "tmetric.hpp"
-
 #include "zentaserror.hpp"
 
 namespace nszen{

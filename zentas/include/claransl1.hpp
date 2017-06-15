@@ -20,10 +20,9 @@ the GNU General Public License along with zentas. If not, see
 namespace nszen{
 
  
-template <class TMetric, class TData>
-class ClaransL1 : public BaseClarans<TMetric, TData> {
 
-  typedef typename TData::DataIn DataIn;
+class ClaransL1 : public BaseClarans {
+
    
   private:
   
@@ -39,9 +38,9 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
   public:
     
     
-    ClaransL1(const BaseClustererInitBundle<DataIn,  TMetric> & ib, const BaseClaransInitBundle & clib): 
-    BaseClarans<TMetric, TData> (ib, clib),
-    up_dists_centers_old_k_to(new double [ib.sc.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_dists_centers_new_k_to(new double [ib.sc.K]), dists_centers_new_k_to(up_dists_centers_new_k_to.get()){}
+    ClaransL1(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): 
+    BaseClarans (sb, eb),
+    up_dists_centers_old_k_to(new double [sb.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_dists_centers_new_k_to(new double [sb.K]), dists_centers_new_k_to(up_dists_centers_new_k_to.get()){}
         
   private: 
 
@@ -81,35 +80,23 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
       base_put_sample_in_cluster(i);
     }
 
-    //virtual bool update_centers() override final{
-      //return update_centers_greedy();
-    //}
 
     /* ************************************************************
      * *************** center - center stuff **********************
      * ************************************************************/
-    
-     
-    
 
     /* set center_nearest_center[k] for k in [0,K) */ 
      virtual void set_center_center_info() override final {
       set_center_center_info_l1(center_nearest_center);
     }
     
-
-    
-    
     virtual void update_center_center_info() override final {
       update_center_center_info_l1(center_nearest_center, dists_centers_old_k_to, dists_centers_new_k_to);
     }
     
-          
     virtual void center_center_info_test() override final{
       center_center_info_test_l1(center_nearest_center);
     }
-    
-    
     
     virtual void custom_acceptance_call() override final {
       for (size_t k = 0; k < K; ++k){
@@ -117,8 +104,6 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
         set_center_sample_distance_nothreshold(k, k_from, j_from, dists_centers_new_k_to[k]);
       }
     }
-    
-    
 
     /* *******************************************************************
      * *************** the 2 core clarans functions **********************
@@ -129,44 +114,11 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
       return get_delta_E_l1(k1, k2, j2, center_nearest_center[k1].d_x, serial);
     }
 
-
     virtual void update_sample_info() override final{
       //BaseClarans<TMetric, TData>::basic_clarans_update_sample_info();
       update_sample_info_l1(dists_centers_old_k_to, dists_centers_new_k_to);
     }
     
-    //virtual bool evaluate_proposal(size_t k1, size_t k2, size_t j2) override final{      
-      //return evaluate_proposal_l1(k1, k2, j2, center_nearest_center[k1].d_x);
-    //}
-
-    
-
-    
-  public:
-
-    using BaseClusterer<TMetric, TData>::K;
-    using BaseClusterer<TMetric, TData>::set_center_sample_distance;
-    using BaseClusterer<TMetric, TData>::set_center_center_distance;
-    using SkeletonClusterer::set_center_center_distance_nothreshold;
-    using SkeletonClusterer::set_center_sample_distance_nothreshold;
-    using BaseClusterer<TMetric, TData>::base_put_sample_in_cluster;    
-    using BaseClarans<TMetric, TData>::k_to;
-    using BaseClarans<TMetric, TData>::k_from;
-    using BaseClarans<TMetric, TData>::j_from;
-    using BaseClarans<TMetric, TData>::put_nearest_2_infos_margin_in_cluster;   
-    using BaseClarans<TMetric, TData>::reset_sample_nearest_2_infos_margin;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_append;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_replace_with_last;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_replace_with;    
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_remove_last;
-    using BaseClarans<TMetric, TData>::nearest_2_infos_margin_test;
-    using BaseClarans<TMetric, TData>::update_sample_info_l1;
-    using BaseClarans<TMetric, TData>::get_delta_E_l1;
-    using BaseClarans<TMetric, TData>::center_center_info_test_l1;
-    using BaseClarans<TMetric, TData>::update_center_center_info_l1;    
-    using BaseClarans<TMetric, TData>::update_centers_greedy;      
-    using BaseClarans<TMetric, TData>::set_center_center_info_l1;
-  
 
 };
 

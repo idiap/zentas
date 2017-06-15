@@ -13,10 +13,10 @@ the GNU General Public License along with zentas. If not, see
 #include "zentas.hpp"
 #include "fasta.hpp"
 #include "costs.hpp"
+#include "zentaserror.hpp"
 
 #include <iostream>
 #include <fstream>
-#include "zentaserror.hpp"
 #include <vector>
 #include <set>
 

@@ -13,8 +13,8 @@ the GNU General Public License along with zentas. If not, see
 #ifndef ZENTAS_VORONOI1_HPP
 #define ZENTAS_VORONOI1_HPP
 
-#include "baseclusterer.hpp"
 #include "skeletonclusterer.hpp"
+#include "extrasbundle.hpp"
 
 namespace nszen{
 

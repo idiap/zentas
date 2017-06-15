@@ -1,13 +1,11 @@
-
 #include <vector>
-
 #include <algorithm>
 #include <map>
-
 #include <sstream>
-#include "energyinit.hpp"
 
+#include "energyinit.hpp"
 #include "zentaserror.hpp"
+
 namespace nszen{
   
 void scrutinize_input_1(const EnergyInitialiser & energy_initialiser, std::string energy, size_t K, std::string algorithm, size_t level, size_t ndata){

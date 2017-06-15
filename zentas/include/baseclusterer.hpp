@@ -13,24 +13,18 @@ the GNU General Public License along with zentas. If not, see
 #ifndef ZENTAS_BASECLUSTERER_HPP
 #define ZENTAS_BASECLUSTERER_HPP
 
-#include "skeletonclusterer.hpp"
-
-
 #include "tdata.hpp"
-#include "tdatain.hpp"
-#include "tmetric.hpp"
+//#include "tdatain.hpp"
+//#include "tmetric.hpp"
+
+#include "skeletonclusterer.hpp"
+#include "extrasbundle.hpp"
 
 namespace nszen{
 
 
-
-class ExtrasBundle{
-  
-};
-
-
 template <class TDataIn, class TMetric>
-struct BaseClustererInitBundle{
+struct ClustererInitBundle{
 
      
   typedef typename TMetric::Initializer TMetricInitializer;
@@ -40,14 +34,14 @@ struct BaseClustererInitBundle{
   const TMetricInitializer & metric_initializer;
   const ExtrasBundle & eb;
   
-  BaseClustererInitBundle(
+  ClustererInitBundle(
   const SkeletonClustererInitBundle & sc, 
   const TDataIn & datain,
   const TMetricInitializer & metric_initializer,
   const ExtrasBundle & eb_): sc(sc), datain(datain), metric_initializer(metric_initializer), eb(eb_) {}
   
 };
-  
+
 
 
 template <class TMetric, class TData, class TOpt>
@@ -85,7 +79,7 @@ class Clusterer : public TOpt{
    
   centers_data(datain, true), rf_data(datain, true), ptr_datain(& datain), metric(datain, sc.nthreads, metric_initializer), ptr_kmoo_c_dt( new TData(datain, true)) {}
 
-  Clusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): Clusterer(ib.sc, ib.datain, ib.metric_initializer, ib.eb) {}
+  Clusterer(const ClustererInitBundle<DataIn, TMetric> & ib): Clusterer(ib.sc, ib.datain, ib.metric_initializer, ib.eb) {}
 
   /* metric only appears in these functions */
   virtual double get_rel_calccosts() override final{
@@ -251,7 +245,7 @@ class BaseClusterer : public SkeletonClusterer{
   SkeletonClusterer(sc), 
   centers_data(datain, true), rf_data(datain, true), ptr_datain(& datain), metric(datain, sc.nthreads, metric_initializer), ptr_kmoo_c_dt( new TData(datain, true)) {}
 
-  BaseClusterer(const BaseClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.sc, ib.datain, ib.metric_initializer) {}
+  BaseClusterer(const ClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer(ib.sc, ib.datain, ib.metric_initializer) {}
 
   /* metric only appears in these functions */
   virtual double get_rel_calccosts() override final{

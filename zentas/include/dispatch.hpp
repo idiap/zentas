@@ -2,10 +2,16 @@
 #define ZEN_DISPATCH_HPP
 
 #include "energyinit.hpp"
+#include "baseclusterer.hpp"
+#include "extrasbundle.hpp"
 
 namespace nszen{
 
 
+
+
+  
+  
 
 
 void scrutinize_input_1(const EnergyInitialiser & energy_initialiser, std::string energy, size_t K, std::string algorithm, size_t level, size_t ndata);
@@ -24,31 +30,31 @@ void dispatch(std::string algorithm, size_t level, const typename TData::InitBun
   nszen::SkeletonClustererInitBundle sc(K, datain_ib.ndata, bigbang, indices_init, initialisation_method, max_time, min_mE, max_rounds, nthreads, seed, energy, with_tests, indices_final, labels, &energy_initialiser);
   
   
-  ExtrasBundle eb;
-  BaseClustererInitBundle<DataIn, TMetric> ib(sc, datain, metric_initializer, eb);
+  ExtrasBundle eb(max_proposals, patient);
+  ClustererInitBundle<DataIn, TMetric> ib(sc, datain, metric_initializer, eb);
   
-  BaseClaransInitBundle clib(max_proposals, patient);
+//  BaseClaransInitBundle clib();
   
   if (algorithm.compare("clarans") == 0){
     if (level == 0){
       //throw zentas::zentas_error("clarans l0 not enabled, grep seow340jkosdm4 and uncomment here to enable");      
-      nszen::ClaransL0<TMetric , TData > cc (ib, clib);
+      nszen::Clusterer<TMetric,  TData, ClaransL0> cc (ib);
       cc.go();
       
     }  
     if (level == 1){
       //throw zentas::zentas_error("clarans l1 not enabled, grep sdrfoweinsdima and uncomment here to enable");
-      nszen::ClaransL1<TMetric, TData > cc (ib, clib);
+      nszen::Clusterer<TMetric,  TData, ClaransL1> cc (ib);
       cc.go();
     }
     if (level == 2){
       //throw zentas::zentas_error("clarans l2 not enabled, grep sdmi4sdfsdollll and uncomment here to enable");
-      nszen::ClaransL2<TMetric, TData > cc (ib, clib);
+      nszen::Clusterer<TMetric,  TData, ClaransL2> cc (ib);
       cc.go();
     }
     if (level == 3){
       //throw zentas::zentas_error("clarans l3 not enabled, grep sdmi4sdfsdfollll and uncomment here to enable");
-      nszen::ClaransL3<TMetric, TData > cc (ib, clib);
+      nszen::Clusterer<TMetric,  TData, ClaransL3> cc (ib);
       cc.go();
     }
   }
@@ -59,6 +65,10 @@ void dispatch(std::string algorithm, size_t level, const typename TData::InitBun
       nszen::Clusterer<TMetric,  TData, VoronoiL0> cc (ib);
       cc.go();
     }
+  }
+  
+  else{
+    throw zentas::zentas_error("unrecognised algorithm in dispatch");
   }
 }
 

@@ -22,8 +22,6 @@ the GNU General Public License along with zentas. If not, see
 #include <sstream>
 #include <fstream>
 
-#include "tdatain.hpp"
-
 
 namespace nszen{
 

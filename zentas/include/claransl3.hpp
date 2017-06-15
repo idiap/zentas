@@ -13,40 +13,28 @@ the GNU General Public License along with zentas. If not, see
 #ifndef ZENTAS_CLARANSL3_HPP
 #define ZENTAS_CLARANSL3_HPP
 
-#include "claransl2.hpp"
+#include "baseclaransl23.hpp"
 
 
 
 namespace nszen{
 
  
-template <class TMetric, class TData>
-class ClaransL3 : public BaseClaransL23<TMetric, TData> {
+//template <class TMetric, class TData>
+class ClaransL3 : public BaseClaransL23 {
 
   
-  typedef typename TData::DataIn DataIn;
 
   public: 
-    ClaransL3(const BaseClustererInitBundle<DataIn, TMetric> & ib, const BaseClaransInitBundle & clib): BaseClaransL23<TMetric, TData> (ib, clib) {}
+
+  ClaransL3(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): BaseClaransL23 (sb, eb) {}
     
   private:
 
-    virtual double get_delta_E(size_t k1, size_t k2, size_t j2, bool serial){
-      
-      //quelch warning
-      serial = ~serial;
-      
-      return get_delta_hat_l3(k1, k2, j2, get_d_min_cc(k1), get_cc());
-    }
-
-    
-  public:
-    using BaseClaransL23<TMetric, TData>::get_cc;
-    using BaseClaransL23<TMetric, TData>::get_d_min_cc;
-    using BaseClarans<TMetric, TData>::update_centers_greedy;
-    using BaseClarans<TMetric, TData>::update_centers_patient;
-    using BaseClarans<TMetric, TData>::get_delta_hat_l3;    
-
+  virtual double get_delta_E(size_t k1, size_t k2, size_t j2, bool serial){
+    (void)serial;      
+    return get_delta_hat_l3(k1, k2, j2, get_d_min_cc(k1), get_cc());
+  }
 };
 
 }
