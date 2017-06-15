@@ -18,7 +18,7 @@ the GNU General Public License along with zentas. If not, see
 
 
 
-
+//TODO : put this in a namespace. 
 struct ClaransStatistics{
   public:
     // max_{j in k} (energy_margins)

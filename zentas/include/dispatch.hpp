@@ -5,6 +5,9 @@
 
 namespace nszen{
 
+
+
+
 void scrutinize_input_1(const EnergyInitialiser & energy_initialiser, std::string energy, size_t K, std::string algorithm, size_t level, size_t ndata);
 
 template <typename TData, typename TMetric>
@@ -20,7 +23,9 @@ void dispatch(std::string algorithm, size_t level, const typename TData::InitBun
 
   nszen::SkeletonClustererInitBundle sc(K, datain_ib.ndata, bigbang, indices_init, initialisation_method, max_time, min_mE, max_rounds, nthreads, seed, energy, with_tests, indices_final, labels, &energy_initialiser);
   
-  BaseClustererInitBundle<DataIn, TMetric> ib(sc, datain, metric_initializer);
+  
+  ExtrasBundle eb;
+  BaseClustererInitBundle<DataIn, TMetric> ib(sc, datain, metric_initializer, eb);
   
   BaseClaransInitBundle clib(max_proposals, patient);
   
@@ -51,7 +56,7 @@ void dispatch(std::string algorithm, size_t level, const typename TData::InitBun
   else if (algorithm.compare("voronoi") == 0){
     //throw zentas::zentas_error("voronoi not enabled, grep dfseimmgrfiddiddidiid and uncomment here to enable");
     if (level == 0){
-      nszen::VoronoiL0<TMetric,  TData > cc (ib);
+      nszen::Clusterer<TMetric,  TData, VoronoiL0> cc (ib);
       cc.go();
     }
   }

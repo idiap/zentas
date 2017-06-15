@@ -22,14 +22,14 @@ def tests():
   
   ndata = int(1e3)
   K = 1e1
-  dimension = 4
+  dimension = 2
   npr.seed(1011)
   data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
   
-  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
+  z = pyzentas.pyzen(K = K, metric = 'l2', algorithm = "voronoi", level = 0, energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
   tangerine =  z.den(data, True)
 
-  z = pyzentas.pyzen(init = np.arange(K), K = K, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
+  z = pyzentas.pyzen(init = np.arange(K), K = K, algorithm = "voronoi", level = 0,  metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
   tangerine =  z.den(data, True)
 
 
