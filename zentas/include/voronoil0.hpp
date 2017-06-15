@@ -31,8 +31,8 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::get_ndata;
     using BaseClusterer<TMetric, TData>::f_energy;
     using BaseClusterer<TMetric, TData>::set_center_sample_distance;
-    using BaseClusterer<TMetric, TData>::get_center_sample_distance;
-    using BaseClusterer<TMetric, TData>::get_sample_sample_distance;
+    using SkeletonClusterer::get_center_sample_distance_nothreshold;
+    using SkeletonClusterer::get_sample_sample_distance_nothreshold;
     using BaseClusterer<TMetric, TData>::get_E_total;
     using BaseClusterer<TMetric, TData>::get_cluster_energy;
     using BaseClusterer<TMetric, TData>::swap_center_with_sample;
@@ -124,7 +124,7 @@ class VoronoiL0 : public BaseClusterer<TMetric, TData> {
         for (size_t j_prop = 0; j_prop < get_ndata(k); ++j_prop){
           E_prop = get_e1(k, j_prop); 
           for (size_t j = 0; j < get_ndata(k); ++j){
-            E_prop += f_energy(get_sample_sample_distance(k, j_prop, j));
+            E_prop += f_energy(get_sample_sample_distance_nothreshold(k, j_prop, j));
           }
           if (E_prop < E_prop_best){
             E_prop_best = E_prop;

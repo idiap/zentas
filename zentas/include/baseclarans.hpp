@@ -324,7 +324,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
 
      void set_center_center_distances(size_t k, double * const distances){
       for (size_t kp = 0; kp < K; ++kp){
-        set_center_center_distance(k, kp, distances[kp]);
+        set_center_center_distance_nothreshold(k, kp, distances[kp]);
       }
     }
 
@@ -807,7 +807,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
         double adist;
         for (size_t kp = 0; kp < K; ++kp){
           if (kp != k){
-            set_center_center_distance(k, kp, adist);
+            set_center_center_distance_nothreshold(k, kp, adist);
             if (adist < distance){
               distance = adist;
               //nearest = kp;
@@ -836,7 +836,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       //updating cc.
       std::copy(cc+K*k_to, cc + K*(k_to +1), dists_centers_old_k_to);
       for (size_t k = 0; k < K; ++k){
-        set_center_sample_distance(k, k_from, j_from, cc[k*K + k_to]);
+        set_center_sample_distance_nothreshold(k, k_from, j_from, cc[k*K + k_to]);
         cc[k_to*K + k] = cc[k*K + k_to];
       }
       dists_centers_old_k_to[k_to] = cc[k_to*K + k_to];
@@ -867,7 +867,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       
       for (size_t k = 0; k < K; ++k){
         for (size_t kp = k; kp < K; ++kp){
-          set_center_center_distance(k, kp, cc[k*K + kp]);
+          set_center_center_distance_nothreshold(k, kp, cc[k*K + kp]);
           cc[kp*K + k] = cc[k*K + kp];
           //std::cout << cc[kp*K + k] << " ";
         }
@@ -959,7 +959,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
           size_t k_second_nearest;
           
           for (size_t k2 = 0; k2 < K; ++k2){  
-            set_center_sample_distance(k2, k, j, distances[k2]);
+            set_center_sample_distance_nothreshold(k2, k, j, distances[k2]);
 
             if (k2 != get_a1(k,j)){
               if (distances[k2] < d_second_nearest){
@@ -1070,13 +1070,13 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       }
       
       //center of k1
-      double k1_post_dist = get_center_sample_distance(k1, k2, j2);
+      double k1_post_dist = get_center_sample_distance_nothreshold(k1, k2, j2);
       for (size_t k = 0; k < k1; ++k){
-        set_center_center_distance(k, k1, adist);
+        set_center_center_distance_nothreshold(k, k1, adist);
         k1_post_dist = std::min(k1_post_dist, adist);
       }
       for (size_t k = k1+1; k < K; ++k){
-        set_center_center_distance(k, k1, adist);
+        set_center_center_distance_nothreshold(k, k1, adist);
         k1_post_dist = std::min(k1_post_dist, adist);
       }
       delta_E += f_energy(k1_post_dist);
@@ -1192,7 +1192,7 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
       auto dists_centers_j2 = up_dists_centers_j2.get();
       /* if this were l(>1) I would consider parallelising it */
       for (size_t k = 0; k < K; ++k){
-        set_center_sample_distance(k, k2, j2, dists_centers_j2[k]);
+        set_center_sample_distance_nothreshold(k, k2, j2, dists_centers_j2[k]);
       }
         
       //center of k1
@@ -1306,11 +1306,14 @@ class BaseClarans : public BaseClusterer<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::K;
     using BaseClusterer<TMetric, TData>::ndata;
     using BaseClusterer<TMetric, TData>::f_energy;
-    using BaseClusterer<TMetric, TData>::set_center_sample_distance;
-    using BaseClusterer<TMetric, TData>::get_center_sample_distance;
-    using BaseClusterer<TMetric, TData>::get_sample_sample_distance;
-    using BaseClusterer<TMetric, TData>::set_sample_sample_distance;
-    using BaseClusterer<TMetric, TData>::set_center_center_distance;
+    using SkeletonClusterer::set_center_sample_distance;
+    using SkeletonClusterer::get_center_sample_distance_nothreshold;
+    using SkeletonClusterer::set_center_sample_distance_nothreshold;
+    using SkeletonClusterer::get_sample_sample_distance_nothreshold;
+    using SkeletonClusterer::set_sample_sample_distance;
+    using SkeletonClusterer::set_center_center_distance;
+    using SkeletonClusterer::set_center_center_distance_nothreshold;
+ 
     using BaseClusterer<TMetric, TData>::get_E_total;
     using BaseClusterer<TMetric, TData>::get_cluster_energy;
     using BaseClusterer<TMetric, TData>::move_center_into_its_own_cluster;

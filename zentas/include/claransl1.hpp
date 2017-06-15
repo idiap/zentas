@@ -113,8 +113,8 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
     
     virtual void custom_acceptance_call() override final {
       for (size_t k = 0; k < K; ++k){
-        set_center_center_distance(k, k_to, dists_centers_old_k_to[k]);
-        set_center_sample_distance(k, k_from, j_from, dists_centers_new_k_to[k]);
+        set_center_center_distance_nothreshold(k, k_to, dists_centers_old_k_to[k]);
+        set_center_sample_distance_nothreshold(k, k_from, j_from, dists_centers_new_k_to[k]);
       }
     }
     
@@ -147,6 +147,8 @@ class ClaransL1 : public BaseClarans<TMetric, TData> {
     using BaseClusterer<TMetric, TData>::K;
     using BaseClusterer<TMetric, TData>::set_center_sample_distance;
     using BaseClusterer<TMetric, TData>::set_center_center_distance;
+    using SkeletonClusterer::set_center_center_distance_nothreshold;
+    using SkeletonClusterer::set_center_sample_distance_nothreshold;
     using BaseClusterer<TMetric, TData>::base_put_sample_in_cluster;    
     using BaseClarans<TMetric, TData>::k_to;
     using BaseClarans<TMetric, TData>::k_from;
