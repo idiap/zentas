@@ -53,7 +53,6 @@ class LpMetricInitializer{
 template <typename TNumber>
 class LpDistance{
 
-
   public:
 
     size_t dimension;
@@ -71,13 +70,63 @@ class LpDistance{
       return calccosts;
     }
   
+  
+  
 
-    /* the inherited classes have very similar set_distance functions, but with differences scattered within them.
-     * code could be compactified by having set_distance be non-virtual, with a few calls to virtual functions within.
-     * but virtual calls are slower than non-virtual calls (I have measured this) and for now sticking to current approach  */
-    virtual void set_distance(const TNumber * const &, const TNumber * const &, double, double & ) = 0;
-    virtual void set_distance(const SparseVectorSample<TNumber> &, const SparseVectorSample<TNumber> &, double, double &) = 0;
+
+
     
+    virtual void correct_threshold(double & threshold){
+      (void)threshold;
+    }
+    
+
+    /* Comment on squaring the threshold : We square the threshold 
+     * as we'll be working with the squared distance. This might look
+     *  dodgey: what if the threshold squared oveflows? This is not
+     *  serious as it overflows to std::infinity, which is larger than
+     *  any double anyway. Besides, it would be silly to complain 
+     * here, as we're assuming that the distance squared is a valid 
+     * double (which is a necessary assumption to make the computation).
+     *  */    
+    virtual void correct_distance(double & a_distance){
+      (void)a_distance;
+    }
+
+    virtual void update_distance_partial(double & distance, double & diff) = 0;    
+
+    virtual void set_distance(const SparseVectorSample<TNumber> &, const SparseVectorSample<TNumber> &, double, double &) = 0;
+
+
+      /* Experiment with blas : 
+     * with d = 1000, the speed-up was only 10s -> 7s. 
+     * Not interesting enough to warrant the additional compilation hassle. 
+     * it looked like this:
+    >> ++ncalcs;
+    >> wblas::copy(dimension, a, 1, worker, 1);
+    >> wblas::axpy(dimension, static_cast<TNumber>(-1.), b, 1, worker, 1);
+    >> distance = wblas::dot(dimension, worker, 1, worker, 1);
+    >> calccosts += dimension;
+
+    */    
+
+    void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & a_distance){
+    //void set_distance(const TNumber * const &, const TNumber * const &, double, double & ) {
+      ++ncalcs;
+      a_distance = 0;       
+      double diff;
+      size_t d;
+      correct_threshold(threshold);
+      for (d = 0; d < dimension; ++d){
+        diff = *(a + d) - *(b + d);
+        update_distance_partial(a_distance, diff);
+        if (a_distance > threshold){
+          break;
+        }
+      }
+      calccosts += (d == dimension ? d : 1 + d);
+      correct_distance(a_distance);
+    }    
         
 };
 
@@ -90,7 +139,16 @@ class L2Distance : public LpDistance<TNumber>{
     using LpDistance<TNumber>::dimension;
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
-    virtual void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final;
+     
+    virtual void correct_threshold(double & threshold) override final{
+      threshold *= threshold;
+    }
+    virtual void correct_distance(double & distance) override final{
+      distance = std::sqrt(distance);
+    }
+    virtual void update_distance_partial(double & a_distance, double & diff) override final{
+      a_distance += diff*diff;
+    }
     virtual void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) override final;  
 };
 
@@ -107,7 +165,13 @@ class L1Distance : public LpDistance<TNumber>{
     using LpDistance<TNumber>::dimension;
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
-    virtual void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final;
+    
+    
+    virtual void update_distance_partial(double & a_distance, double & diff) override final{
+      a_distance += std::abs(diff);
+    }    
+
+    
     virtual void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) override final;
 };
 
@@ -122,7 +186,13 @@ class L0Distance : public LpDistance<TNumber>{
     using LpDistance<TNumber>::dimension;
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
-    virtual void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final;
+    
+    
+    virtual void update_distance_partial(double & a_distance, double & diff) override final{
+      a_distance += (diff != 0);
+    }    
+
+    
     virtual void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) override final;
 };
 
@@ -135,7 +205,12 @@ class L_oo_Distance : public LpDistance<TNumber>{
     using LpDistance<TNumber>::dimension;
     using LpDistance<TNumber>::ncalcs;
     using LpDistance<TNumber>::calccosts;
-    virtual void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & distance) override final;
+    
+    
+    virtual void update_distance_partial(double & a_distance, double & diff) override final{
+      a_distance = std::max(a_distance, std::abs(diff));
+    }
+    
     virtual void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) override final;
 };
 
