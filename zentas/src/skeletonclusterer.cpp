@@ -3,6 +3,10 @@
 
 namespace nszen{
 
+
+
+
+
 void P2Bundle::initialise_data(size_t n){
   ndata = n;
   d12_.reset(new std::array<double, 2> [n]);
@@ -62,9 +66,6 @@ mowri(true, false, ""), K(sb.K), bigbang(sb.bigbang), ndata(sb.ndata), initialis
 
   
 {
-  
-  /* TODO here: set-up the center refiner function. 
-   * Takes in center by reference and samples by const reference? */ 
   
   if (energy.compare("identity") == 0){
     f_energy = nszen::Identity(); 
@@ -714,10 +715,6 @@ bool SkeletonClusterer::halt_kmedoids(){
   return (do_not_halt == false);
 };
 
-bool SkeletonClusterer::halt_refinement(){
-  /* TODO. */
-  return false;
-}
 
 void SkeletonClusterer::set_t_ncalcs_update_centers_start(){
   t_update_centers_start = std::chrono::high_resolution_clock::now();
@@ -752,16 +749,6 @@ void SkeletonClusterer::update_t_update_all_cluster_stats_end(){
 }
 
 
-bool SkeletonClusterer::refine_centers(){
-  throw zentas::zentas_error("refine_centers not implemented");
-}
-
-void SkeletonClusterer::refine_center_center_info(){
-  throw zentas::zentas_error("refine_center_center_info not implemented");
-}
-void SkeletonClusterer::refine_sample_info(){
-  throw zentas::zentas_error("refine_sample_info not implemented");
-}
 
 
 
@@ -774,24 +761,16 @@ void SkeletonClusterer::run_kmedoids(){
   output_halt_kmedoids_reason();      
 }
 
-void SkeletonClusterer::run_refinement(){
-  if (in_refinement == false){
-    throw zentas::zentas_error("in run_refinement, but in_refinement is false. This is not correct");
-  }
 
-  clustering_loop_scaffolding();
-  mowri << get_equals_line(get_round_summary().size());
-  mowri << "refinement complete, say something intelligent.";
-}
 
 void SkeletonClusterer::clustering_loop_scaffolding(){
 
 
   /* TODO : the bool in_refinement should be outside, if possible */
-  auto bc_centers = [this](){if (in_refinement){ return refine_centers();}else{ return update_centers();}};
-  auto bc_center_center_info = [this](){if (in_refinement){refine_center_center_info();}else{ update_center_center_info();}};
-  auto bc_sample_info = [this](){if (in_refinement){refine_sample_info();}else{ update_sample_info();}};
-  auto bc_halt =        [this](){if (in_refinement){return halt_refinement();}else{ return halt_kmedoids();}};
+  auto bc_centers = [this](){if (in_refinement){ return refine_centers();} else{ return update_centers();}};
+  auto bc_center_center_info = [this](){if (in_refinement){refine_center_center_info();} else{ update_center_center_info();}};
+  auto bc_sample_info = [this](){if (in_refinement){refine_sample_info();} else{ update_sample_info();}};
+  auto bc_halt =        [this](){if (in_refinement){return halt_refinement();} else{ return halt_kmedoids();}};
 
   while (bc_halt() == false){
 
@@ -1734,16 +1713,6 @@ void SkeletonClusterer::overwrite_center_with_sample(size_t k1, size_t k2, size_
 }
 
 
-void SkeletonClusterer::prepare_for_refinement(){
-  //add center to data. 
-  /* TODO : can be faster at claransl123, as intercenter distances already have */ 
-  for (size_t k = 0; k < K; ++k){
-    put_sample_in_cluster(center_IDs[k]);
-    /* hint for faster : final_push_into_cluster_basic(center_IDs[k], k, d1); */
-  }
-  
-  in_refinement = true;
-}
 
 
 

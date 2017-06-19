@@ -41,14 +41,6 @@ class TData{
 
 namespace nszen{  
 
-class NoRefinementPossible {
-
-  public:
-  template<typename T>
-  NoRefinementPossible(const T & t, bool as_empty){(void)as_empty; (void)t;}
-    
-};
-
 template <typename TDinz>
 class SparseRefinementCenterData{
 
@@ -56,6 +48,49 @@ class SparseRefinementCenterData{
   template<typename T>
   SparseRefinementCenterData(const T & t, bool as_empty){(void)as_empty; (void)t;}
 
+
+  template<typename T>
+  void add(size_t, T){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY add");
+  }
+
+  template<typename T>
+  void subtract(size_t, T){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY subtract");
+  }
+  
+  void set_to_zero(size_t){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set to zero");
+  }
+
+  template<typename T>
+  void scale(size_t, T, double){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY scale");
+  }
+
+  int at_for_metric(size_t) const {
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY return at_for_metric");
+  }
+  
+  void append_zero(){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY append_zero");
+  }
+
+  template<typename T>
+  void replace_with(size_t j, const T & t){
+    (void)j;
+    (void)t;
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY replace_with");
+  }
+
+  template<typename T>  
+  bool equals (size_t j, const T & t){
+    (void)j;
+    (void)t;
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY equals");
+  }
+
+  
 };
 
 
@@ -68,15 +103,10 @@ class VData{
   private:
     typedef typename TDinz::Sample Sample;
     typedef typename std::remove_const<typename std::remove_pointer<Sample>::type>::type NP_Sample;
-    
-    
-    
+        
   public:
     typedef TDinz DataIn;
-    typedef typename TDinz::InitBundle InitBundle;
-  
-    
-    
+    typedef typename TDinz::InitBundle InitBundle;    
     
   private:
     size_t ndata;    
@@ -120,7 +150,49 @@ class VData{
         data[j*dimension + d] = *(datapoint + d);
       }
     }
-    
+
+    bool equals(size_t i, const Sample & datapoint){
+      double abs_sum = 0.; 
+      double sum_abs = 0.;
+      for (size_t d = 0; d < dimension; ++d){
+        abs_sum += std::abs(data[i*dimension + d] -  *(datapoint + d));
+        sum_abs += std::abs(data[i*dimension + d]) +  std::abs(*(datapoint + d));
+      }
+      
+      return (abs_sum / sum_abs) < 1e-7;
+    }
+
+
+  void add(size_t i, const Sample & datapoint){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] += *(datapoint + d);
+    }
+  }
+
+  void subtract(size_t i, const Sample & datapoint){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] -= *(datapoint + d);
+    }
+  }
+  
+  void set_to_zero(size_t i){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] = 0;
+    }
+  }
+
+
+  void scale(size_t i, const Sample & datapoint, double alpha){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] = datapoint[i*dimension + d]*alpha;
+    }
+  }
+  
+  void append_zero(){
+    data.resize((ndata + 1)*dimension, 0);
+    ++ndata;
+  }
+  
     
     std::string string_for_sample(size_t i){
       std::stringstream ss;
@@ -147,13 +219,15 @@ class VData{
 template <typename TSDataIn>
 class SData{
   
-  public:
-    typedef NoRefinementPossible RefinementCenterData;
 
   public:
     typedef typename TSDataIn::Sample Sample;
     typedef typename TSDataIn::AtomicType AtomicType;
     typedef TSDataIn DataIn;
+
+  public:
+    //typedef NoRefinementPossible<Sample> RefinementCenterData;
+
     
     typedef typename TSDataIn::InitBundle InitBundle;
     
@@ -421,8 +495,6 @@ class VDataRooted : public  BaseDataRooted <TDinz>{
 template <typename TDinz>
 class SDataRooted : public BaseDataRooted<TDinz> {
 
-  public:
-    typedef NoRefinementPossible RefinementCenterData;
     
   public: 
     using BaseDataRooted<TDinz>::ptr_datain;
@@ -431,9 +503,11 @@ class SDataRooted : public BaseDataRooted<TDinz> {
 
   public:
     typedef typename TDinz::Sample Sample;
-    
     typedef TDinz DataIn;
 
+    
+ public:
+ 
     SDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDinz> (datain, as_empty) {}
     const Sample at_for_metric(size_t j) const {
       return Sample(ptr_datain->get_size(IDs[j]), ptr_datain->get_data(IDs[j]));
