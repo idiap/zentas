@@ -32,8 +32,6 @@ cdef extern from "zentasinfo.hpp" namespace "nszen":
 
 
 cdef extern from "zentas.hpp" namespace "nszen":
-  void hello() except +
-
 
   # dense vectors 
   void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap) except +;
@@ -81,19 +79,6 @@ def dangerwrap(f):
   
   return q.get()
 
-
-def basehello():
-  hello()
-  return "goodbye ! :():"
-
-
-def pyhello():
-  """
-  Example function
-  """	
-  return dangerwrap(lambda : basehello)
-  
-  
 
 cdef class RetBundle:
 

@@ -25,8 +25,6 @@ the GNU General Public License along with zentas. If not, see
 
 namespace nszen{
 
-void hello();
-
 
 // dense vectors 
 template <typename T>

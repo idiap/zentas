@@ -24,22 +24,13 @@ the GNU General Public License along with zentas. If not, see
 
 namespace nszen{
 
-void hello(){
-  
-}
-
-
-
-
 /* dense vectors */
 
-// like 10% -> 80% faster if unrooted (!) :)
+// 10% -> 80% faster if unrooted (!) :)
 template <typename T>
 void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, std::string initialisation_method, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, std::string metric, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap){
   
-  
   auto bigbang = std::chrono::high_resolution_clock::now(); 
-  
   
   std::vector<T> v_mapped;
   const T * true_ptr_datain; 
@@ -51,12 +42,10 @@ void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t 
   }
   
   else{
-    vdimap::vdimap(v_mapped, ptr_datain, ndata, dimension, seed);
+    vdimap::vdimap<T>(v_mapped, ptr_datain, ndata, dimension, seed);
     true_ptr_datain = v_mapped.data();
     true_dimension = v_mapped.size()/ndata;
   }
-  
-  
   
   /* TODO here : ptr_datain: shuffle if requested. Another flag :) */
 
@@ -64,7 +53,6 @@ void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t 
   metric_initializer.reset(metric);
 
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
-
 
   if (rooted == true){
     typedef typename VDataRooted<DenseVectorDataRootedIn < T > >::InitBundle InitBundle;
