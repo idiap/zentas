@@ -16,16 +16,14 @@ the GNU General Public License along with zentas. If not, see
 #include "baseclarans.hpp"
 
 
-
 namespace nszen{
 
- 
+/* choosing not to have a cpp file, as no new `heavy' algorithms to compile */
 
 class ClaransL1 : public BaseClarans {
-
    
   private:
-  
+    
     std::unique_ptr<double []> up_dists_centers_old_k_to;
     double * const dists_centers_old_k_to;
     
@@ -34,9 +32,7 @@ class ClaransL1 : public BaseClarans {
 
     std::vector<XNearestInfo> center_nearest_center;
 
-
   public:
-    
     
     ClaransL1(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): 
     BaseClarans (sb, eb),

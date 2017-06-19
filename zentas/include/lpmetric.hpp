@@ -30,11 +30,6 @@ class TMetric{
 
 
 
-#include <algorithm>
-#include <mutex>
-#include <atomic>
-#include <vector>
-#include <iostream>
 
 #include "tdatain.hpp" 
 /* the above is included for this guy:
@@ -43,10 +38,6 @@ struct SparseVectorSample; */
 
 namespace nszen{
   
-
-
-    
-
 class LpMetricInitializer{
 
   public:
@@ -61,8 +52,14 @@ class LpMetricInitializer{
 
 template <typename TNumber>
 class LpDistance{
-  
+
+
   public:
+
+    size_t dimension;
+    size_t ncalcs = 0;
+    size_t calccosts = 0;
+
   
     LpDistance(size_t dimension):dimension(dimension) {}
   
@@ -74,9 +71,6 @@ class LpDistance{
       return calccosts;
     }
   
-    size_t dimension;
-    size_t ncalcs = 0;
-    size_t calccosts = 0;
 
     /* the inherited classes have very similar set_distance functions, but with differences scattered within them.
      * code could be compactified by having set_distance be non-virtual, with a few calls to virtual functions within.
@@ -190,20 +184,14 @@ class LpMetric{
     }
     
     template <typename T>
-     void set_distance(const T & a, const T & b, double threshold, double & distance){
+    void set_distance(const T & a, const T & b, double threshold, double & distance){
       /* This virtual function call costs 
        * about 2% when dimension = 2. 2% 
        * slowdown is negligible, I'm going
        * for this clean code.  */
       uptr_lpdistance->set_distance(a, b, threshold, distance);
     }
-    
-    
-    //template <typename T>
-     //void set_distance(const T & a, const T & b, double & distance){
-      //set_distance(a, b, std::numeric_limits<double>::max(), distance); 
-    //}
-    
+        
      size_t get_ncalcs() const{
       return uptr_lpdistance->ncalcs;
     }
@@ -216,56 +204,6 @@ class LpMetric{
     const char p;
 
 };
-
-
-
-
-class LevenshteinInitializer{
-  
-  public:
-    size_t dict_size;
-    double c_indel;
-    double c_switch;
-    /*  will use either the above (if dict_size == 0) or the below (otherwise). */
-    const double *  c_indel_arr;
-    const double *  c_switch_arr;
-    bool normalised;
-
-    LevenshteinInitializer(const size_t dict_size, const double c_indel, const double c_switch, const double * const c_indel_arr, const double * const c_switch_arr, bool normalised);
-    LevenshteinInitializer(const double c_indel, const double c_switch, bool normalised);
-    LevenshteinInitializer(const size_t dict_size, const double * const c_indel_arr, const double * const c_switch_arr, bool normalised);
-    LevenshteinInitializer();
-    
-};
-
-
-/* using pimpl for Levenshtein. This is the working class, */
-template<typename TSDataIn>
-class LevenshteinMetric_X;
-
-
-/* using pimpl for Levenshtein. This is the wrapping class, */
-template<typename TSDataIn>
-class LevenshteinMetric{
-
-  private:
-   std::unique_ptr<LevenshteinMetric_X<TSDataIn>> lvsm;
-  
-  public:  
-    typedef typename TSDataIn::Sample Sample;
-    typedef LevenshteinInitializer Initializer;  
-    LevenshteinMetric(const TSDataIn & datain, size_t nthreads, const LevenshteinInitializer & li);
-    void set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance);
-    //void set_distance(const Sample & a, const Sample & b, double & distance);
-    size_t get_ncalcs();
-    double get_rel_calccosts();
-    /* destructor declared elsewhere as unique_ptr to undefined class, as described at
-     * https://stackoverflow.com/questions/27336779/unique-ptr-and-forward-declaration*/ 
-    ~LevenshteinMetric();
-    
-
-};
-
 
 } //namespace nszen
 

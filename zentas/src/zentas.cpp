@@ -20,7 +20,8 @@ the GNU General Public License along with zentas. If not, see
 #include "dispatch.hpp"
 #include "zentaserror.hpp"
 #include "vdimap.hpp"
-#include "tmetric.hpp"
+#include "lpmetric.hpp"
+#include "levenshtein.hpp"
 
 namespace nszen{
 

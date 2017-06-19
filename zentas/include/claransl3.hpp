@@ -19,11 +19,7 @@ the GNU General Public License along with zentas. If not, see
 
 namespace nszen{
 
- 
-//template <class TMetric, class TData>
 class ClaransL3 : public BaseClaransL23 {
-
-  
 
   public: 
 

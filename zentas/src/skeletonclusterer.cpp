@@ -787,7 +787,7 @@ void SkeletonClusterer::run_refinement(){
 void SkeletonClusterer::clustering_loop_scaffolding(){
 
 
-  /* TODO : in refinement should be outside, if possible */
+  /* TODO : the bool in_refinement should be outside, if possible */
   auto bc_centers = [this](){if (in_refinement){ return refine_centers();}else{ return update_centers();}};
   auto bc_center_center_info = [this](){if (in_refinement){refine_center_center_info();}else{ update_center_center_info();}};
   auto bc_sample_info = [this](){if (in_refinement){refine_sample_info();}else{ update_sample_info();}};
@@ -1779,4 +1779,4 @@ void SkeletonClusterer::initialise_center_indices()  {
 }
  
 
-} //samespace
+} //samenpace

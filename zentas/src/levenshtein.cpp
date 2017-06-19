@@ -1,4 +1,14 @@
-#include "tmetric.hpp"
+#include "levenshtein.hpp"
+#include "zentaserror.hpp"
+
+#include <sstream>
+#include <cmath>
+#include <random>
+#include <iostream>
+#include <mutex>
+#include <atomic>
+#include <memory>
+#include <vector>
 
 namespace nszen{
 
@@ -223,14 +233,6 @@ template <class TSample, class TIndelCost, class TSwitchCost>
 
 
 
-
-
-
-
-
-
-
-
 template<typename TSDataIn>
 /* See levenshtein_prototyping for equivalent python version */
 class LevenshteinMetric_X{
@@ -365,11 +367,7 @@ class LevenshteinMetric_X{
       if (normalised == true){
         // threshold in normalised space
         
-        //threshold = std::numeric_limits<double>::max();
         threshold = std::min(1., threshold);         
-
-        //std::cout << max_c_indel << std::endl;
-        //std::abort();
 
         //threshold in non-normalised space, where the distance calculation is to take place.
         threshold = max_c_indel * threshold * static_cast<double>(v_vertical.size + v_horizontal.size) / (2. - threshold); 
@@ -422,13 +420,6 @@ class LevenshteinMetric_X{
       
       distance = static_cast<double>(static_cast<float> (distance));
     }
-          
-     //void set_distance(const Sample & a, const Sample & b, double & distance) {
-      //set_distance(a, b, std::numeric_limits<double>::max(), distance);
-    //}
-    
-    
-    
     
      size_t get_ncalcs() const{
       size_t ncalcs = 0;
@@ -466,11 +457,6 @@ template <typename TSDataIn>
 void LevenshteinMetric<TSDataIn>::set_distance(const Sample & v_vertical, const Sample & v_horizontal, double threshold, double & distance){
   lvsm->set_distance(v_vertical, v_horizontal, threshold, distance);
 }
-
-//template <typename TSDataIn>
-//void LevenshteinMetric<TSDataIn>::set_distance(const Sample & a, const Sample & b, double & distance){
-  //lvsm->set_distance(a,b,distance);
-//}
 
 template <typename TSDataIn>
 size_t LevenshteinMetric<TSDataIn>::get_ncalcs(){
