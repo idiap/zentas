@@ -211,7 +211,7 @@ class SquareDiff{
 
 class MaxDiff{
   public:
-    inline void operator() (double & dist, const double & diff){ dist = std::max(dist, diff);}  
+    inline void operator() (double & dist, const double & diff){ dist = std::max(dist, std::abs(diff));}  
 };
 
 
