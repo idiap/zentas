@@ -37,25 +37,33 @@ class TData{
 #include <sstream>
 #include <vector>
 #include "zentaserror.hpp"
-
+#include "sparsevectorrfcenter.hpp"
 
 namespace nszen{  
 
-template <typename TDinz>
+
+
+template <typename AtomicType>
 class SparseRefinementCenterData{
 
-  public:
-  template<typename T>
-  SparseRefinementCenterData(const T & t, bool as_empty){(void)as_empty; (void)t;}
+ public:
+  
+  /* Rooted or unrooted sparse data-in */
+  //typedef TSDataIn DataIn;
+  //typedef typename DataIn::Sample Sample;
+  
+  //using AtomicType = typename DataIn::AtomicType;
+  
+  typedef SparseVectorRfCenter<AtomicType> RfCenter;
+  
+  SparseRefinementCenterData(size_t dimension){(void)dimension;} //maybe use dimension to initialise size of maps
 
-
-  template<typename T>
-  void add(size_t, T){
+  
+  void add(size_t, const SparseVectorSample<AtomicType> & ){
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY add");
   }
 
-  template<typename T>
-  void subtract(size_t, T){
+  void subtract(size_t, const SparseVectorSample<AtomicType> &){
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY subtract");
   }
   
@@ -63,55 +71,162 @@ class SparseRefinementCenterData{
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set to zero");
   }
 
-  template<typename T>
-  void scale(size_t, T, double){
+  void scale(size_t, const RfCenter &, double){
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY scale");
   }
 
-  int at_for_metric(size_t) const {
+  const RfCenter & at_for_metric(size_t) const {
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY return at_for_metric");
   }
-  
+
+  RfCenter & at_for_change(size_t) {
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY return at_for_change");
+  }
+    
   void append_zero(){
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY append_zero");
   }
 
-  template<typename T>
-  void replace_with(size_t j, const T & t){
+  void set_zero(size_t){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set_zero");
+  }
+
+
+  void replace_with(size_t j, const RfCenter & t){
     (void)j;
     (void)t;
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY replace_with");
   }
 
-  template<typename T>  
-  bool equals (size_t j, const T & t){
+  bool equals (size_t j, const RfCenter & t){
     (void)j;
     (void)t;
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY equals");
   }
 
+  std::string string_for_sample(size_t){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY string_for_sample");
+  }
   
 };
 
 
-template <typename TDinz>
+template <typename AtomicType>
+class VCenterData{
+    
+ public:
+
+  size_t ndata;    
+  const size_t dimension;
+  std::vector<AtomicType> data;
+
+  VCenterData (size_t dimension_):dimension(dimension_){}
+
+  void append(const AtomicType * const datapoint){
+    ndata += 1;
+    data.insert(data.end(), datapoint, datapoint + dimension);
+  }
+
+  void add(size_t i, const AtomicType * const datapoint){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] += *(datapoint + d);
+    }
+  }
+
+  void subtract(size_t i, const AtomicType * const datapoint){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] -= *(datapoint + d);
+    }
+  }
+  
+  void set_to_zero(size_t i){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] = 0;
+    }
+  }
+
+
+  void scale(size_t i, const AtomicType * const datapoint, double alpha){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] = *(datapoint + d)*alpha;            
+    }
+  }
+  
+  void append_zero(){
+    data.resize((ndata + 1)*dimension, 0);
+    ++ndata;
+  }
+  
+  void set_zero(size_t i){
+    for (size_t d = 0; d < dimension; ++d){
+      data[i*dimension + d] = 0;
+    }
+  }
+
+    std::string string_for_sample(size_t i){
+      std::stringstream ss;
+      ss << "(";
+      for (size_t d = 0; d < dimension; ++d){
+        ss << " " << data[i*dimension + d] << " ";
+      }
+      ss << ")";
+      return ss.str();
+    }
+
+  const AtomicType * const at_for_metric(size_t j) const {
+    return data.data() + j*dimension;
+  }
+
+  AtomicType * const at_for_change(size_t j) {
+    return data.data() + j*dimension;
+  }
+
+
+  void replace_with(size_t j, const AtomicType * const datapoint){
+    for (size_t d = 0; d < dimension; ++d){
+      data[j*dimension + d] = *(datapoint + d);
+    }
+  }
+
+  bool equals(size_t i, const AtomicType * const datapoint) const{
+    double abs_sum = 0.; 
+    double sum_abs = 0.;
+    for (size_t d = 0; d < dimension; ++d){
+
+      abs_sum += std::abs(data[i*dimension + d] -  *(datapoint + d));
+      sum_abs += std::abs(data[i*dimension + d]) +  std::abs(*(datapoint + d));
+    }
+    
+    double relative_change = (abs_sum / sum_abs);
+    return relative_change < 1e-7;
+  }
+
+
+  
+  
+  
+};
+
+
+template <typename TDataIn>
 class VData{
   
-  public: // if the TData, VData then so is RefinementCenterData
-    typedef VData<TDinz> RefinementCenterData;
+  public:
+    using AtomicType = typename TDataIn::AtomicType;
+    typedef VCenterData<AtomicType> RefinementCenterData;
 
   private:
-    typedef typename TDinz::Sample Sample;
-    typedef typename std::remove_const<typename std::remove_pointer<Sample>::type>::type NP_Sample;
+    typedef typename TDataIn::Sample Sample;
         
   public:
-    typedef TDinz DataIn;
-    typedef typename TDinz::InitBundle InitBundle;    
+    typedef TDataIn DataIn;
+    typedef typename TDataIn::InitBundle InitBundle;    
     
   private:
     size_t ndata;    
     const size_t dimension;
-    std::vector<NP_Sample> data;
+    std::vector<AtomicType> data;
+
     
   public: 
     VData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.dimension){
@@ -128,7 +243,8 @@ class VData{
       ndata += 1;
       data.insert(data.end(), datapoint, datapoint + dimension);
     }
-    
+
+        
     const Sample at_for_metric(size_t j) const {
       return data.data() + j*dimension;
     }
@@ -151,48 +267,6 @@ class VData{
       }
     }
 
-    bool equals(size_t i, const Sample & datapoint){
-      double abs_sum = 0.; 
-      double sum_abs = 0.;
-      for (size_t d = 0; d < dimension; ++d){
-        abs_sum += std::abs(data[i*dimension + d] -  *(datapoint + d));
-        sum_abs += std::abs(data[i*dimension + d]) +  std::abs(*(datapoint + d));
-      }
-      
-      return (abs_sum / sum_abs) < 1e-7;
-    }
-
-
-  void add(size_t i, const Sample & datapoint){
-    for (size_t d = 0; d < dimension; ++d){
-      data[i*dimension + d] += *(datapoint + d);
-    }
-  }
-
-  void subtract(size_t i, const Sample & datapoint){
-    for (size_t d = 0; d < dimension; ++d){
-      data[i*dimension + d] -= *(datapoint + d);
-    }
-  }
-  
-  void set_to_zero(size_t i){
-    for (size_t d = 0; d < dimension; ++d){
-      data[i*dimension + d] = 0;
-    }
-  }
-
-
-  void scale(size_t i, const Sample & datapoint, double alpha){
-    for (size_t d = 0; d < dimension; ++d){
-      data[i*dimension + d] = datapoint[i*dimension + d]*alpha;
-    }
-  }
-  
-  void append_zero(){
-    data.resize((ndata + 1)*dimension, 0);
-    ++ndata;
-  }
-  
     
     std::string string_for_sample(size_t i){
       std::stringstream ss;
@@ -410,22 +484,22 @@ class SparseVectorData{
  * : Rooted data structures (non big memory copies) :
  * ************************************************* */
 
-template <typename TDinz>
+template <typename TDataIn>
 class BaseDataRooted{
   
   private:
-    typedef typename TDinz::Sample Sample;
+    typedef typename TDataIn::Sample Sample;
     typedef typename std::remove_const<typename std::remove_pointer<Sample>::type>::type NP_Sample;
   
   public:
-    typedef TDinz DataIn;
-    typedef typename TDinz::InitBundle InitBundle;
+    typedef TDataIn DataIn;
+    typedef typename TDataIn::InitBundle InitBundle;
  
   protected:
     size_t ndata;    
     const size_t dimension;
     std::vector<size_t> IDs;
-    const  TDinz * const  ptr_datain;
+    const  TDataIn * const  ptr_datain;
   
   public: 
     BaseDataRooted (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.dimension), ptr_datain(&datain){
@@ -433,7 +507,8 @@ class BaseDataRooted{
         throw zentas::zentas_error("Currently, there is no implementation for constructing VData from DenseVectorDataUnrootedIn with data, due to the lack of any apparent need");
       }
     }
-     size_t get_ndata() const{
+    
+    size_t get_ndata() const{
       return ndata;
     }
     void append(size_t i){
@@ -466,24 +541,25 @@ class BaseDataRooted{
 };
 
 
-template <typename TDinz>
-class VDataRooted : public  BaseDataRooted <TDinz>{
+template <typename TDataIn>
+class VDataRooted : public  BaseDataRooted <TDataIn>{
 
   public:
-    typedef VData<TDinz> RefinementCenterData;
+    using AtomicType = typename TDataIn::AtomicType;
+    typedef VCenterData<AtomicType> RefinementCenterData;
 
         
   public:
-    using BaseDataRooted<TDinz>::ptr_datain;
-    using BaseDataRooted<TDinz>::IDs;
-    using BaseDataRooted<TDinz>::dimension;
+    using BaseDataRooted<TDataIn>::ptr_datain;
+    using BaseDataRooted<TDataIn>::IDs;
+    using BaseDataRooted<TDataIn>::dimension;
 
   public:
-    typedef typename TDinz::Sample Sample;
+    typedef typename TDataIn::Sample Sample;
     
-    typedef TDinz DataIn;
+    typedef TDataIn DataIn;
 
-    VDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDinz> (datain, as_empty) {}
+    VDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDataIn> (datain, as_empty) {}
 
     const Sample at_for_metric(size_t j) const {
       return ptr_datain->data + IDs[j]*dimension;
@@ -492,23 +568,23 @@ class VDataRooted : public  BaseDataRooted <TDinz>{
 
 
 
-template <typename TDinz>
-class SDataRooted : public BaseDataRooted<TDinz> {
+template <typename TDataIn>
+class SDataRooted : public BaseDataRooted<TDataIn> {
 
     
   public: 
-    using BaseDataRooted<TDinz>::ptr_datain;
-    using BaseDataRooted<TDinz>::IDs;
-    using BaseDataRooted<TDinz>::dimension;
+    using BaseDataRooted<TDataIn>::ptr_datain;
+    using BaseDataRooted<TDataIn>::IDs;
+    using BaseDataRooted<TDataIn>::dimension;
 
   public:
-    typedef typename TDinz::Sample Sample;
-    typedef TDinz DataIn;
+    typedef typename TDataIn::Sample Sample;
+    typedef TDataIn DataIn;
 
     
  public:
  
-    SDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDinz> (datain, as_empty) {}
+    SDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDataIn> (datain, as_empty) {}
     const Sample at_for_metric(size_t j) const {
       return Sample(ptr_datain->get_size(IDs[j]), ptr_datain->get_data(IDs[j]));
     }
@@ -516,24 +592,25 @@ class SDataRooted : public BaseDataRooted<TDinz> {
 };
 
 
-template <typename TDinz>
-class SparseVectorDataRooted : public BaseDataRooted<TDinz>{
+template <typename TDataIn>
+class SparseVectorDataRooted : public BaseDataRooted<TDataIn>{
 
 
   public: 
-    using BaseDataRooted<TDinz>::ptr_datain;
-    using BaseDataRooted<TDinz>::IDs;
-    using BaseDataRooted<TDinz>::dimension;
+    using BaseDataRooted<TDataIn>::ptr_datain;
+    using BaseDataRooted<TDataIn>::IDs;
+    using BaseDataRooted<TDataIn>::dimension;
 
   public:
-    typedef typename TDinz::Sample Sample;
-    typedef TDinz DataIn;
+    typedef typename TDataIn::Sample Sample;
+    typedef TDataIn DataIn;
+    using AtomicType = typename TDataIn::AtomicType;
 
   public:
-    typedef SparseRefinementCenterData<TDinz> RefinementCenterData;
-
-
-    SparseVectorDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDinz> (datain, as_empty) {}
+    
+    typedef SparseRefinementCenterData<AtomicType> RefinementCenterData;
+    
+    SparseVectorDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDataIn> (datain, as_empty) {}
     
     const Sample at_for_metric(size_t j) const {
       return Sample(ptr_datain->get_size(IDs[j]), ptr_datain->get_data(IDs[j]), ptr_datain->get_indices_s(IDs[j]));

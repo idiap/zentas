@@ -20,8 +20,8 @@ from IPython.core.debugger import Tracer
 
 def tests():
   
-  ndata = int(1e3)
-  K = 1e1
+  ndata = int(1e2)
+  K = 5
   dimension = 2
   npr.seed(1011)
   data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
@@ -39,14 +39,14 @@ def dense_data_example():
   """
   
   
-  ndata = int(5e3)
+  ndata = int(1e5)
   dimension = 4
   npr.seed(1011)
-  data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
-  z = pyzentas.pyzen(K = 1e1, metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_rounds = 10, seed = 1011, nthreads = 1, patient = False, with_tests = True)
+  data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float32)  
+  z = pyzentas.pyzen(K = 2e2, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 10, seed = 1011, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
   #, , 
   
-  do_vdimap = True
+  do_vdimap = False
   tangerine =  z.den(data, do_vdimap)
 
 def sparse_data_example():

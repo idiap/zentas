@@ -106,6 +106,7 @@ class BaseClarans : public SkeletonClusterer {
   
   private:
   
+  virtual void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override;
   virtual void initialise_with_kmeanspp() override final;
   virtual double get_delta_E(size_t k1, size_t k2, size_t j2, bool serial) = 0;
   virtual void set_redistribute_order(std::vector<size_t> & redistribute_order) override final;

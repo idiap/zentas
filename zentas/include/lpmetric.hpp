@@ -10,8 +10,8 @@ See the GNU General Public License for more details. You should have received a 
 the GNU General Public License along with zentas. If not, see
 <http://www.gnu.org/licenses/>.
 */
-#ifndef ZENTAS_TMETRIC_H
-#define ZENTAS_TMETRIC_H
+#ifndef ZENTAS_LPLPLPMETRIC_H
+#define ZENTAS_LPLPLPMETRIC_H
 
 /* 
  * 
@@ -32,6 +32,7 @@ class TMetric{
 
 
 #include "tdatain.hpp" 
+#include "sparsevectorrfcenter.hpp"
 /* the above is included for this guy:
  * template <typename TNumber>
 struct SparseVectorSample; */
@@ -82,6 +83,17 @@ class LpDistance{
     
     virtual void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & a_distance) = 0;
     virtual void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) = 0;
+    virtual void set_distance(const SparseVectorRfCenter<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) = 0;
+    virtual void set_distance(const SparseVectorRfCenter<TNumber> & a, const SparseVectorRfCenter<TNumber> & b, double threshold, double & distance) = 0;
+    
+    
+    //void set_minimiser(const std::string & energy, std::function<const TNumber * const & (size_t)> f_sample, size_t ndata, TNumber * const minimiser){
+      //throw zentas::zentas_error("cannot minimise");
+    //}
+    
+    //virtual void set_minimiser(const std::string & energy, std::function<const TNumber * const & (size_t)> f_sample, size_t ndata, SparseVectorRfCenter<TNumber> & minimiser){
+      //throw zentas::zentas_error("cannot minimise");
+    //}
     
 };
 
@@ -122,7 +134,7 @@ class TLpDistance : public LpDistance<TNumber>{
     
 
     void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) {
-              
+
       ++ncalcs;
       distance = 0;
       size_t a_pos = 0;
@@ -173,8 +185,15 @@ class TLpDistance : public LpDistance<TNumber>{
       }            
       
       correct_distance(threshold);
-      
     }
+    
+    void set_distance(const SparseVectorRfCenter<TNumber> & , const SparseVectorSample<TNumber> & , double , double & ) {
+      //TODO 
+    }
+
+    void set_distance(const SparseVectorRfCenter<TNumber> & , const SparseVectorRfCenter<TNumber> & , double , double & ) {
+      //TODO 
+    }    
 };
 
 class NullOpDouble{
@@ -278,8 +297,8 @@ class LpMetric{
       }
     }
     
-    template <typename T>
-    void set_distance(const T & a, const T & b, double threshold, double & distance){
+    template <typename T, typename V>
+    void set_distance(const T & a, const V & b, double threshold, double & distance){
       /* This virtual function call costs 
        * about 2% when dimension = 2. 2% 
        * slowdown is negligible, I'm going
@@ -294,6 +313,13 @@ class LpMetric{
      double get_rel_calccosts() const{
       return static_cast<double> (uptr_lpdistance->calccosts)  / static_cast<double> (uptr_lpdistance->ncalcs);
     }
+
+    
+    template <typename TNumber, typename TFunction>
+    void set_minimiser(const std::string & energy, const TFunction & f_sample, size_t ndata, TNumber * const minimiser){
+      uptr_lpdistance->set_minimiser(energy, f_sample, ndata, minimiser);
+    }
+
   
   private:
     const char p;

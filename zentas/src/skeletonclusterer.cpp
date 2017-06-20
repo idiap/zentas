@@ -668,6 +668,10 @@ void SkeletonClusterer::set_center_sample_distance_nothreshold(size_t k, size_t 
   set_center_sample_distance(k, k1, j1, std::numeric_limits<double>::max(), distance);
 }
 
+//void SkeletonClusterer::set_rf_center_sample_distance_nothreshold(size_t k, size_t k1, size_t j1, double & distance){
+  //set_rf_center_sample_distance(k, k1, j1, std::numeric_limits<double>::max(), distance);
+//}
+
 void SkeletonClusterer::set_sampleID_sampleID_distance_nothreshold(size_t i1, size_t i2, double & distance) {
    set_sampleID_sampleID_distance(i1, i2, std::numeric_limits<double>::max(), distance);
 }
@@ -1015,7 +1019,13 @@ void SkeletonClusterer::info_tests(){
       size_t k_first_nearest;
       double d_first_nearest = std::numeric_limits<double>::max();
       for (size_t k2 = 0; k2 < K; ++k2){
+        //if (in_refinement == false){
         set_center_sample_distance_nothreshold(k2, k, j, distances[k2]);
+        //}
+        //else{
+          //set_rf_center_sample_distance_nothreshold(k2, k, j, distances[k2]);
+        //}
+        
         if (distances[k2] < d_first_nearest){
           d_first_nearest = distances[k2];
           k_first_nearest = k2;
@@ -1096,10 +1106,13 @@ void SkeletonClusterer::injective_ID_test(){
     std::vector<size_t> at_index;
     
     for (size_t k = 0; k < K; ++k){
-      if (i == center_IDs[k]){
-        ++count_i;
-        as_center_ID.push_back(k);
+      if (in_refinement == false){
+        if (i == center_IDs[k]){
+          ++count_i;
+          as_center_ID.push_back(k);
+        }
       }
+      
       for (size_t j = 0; j < get_ndata(k); ++j){
         if (i == sample_IDs[k][j]){
           ++count_i;
@@ -1378,6 +1391,7 @@ void SkeletonClusterer::update_all_cluster_statistics(){
   E_total = 0;
   for (size_t k = 0; k < K; ++k){
     if (cluster_has_changed[k] == true){ 
+
       set_cluster_statistics(k);
       cluster_has_changed[k] = false;
     }
@@ -1525,7 +1539,7 @@ void SkeletonClusterer::pll_put_samples_in_cluster(size_t i_a, size_t i_z, std::
     }
   }      
 
-  else{        
+  else{
     for (size_t i = i_a; i < i_z; ++i){
       put_sample_in_cluster(non_center_IDs[i]);
     }
@@ -1665,7 +1679,9 @@ void SkeletonClusterer::reset_sample_infos_basic(size_t k, size_t j){
   double second_min_distance = std::numeric_limits<double>::max();
 
   for (size_t kp = 0; kp < K; ++kp){
+    
     set_center_sample_distance(kp, k, j, second_min_distance, up_distances[kp]);
+    
     if (up_distances[kp] < second_min_distance){
       if (up_distances[kp] < min_distance){
         nearest_center = kp;
@@ -1747,5 +1763,82 @@ void SkeletonClusterer::initialise_center_indices()  {
   std::copy(center_indices_init, center_indices_init + K, center_IDs);
 }
  
+ 
+void SkeletonClusterer::default_refine_sample_info(){  
+  for (size_t k = 0; k < K; ++k){
+    for (size_t j = 0; j < get_ndata(k); ++j){
+      reset_sample_infos(k,j);
+    }
+  }
+}
+
+
+void SkeletonClusterer::run_refinement(){
+  if (in_refinement == false){
+    throw zentas::zentas_error("in run_refinement, but in_refinement is false. This is not correct");
+  }
+
+  clustering_loop_scaffolding();
+  mowri << get_equals_line(get_round_summary().size());
+  mowri << "refinement complete, say something intelligent.";
+}
+
+bool SkeletonClusterer::halt_refinement(){
+  /* TODO : make refinement stop criterion, pass in via constructor.  */
+  return false;
+}
+
+
+bool SkeletonClusterer::default_l2_quadratic_refine_centers(){
+
+  bool has_changed = false;
+  for (size_t k = 0; k < K; ++k){ 
+    set_old_rf_center_data(k);
+    set_rf_center_data(k);
+    cluster_has_changed[k] = equals_rf_new_and_old(k);
+    has_changed = cluster_has_changed[k] == true ? has_changed : true;
+  }
+  return has_changed;
+
+  //bool has_changed = false;
+  //for (size_t k = 0; k < K; ++k){
+    //
+    //zero_refinement_sum(k);
+  //}
+  //for (size_t k = 0; k < K; ++k){
+    //for (size_t j = 0; j < get_ndata(k); ++j){
+      //add_to_refinement_sum(k, j);
+    //}
+    
+    //set_refinement_center_as_sum_mean(k);
+    //cluster_has_changed[k] = equals_rf_new_and_old(k);
+    //has_changed = cluster_has_changed[k] == true ? has_changed : true;
+  //}
+  
+  //return has_changed;
+}
+
+
+void SkeletonClusterer::default_refine_center_center_info(){
+  set_center_center_info();
+}
+
+void SkeletonClusterer::default_initialise_refinement_variables(){
+  for (size_t k = 0; k < K; ++k){
+    append_zero_to_rf_sum_data();
+    append_zero_to_rf_center_data();
+    append_zero_to_old_rf_center_data();
+  }
+}
+
+
+void SkeletonClusterer::prepare_for_refinement(){
+  for (size_t k = 0; k < K; ++k){
+    put_sample_in_cluster(center_IDs[k]);
+  }
+  initialise_refinement_variables();
+  in_refinement = true;
+}
+
 
 } //samenpace

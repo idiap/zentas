@@ -23,10 +23,13 @@ the GNU General Public License along with zentas. If not, see
 #include <fstream>
 #include "zentaserror.hpp"
 
+// TODO rename this file.
+#include "sparsevectorrfcenter.hpp"
 
-/* 
- * 
- * define classes satisfying TDataIn template
+
+/* ******************************************** 
+* define classes satisfying TDataIn template  *
+***********************************************
 
 template <typename T> 
 class TDataIn{
@@ -36,15 +39,14 @@ class TDataIn{
     const Sample & at (size_t) const;
 };
 
-*/
+***********************************************/
 
 
 
 namespace nszen{
 
-/* For vector data : array of size ndata x dimension */
 template <typename TAtomic>
-struct VariableLengthSample{ /* Used for strings */
+struct VariableLengthSample{
   public:
     size_t size;
     const TAtomic * const values;
@@ -56,18 +58,10 @@ struct VariableLengthSample{ /* Used for strings */
       }
       return ss.str();   
     }
-    
 };
 
 
-template <typename TAtomic>
-struct SparseVectorSample{ /* Sparse vector sample */
-  public:
-    size_t size;
-    const TAtomic * const values;
-    const size_t * const indices;
-    SparseVectorSample(size_t size, const TAtomic * const values, const size_t * const indices): size(size), values(values), indices(indices) {}
-};
+
 
 
 template <typename TAtomic>
@@ -102,7 +96,6 @@ struct BaseDataIn{
     size_t dimension;
     const Sample data;
 
-
   public:
     BaseDataIn(size_t ndata, size_t dimension, const TAtomic * const data): ndata(ndata), dimension(dimension), data(data) {}
     BaseDataIn(const InitBundle & ib): BaseDataIn(ib.ndata, ib.dimension, ib.data) {}
@@ -115,12 +108,10 @@ struct BaseDataIn{
       return data + dimension*i;
     }
     
-
     std::string string_for_sample(size_t i) const{
       (void)i;
       return "currently no string function for BaseDataIn";          
     }
-    
 };
 
 

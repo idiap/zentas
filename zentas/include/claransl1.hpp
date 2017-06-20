@@ -36,7 +36,14 @@ class ClaransL1 : public BaseClarans {
     
     ClaransL1(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): 
     BaseClarans (sb, eb),
-    up_dists_centers_old_k_to(new double [sb.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_dists_centers_new_k_to(new double [sb.K]), dists_centers_new_k_to(up_dists_centers_new_k_to.get()){}
+    up_dists_centers_old_k_to(new double [sb.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_dists_centers_new_k_to(new double [sb.K]), dists_centers_new_k_to(up_dists_centers_new_k_to.get()){
+    
+      for (size_t k = 0; k < K; ++k){
+        center_nearest_center.emplace_back(0,0,0);
+      }
+
+      
+    }
         
   private: 
 
@@ -47,9 +54,9 @@ class ClaransL1 : public BaseClarans {
       put_nearest_2_infos_margin_in_cluster(i, k_first_nearest, distances);
     }
     
-    virtual  void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
-      reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
-    }
+    //virtual  void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
+      //reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
+    //}
 
     virtual  void custom_append(size_t k_to, size_t k, size_t j) final override{
       nearest_2_infos_margin_append(k_to, k, j);

@@ -3,7 +3,12 @@
 
 
 namespace nszen{
-    
+  
+void BaseClarans::reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) {
+  reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
+}
+
+
 void ClaransStatistics::set_to_zero(){
   M = 0;
   M_star = 0;
@@ -1150,13 +1155,13 @@ void BaseClarans::center_center_info_test_l1(const std::vector<XNearestInfo> & c
         }
       }
     }
-
-    //if (nearest != center_nearest_center[k].a_x){
-      //throw zentas::zentas_error("nearest center to center not in agreement (new test)");
-    //}
     
     if (distance != center_nearest_center[k].d_x){
-      throw zentas::zentas_error("distance to nearest center not in agreement");
+      std::stringstream ss;
+      ss << "Distance center-to-nearest-center not in agreement. The recorded distance is " << center_nearest_center[k].d_x << ", and the just computed distance is ";
+      ss << distance << ".";
+      throw zentas::zentas_error(ss.str());
+      
     }
     
     if (f_energy(distance) != center_nearest_center[k].e_x){
@@ -1205,9 +1210,7 @@ void BaseClarans::set_center_center_info_l2(double * const cc, double * const d_
     for (size_t kp = k; kp < K; ++kp){
       set_center_center_distance_nothreshold(k, kp, cc[k*K + kp]);
       cc[kp*K + k] = cc[k*K + kp];
-      //std::cout << cc[kp*K + k] << " ";
     }
-    //std::cout << std::endl;
   }
   
   for (size_t k = 0; k < K; ++k){
@@ -1616,13 +1619,10 @@ void BaseClarans::set_center_center_info_l1(std::vector<XNearestInfo> & center_n
   /* I could create an empty constructor for XNearestInfo, 
    * but I prefer not to, to make sure things are initialised correctly,
    * hence this unelegant code: */
-  if (center_nearest_center.size() != 0){
-    throw zentas::zentas_error("center_nearest_center should be an empty vector");
+  if (center_nearest_center.size() != K){
+    throw zentas::zentas_error("center_nearest_center should be of size K (jn 20/7/2017)");
   }
   
-  for (size_t k = 0; k < K; ++k){
-    center_nearest_center.emplace_back(0,0,0);
-  }
 
   std::unique_ptr<double []> up_distances (new double [K]);
   auto distances = up_distances.get();

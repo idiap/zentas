@@ -260,6 +260,7 @@ class SkeletonClusterer{
   void triangular_kmeanspp_after_initial(size_t aq2p_bin, size_t k0, size_t k1, bool from_full_data);
   void test_parameters_to_tkai(size_t k0, size_t k1, size_t ndata_1, size_t ndata_2);
   void set_center_sample_distance_nothreshold(size_t k, size_t k1, size_t j1, double & distance);
+  void set_rf_center_sample_distance_nothreshold(size_t k, size_t k1, size_t j1, double & distance);
   void set_sampleID_sampleID_distance_nothreshold(size_t i1, size_t i2, double & distance);
   double get_center_sample_distance_nothreshold(size_t k, size_t k1, size_t j1);
   double get_sample_sample_distance_nothreshold(size_t k , size_t j1, size_t j2);
@@ -397,82 +398,53 @@ class SkeletonClusterer{
   void populate_afk_mc2();
   void initialise_center_indices();
   
+  /* refinement (k-means etc.) */
   public:
-
-
-
-void run_refinement(){
-  if (in_refinement == false){
-    throw zentas::zentas_error("in run_refinement, but in_refinement is false. This is not correct");
-  }
-
-  clustering_loop_scaffolding();
-  mowri << get_equals_line(get_round_summary().size());
-  mowri << "refinement complete, say something intelligent.";
-}
-
-bool halt_refinement(){
-  /* TODO. */
-  return false;
-}
-
-
-virtual bool refine_centers(){
-  bool has_changed = false;
-  for (size_t k = 0; k < K; ++k){
-    set_old_rf_center_data(k);
-    zero_refinement_sum(k);
-    for (size_t j = 0; j < get_ndata(k); ++j){
-      add_to_refinement_sum(k, j);
-    }
-    set_refinement_center_as_sum_mean(k);
-    has_changed = has_changed || compare_rf_new_and_old(k);
-  }
-  return has_changed;
-}
-
-virtual void refine_center_center_info(){
-  throw zentas::zentas_error("refine_center_center_info not implemented");
-}
-
-virtual void refine_sample_info(){
-  throw zentas::zentas_error("refine_sample_info not implemented");
-}
-
-
-virtual void initialise_refinement_variables(){
-  for (size_t k = 0; k < K; ++k){
-    append_zero_to_rf_sum_data();
-    append_zero_to_rf_center_data();
-    append_zero_to_old_rf_center_data();
-  }
-}
-
-
-void prepare_for_refinement(){
-  //add center to data. 
-  /* TODO : can be faster at claransl(1,2,3) using intercenter distances */ 
-  for (size_t k = 0; k < K; ++k){
-    put_sample_in_cluster(center_IDs[k]);
-    /* hint for faster : final_push_into_cluster_basic(center_IDs[k], k, d1); */
+  
+  void run_refinement();
+  bool halt_refinement();
+  
+  bool default_l2_quadratic_refine_centers();
+  virtual bool refine_centers(){
+    return default_l2_quadratic_refine_centers();
   }
   
-  initialise_refinement_variables();
+  virtual void set_rf_center_data(size_t k) { (void)k; throw zentas::zentas_error("cannot set_rf_center_data yet in skeleton clusterer"); }
   
-  //initialise refinement centers 
-  in_refinement = true;
-}
+  void default_refine_center_center_info();
+  virtual void refine_center_center_info(){
+    default_refine_center_center_info();
+  }
+  
+  void default_refine_sample_info();
+  virtual void refine_sample_info(){
+    default_refine_center_center_info();
+  }
+  
+  void default_initialise_refinement_variables();
+  virtual void initialise_refinement_variables(){
+    default_initialise_refinement_variables();
+  }
+  
+  void prepare_for_refinement();
 
-virtual void zero_refinement_sum(size_t k) { (void)k; throw zentas::zentas_error("zero_refinement_sum not possible"); };
-virtual void add_to_refinement_sum(size_t k, size_t j) {(void)k; (void)j; throw zentas::zentas_error("add_to_refinement_sum not possible"); };
-virtual void subtract_from_refinement_sum(size_t k, size_t j) {(void)k; (void)j;  throw zentas::zentas_error("subtract_from_refinement_sum not possible"); };
-virtual void set_refinement_center_as_sum_mean(size_t k) {(void)k; throw zentas::zentas_error("set_refinement_center_as_sum_mean not possible"); };
-virtual void append_zero_to_rf_sum_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_sum_data not possible"); }
-virtual void append_zero_to_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
-virtual void append_zero_to_old_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
-virtual void set_old_rf_center_data(size_t k){(void)k; throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
-virtual bool compare_rf_new_and_old(size_t k){(void)k; throw zentas::zentas_error("virtual function compare_rf_new_and_old not possible");}
 
+  
+  
+  /* data */
+  virtual void zero_refinement_sum(size_t k) { (void)k; throw zentas::zentas_error("zero_refinement_sum not possible"); };
+  virtual void add_to_refinement_sum(size_t k, size_t j) {(void)k; (void)j; throw zentas::zentas_error("add_to_refinement_sum not possible"); };
+  virtual void subtract_from_refinement_sum(size_t k, size_t j) {(void)k; (void)j;  throw zentas::zentas_error("subtract_from_refinement_sum not possible"); };
+  virtual void set_refinement_center_as_sum_mean(size_t k) {(void)k; throw zentas::zentas_error("set_refinement_center_as_sum_mean not possible"); };
+  virtual void append_zero_to_rf_sum_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_sum_data not possible"); }
+  virtual void append_zero_to_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
+  virtual void append_zero_to_old_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
+  virtual void set_old_rf_center_data(size_t k){(void)k; throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
+  virtual bool equals_rf_new_and_old(size_t k){(void)k; throw zentas::zentas_error("virtual function equals_rf_new_and_old not possible");}
+
+  /* metric */
+  /* The only two metrics needed are set_center_center_distances and set_center_sample_distance. 
+   * The decision to use centers (medoids) or refinement centers (centroids) is managed in baseclusterer. */
 
 };
 

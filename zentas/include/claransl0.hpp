@@ -37,7 +37,7 @@ class ClaransL0 : public BaseClarans{
      * defined in BaseClarans, use functions 
      * defined in BaseClarans */
     virtual void put_sample_custom_in_cluster(size_t i, size_t k_nearest, const double * const distances) final override;
-    virtual void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override;
+    //virtual void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override;
     virtual void custom_append(size_t k_new, size_t k, size_t j) final override;
     virtual void custom_replace_with_last(size_t k, size_t j) final override;
     virtual void custom_replace_with(size_t k1, size_t j1, size_t k2, size_t j2) final override;

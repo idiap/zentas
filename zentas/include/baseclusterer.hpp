@@ -98,10 +98,6 @@ class BaseClusterer : public TOpt{
     metric.set_distance(ptr_kmoo_c_dt->at_for_metric(k), p2buns_dt[bin].at_for_metric(i), aq2p_p2buns[bin].d_2(i), adistance);
   }
   
-  virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance)  override final   {
-    metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
-  }
-
   virtual void set_center_sampleID_distance(size_t k, size_t i, double threshold, double & distance)  override final  {
     metric.set_distance(centers_data.at_for_metric(k), ptr_datain->at_for_metric(i), threshold, distance);
   }
@@ -113,11 +109,7 @@ class BaseClusterer : public TOpt{
   virtual void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance)  override final   {
     metric.set_distance(cluster_datas[k1].at_for_metric(j1), cluster_datas[k2].at_for_metric(j2), threshold, adistance);
   }
-  
-  virtual void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance)  override final  {
-    metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
-  }
-    
+      
   virtual void append_to_centers_from_ID(size_t i) override final{
       centers_data.append(ptr_datain->at_for_move(i));
   }
@@ -215,14 +207,26 @@ class Clusterer : public BaseClusterer <TMetric, TData, TOpt>{
 
 public:
 
+  using BaseClusterer <TMetric, TData, TOpt>::metric;
+  using BaseClusterer <TMetric, TData, TOpt>::centers_data;
+  using BaseClusterer <TMetric, TData, TOpt>::cluster_datas;
+  
   typedef typename TData::DataIn DataIn;
   Clusterer(const ClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer<TMetric, TData, TOpt> (ib) {}      
+
+  virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance)  override final   {
+    metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
+  }
+
+  virtual void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance)  override final  {
+    metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
+  }
 
   
 };
 
 
-/* The LpMetric, which has refinement */
+/* The LpMetric, which can do refinement and so has additional methods */
 template <class TData, class TOpt>  
 class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>  : public BaseClusterer <LpMetric<typename TData::DataIn>, TData, TOpt>{
 
@@ -237,13 +241,18 @@ public:
   RefinementCenterData old_rf_center_data;
 
   typedef typename TData::DataIn DataIn;
+  using AtomicType = typename DataIn::AtomicType;
 
   using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::cluster_datas;
   using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::get_ndata;
+  using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::metric;
+  using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::in_refinement;
+  using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::centers_data;
+  using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::energy;
 
   Clusterer(const ClustererInitBundle<DataIn, LpMetric<typename TData::DataIn>> & ib): BaseClusterer<LpMetric<typename TData::DataIn>, TData, TOpt> (ib), 
   
-  rf_sum_data(ib.datain, true), rf_center_data(ib.datain, true), old_rf_center_data(ib.datain, true) {}
+  rf_sum_data(ib.datain.dimension), rf_center_data(ib.datain.dimension), old_rf_center_data(ib.datain.dimension) {}
 
   /* refinement matters */
 
@@ -263,6 +272,7 @@ public:
     else{
       rf_center_data.scale(k, rf_sum_data.at_for_metric(k), 1./get_ndata(k));
     }
+    
   }
   
   virtual void append_zero_to_rf_sum_data() override final{
@@ -278,16 +288,42 @@ public:
   }  
 
   virtual void zero_refinement_sum(size_t k) override final{
-    (void)k;
+    rf_sum_data.set_zero(k);
   }
 
   virtual void set_old_rf_center_data(size_t k) override final{
     old_rf_center_data.replace_with(k, rf_center_data.at_for_metric(k));
   }
 
-  virtual bool compare_rf_new_and_old(size_t k) override final{
+  virtual bool equals_rf_new_and_old(size_t k) override final{
     return old_rf_center_data.equals(k, rf_center_data.at_for_metric(k));
   }
+  
+  virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance)  override final   {
+    // TODO : a faster approach than of else here. 
+    if (in_refinement == false){
+      metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
+    }
+    else{
+      metric.set_distance(rf_center_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
+    }
+  }
+  
+  
+  virtual void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance)  override final  {
+  
+    if (in_refinement == false){  
+      metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
+    }
+    else{
+      metric.set_distance(rf_center_data.at_for_metric(k1), rf_center_data.at_for_metric(k2), threshold, adistance);
+    }
+  }
+  
+  virtual void set_rf_center_data(size_t) override final {
+    //metric.set_minimiser(energy, [this, k](size_t j){return cluster_datas[k].at_for_metric(j);}, get_ndata(k), rf_center_data.at_for_change(k));
+  }
+
   
 };
   

@@ -63,9 +63,9 @@ class BaseClaransL23 : public BaseClarans {
     }
     
     
-    virtual  void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
-      reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
-    }
+    //virtual void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
+      //reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
+    //}
 
     virtual  void custom_append(size_t k_to, size_t k, size_t j) final override{
       nearest_2_infos_margin_append(k_to, k, j);
@@ -105,7 +105,15 @@ class BaseClaransL23 : public BaseClarans {
       
           
     virtual void center_center_info_test() override final{
-      /* TODO (cc test) */
+      for (size_t k1 = 0; k1 < K; ++k1){
+        for (size_t k2 = 0; k2 < K; ++k2){
+          double distance;
+          set_center_center_distance_nothreshold(k1, k2, distance);
+          if (std::abs(distance - cc[k1*K + k2]) > 1e-7*(std::abs(distance) + std::abs(cc[k1*K + k2]))){
+            throw zentas::zentas_error("cc not correct in center_center_info_test");
+          }
+        }
+      }  
     }
     
     
