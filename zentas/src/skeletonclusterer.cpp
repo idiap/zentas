@@ -1794,6 +1794,7 @@ bool SkeletonClusterer::default_l2_quadratic_refine_centers(){
   bool has_changed = false;
   for (size_t k = 0; k < K; ++k){ 
     set_old_rf_center_data(k);
+    /* metric dependent : */
     set_rf_center_data(k);
     cluster_has_changed[k] = equals_rf_new_and_old(k);
     has_changed = cluster_has_changed[k] == true ? has_changed : true;
@@ -1824,15 +1825,19 @@ void SkeletonClusterer::default_refine_center_center_info(){
 }
 
 void SkeletonClusterer::default_initialise_refinement_variables(){
+  std::cout << "in default_initialise_refinement_variables" << std::endl;
   for (size_t k = 0; k < K; ++k){
+
     append_zero_to_rf_sum_data();
     append_zero_to_rf_center_data();
     append_zero_to_old_rf_center_data();
+
   }
 }
 
 
 void SkeletonClusterer::prepare_for_refinement(){
+
   for (size_t k = 0; k < K; ++k){
     put_sample_in_cluster(center_IDs[k]);
   }

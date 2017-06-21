@@ -55,15 +55,12 @@ void vzentas(size_t ndata, size_t dimension, const T * const ptr_datain, size_t 
 
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
 
+  ConstLengthInitBundle<T> datain_ib(ndata, true_dimension, true_ptr_datain);
   if (rooted == true){
-    typedef typename VDataRooted<DenseVectorDataRootedIn < T > >::InitBundle InitBundle;
-    InitBundle datain_ib(ndata, true_dimension, true_ptr_datain);
     zentas_base  <VDataRooted <DenseVectorDataRootedIn < T > >, LpMetric<DenseVectorDataRootedIn < T >  > > (datain_ib, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, patient, energy, with_tests, metric_initializer, energy_initialiser, bigbang);
   }
   
   else{
-    typedef typename VData<DenseVectorDataUnrootedIn < T > >::InitBundle InitBundle;
-    InitBundle datain_ib(ndata, true_dimension, true_ptr_datain);
     zentas_base  <VData <DenseVectorDataUnrootedIn < T> >, LpMetric<DenseVectorDataUnrootedIn < T > > > (datain_ib, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, patient, energy, with_tests, metric_initializer, energy_initialiser, bigbang);
   }
 }
@@ -85,17 +82,14 @@ void sparse_vector_zentas(size_t ndata, const size_t * const sizes, const T * co
   metric_initializer.reset(metric);
   
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
-      
+    
+  SparseVectorDataInitBundle<T> datain_ib(ndata, sizes, ptr_datain, ptr_indices_s);  
+  
   if (rooted == true){ 
-
-    typedef typename SparseVectorDataRooted<SparseVectorDataRootedIn < T > >::InitBundle InitBundle;
-    InitBundle datain_ib(ndata, sizes, ptr_datain, ptr_indices_s);
     zentas_base  <SparseVectorDataRooted <SparseVectorDataRootedIn < T> >, LpMetric<SparseVectorDataRootedIn < T > > > (datain_ib, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, patient, energy, with_tests, metric_initializer, energy_initialiser, bigbang);
   }
   
   else{
-    typedef typename SparseVectorData<SparseVectorDataUnrootedIn < T > >::InitBundle InitBundle;
-    InitBundle datain_ib(ndata, sizes, ptr_datain, ptr_indices_s);
     zentas_base  <SparseVectorData <SparseVectorDataUnrootedIn < T> >, LpMetric<SparseVectorDataUnrootedIn < T > > > (datain_ib, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, patient, energy, with_tests, metric_initializer, energy_initialiser, bigbang);
   }
     
@@ -166,16 +160,18 @@ void szentas(size_t ndata, const size_t * const sizes, const T * const ptr_datai
       metric_initializer = LevenshteinInitializer (dict_size, c_indel_arr, c_switches_arr, normalised);//
     }
   
+  
+    //VariableLengthInitBundle datain_ib(ndata, sizes, ptr_datain, ptr_indices_s);  
+    
   //  LevenshteinInitializer metric_initializer(1.0, 1.0);
+    
+    
+    VariableLengthInitBundle<T> datain_ib(ndata, sizes, ptr_datain);
     if (rooted == true){
-      typedef typename SDataRooted<StringDataRootedIn < T > >::InitBundle InitBundle;
-      InitBundle datain_ib(ndata, sizes, ptr_datain);
       zentas_base  <SDataRooted <StringDataRootedIn < T> >, LevenshteinMetric < StringDataRootedIn <T> > > (datain_ib, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, patient, energy, with_tests, metric_initializer, energy_initialiser, bigbang);      
     }
     
     else{
-      typedef typename SData<StringDataUnrootedIn< T > >::InitBundle InitBundle;
-      InitBundle datain_ib(ndata, sizes, ptr_datain);
       zentas_base  <SData <StringDataUnrootedIn< T> >, LevenshteinMetric < StringDataUnrootedIn<T> > > (datain_ib, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final, labels, nthreads, max_rounds, patient, energy, with_tests, metric_initializer, energy_initialiser, bigbang);
     }
   }

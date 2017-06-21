@@ -87,13 +87,13 @@ class LpDistance{
     virtual void set_distance(const SparseVectorRfCenter<TNumber> & a, const SparseVectorRfCenter<TNumber> & b, double threshold, double & distance) = 0;
     
     
-    //void set_minimiser(const std::string & energy, std::function<const TNumber * const & (size_t)> f_sample, size_t ndata, TNumber * const minimiser){
-      //throw zentas::zentas_error("cannot minimise");
-    //}
+    void set_minimiser(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const minimiser){
+      throw zentas::zentas_error("cannot minimise");
+    }
     
-    //virtual void set_minimiser(const std::string & energy, std::function<const TNumber * const & (size_t)> f_sample, size_t ndata, SparseVectorRfCenter<TNumber> & minimiser){
-      //throw zentas::zentas_error("cannot minimise");
-    //}
+    virtual void set_minimiser(const std::string & energy, const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, size_t ndata, SparseVectorRfCenter<TNumber> * const minimiser){
+      throw zentas::zentas_error("cannot minimise");
+    }
     
 };
 
@@ -259,7 +259,7 @@ template<typename TVDataIn>
 class LpMetric{
   
   public:
-    typedef typename TVDataIn::Sample Sample;
+ //   typedef typename TVDataIn::Sample Sample;
     typedef typename TVDataIn::AtomicType AtomicType;
     typedef LpMetricInitializer Initializer;    
   
@@ -315,9 +315,9 @@ class LpMetric{
     }
 
     
-    template <typename TNumber, typename TFunction>
-    void set_minimiser(const std::string & energy, const TFunction & f_sample, size_t ndata, TNumber * const minimiser){
-      uptr_lpdistance->set_minimiser(energy, f_sample, ndata, minimiser);
+    template <typename TPointerCenter, typename TFunction>
+    void set_minimiser(const std::string & energy, const TFunction & f_sample, size_t ndata, TPointerCenter ptr_center){
+      uptr_lpdistance->set_minimiser(energy, f_sample, ndata, ptr_center);
     }
 
   

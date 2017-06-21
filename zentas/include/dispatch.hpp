@@ -16,8 +16,8 @@ namespace nszen{
 
 void scrutinize_input_1(const EnergyInitialiser & energy_initialiser, std::string energy, size_t K, std::string algorithm, size_t level, size_t ndata);
 
-template <typename TData, typename TMetric>
-void dispatch(std::string algorithm, size_t level, const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string initialisation_method, size_t max_proposals, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser, std::chrono::time_point<std::chrono::high_resolution_clock> bigbang){
+template <typename TData, typename TMetric, typename TInitBundle>
+void dispatch(std::string algorithm, size_t level, TInitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string initialisation_method, size_t max_proposals, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser, std::chrono::time_point<std::chrono::high_resolution_clock> bigbang){
   
   
   
@@ -74,9 +74,9 @@ void dispatch(std::string algorithm, size_t level, const typename TData::InitBun
 
 
 /* This is the place to do all kinds of tests on the input: all user calls (R/Python/Terminal) will pass through this function */
-template <typename TData, typename TMetric>
+template <typename TData, typename TMetric, typename TInitBundle>
 void zentas_base(
-const typename TData::InitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string initialisation_method, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser, const std::chrono::time_point<std::chrono::high_resolution_clock> & bigbang){
+const TInitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string initialisation_method, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser, const std::chrono::time_point<std::chrono::high_resolution_clock> & bigbang){
 
   /* used during experiments to see if openblas worth the effort. Decided not. 
   //openblas_set_num_threads(1);

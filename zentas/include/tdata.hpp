@@ -43,27 +43,21 @@ namespace nszen{
 
 
 
-template <typename AtomicType>
+template <typename TAtomic>
 class SparseRefinementCenterData{
 
  public:
   
-  /* Rooted or unrooted sparse data-in */
-  //typedef TSDataIn DataIn;
-  //typedef typename DataIn::Sample Sample;
-  
-  //using AtomicType = typename DataIn::AtomicType;
-  
-  typedef SparseVectorRfCenter<AtomicType> RfCenter;
-  
+  using RfCenter = SparseVectorRfCenter<TAtomic>;
+   
   SparseRefinementCenterData(size_t dimension){(void)dimension;} //maybe use dimension to initialise size of maps
 
   
-  void add(size_t, const SparseVectorSample<AtomicType> & ){
+  void add(size_t, const SparseVectorSample<TAtomic> &){
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY add");
   }
 
-  void subtract(size_t, const SparseVectorSample<AtomicType> &){
+  void subtract(size_t, const SparseVectorSample<TAtomic> &){
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY subtract");
   }
   
@@ -79,7 +73,7 @@ class SparseRefinementCenterData{
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY return at_for_metric");
   }
 
-  RfCenter & at_for_change(size_t) {
+  RfCenter * at_for_change(size_t) {
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY return at_for_change");
   }
     
@@ -111,29 +105,26 @@ class SparseRefinementCenterData{
 };
 
 
-template <typename AtomicType>
+template <typename TAtomic>
 class VCenterData{
     
  public:
-
+  
   size_t ndata;    
   const size_t dimension;
-  std::vector<AtomicType> data;
+  std::vector<TAtomic> data;
 
-  VCenterData (size_t dimension_):dimension(dimension_){}
-
-  void append(const AtomicType * const datapoint){
-    ndata += 1;
-    data.insert(data.end(), datapoint, datapoint + dimension);
+  VCenterData (size_t dimension_):ndata(0), dimension(dimension_){
   }
 
-  void add(size_t i, const AtomicType * const datapoint){
+
+  void add(size_t i, const TAtomic * const datapoint){
     for (size_t d = 0; d < dimension; ++d){
       data[i*dimension + d] += *(datapoint + d);
     }
   }
 
-  void subtract(size_t i, const AtomicType * const datapoint){
+  void subtract(size_t i, const TAtomic * const datapoint){
     for (size_t d = 0; d < dimension; ++d){
       data[i*dimension + d] -= *(datapoint + d);
     }
@@ -146,7 +137,7 @@ class VCenterData{
   }
 
 
-  void scale(size_t i, const AtomicType * const datapoint, double alpha){
+  void scale(size_t i, const TAtomic * const datapoint, double alpha){
     for (size_t d = 0; d < dimension; ++d){
       data[i*dimension + d] = *(datapoint + d)*alpha;            
     }
@@ -163,32 +154,32 @@ class VCenterData{
     }
   }
 
-    std::string string_for_sample(size_t i){
-      std::stringstream ss;
-      ss << "(";
-      for (size_t d = 0; d < dimension; ++d){
-        ss << " " << data[i*dimension + d] << " ";
-      }
-      ss << ")";
-      return ss.str();
+  std::string string_for_sample(size_t i){
+    std::stringstream ss;
+    ss << "(";
+    for (size_t d = 0; d < dimension; ++d){
+      ss << " " << data[i*dimension + d] << " ";
     }
+    ss << ")";
+    return ss.str();
+  }
 
-  const AtomicType * const at_for_metric(size_t j) const {
+  const TAtomic * const at_for_metric(size_t j) const {
     return data.data() + j*dimension;
   }
 
-  AtomicType * const at_for_change(size_t j) {
+  TAtomic * const at_for_change(size_t j) {
     return data.data() + j*dimension;
   }
 
 
-  void replace_with(size_t j, const AtomicType * const datapoint){
+  void replace_with(size_t j, const TAtomic * const datapoint){
     for (size_t d = 0; d < dimension; ++d){
       data[j*dimension + d] = *(datapoint + d);
     }
   }
 
-  bool equals(size_t i, const AtomicType * const datapoint) const{
+  bool equals(size_t i, const TAtomic * const datapoint) const{
     double abs_sum = 0.; 
     double sum_abs = 0.;
     for (size_t d = 0; d < dimension; ++d){
@@ -200,10 +191,6 @@ class VCenterData{
     double relative_change = (abs_sum / sum_abs);
     return relative_change < 1e-7;
   }
-
-
-  
-  
   
 };
 
@@ -213,15 +200,11 @@ class VData{
   
   public:
     using AtomicType = typename TDataIn::AtomicType;
-    typedef VCenterData<AtomicType> RefinementCenterData;
-
-  private:
-    typedef typename TDataIn::Sample Sample;
+    using RefinementCenterData = VCenterData<AtomicType>;
         
   public:
     typedef TDataIn DataIn;
-    typedef typename TDataIn::InitBundle InitBundle;    
-    
+     
   private:
     size_t ndata;    
     const size_t dimension;
@@ -239,17 +222,17 @@ class VData{
       return ndata;
     }
     
-    void append(const Sample & datapoint){
+    void append(const AtomicType * const datapoint){
       ndata += 1;
       data.insert(data.end(), datapoint, datapoint + dimension);
     }
 
         
-    const Sample at_for_metric(size_t j) const {
+    const AtomicType * const at_for_metric(size_t j) const {
       return data.data() + j*dimension;
     }
 
-    const Sample at_for_move(size_t j) const {
+    const AtomicType * const at_for_move(size_t j) const {
       return data.data() + j*dimension;
     }
         
@@ -261,7 +244,7 @@ class VData{
       data.resize(ndata*dimension);
     }
     
-    void replace_with(size_t j, const Sample & datapoint){
+    void replace_with(size_t j, const AtomicType * const datapoint){
       for (size_t d = 0; d < dimension; ++d){
         data[j*dimension + d] = *(datapoint + d);
       }
@@ -295,18 +278,10 @@ class SData{
   
 
   public:
-    typedef typename TSDataIn::Sample Sample;
-    typedef typename TSDataIn::AtomicType AtomicType;
+    using Sample = typename TSDataIn::Sample;
+    using AtomicType = typename TSDataIn::AtomicType;
     typedef TSDataIn DataIn;
 
-  public:
-    //typedef NoRefinementPossible<Sample> RefinementCenterData;
-
-    
-    typedef typename TSDataIn::InitBundle InitBundle;
-    
-    
-    
 
    private: 
     size_t ndata;   
@@ -314,10 +289,8 @@ class SData{
     std::vector<AtomicType> data;
     std::vector<size_t> sizes;
     
-   public: 
-
-    
-    SData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){  //, mowri(true, false, ""){
+   public:     
+    SData (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.get_max_size()){
       if (as_empty == false){
         throw zentas::zentas_error("Currently, there is no implementation for constructing SData from SDataIn with data, due to the lack of any apparent need");
       }
@@ -387,15 +360,10 @@ class SparseVectorData{
   
 
   public:
-    typedef typename TSDataIn::Sample Sample;
-    typedef typename TSDataIn::AtomicType AtomicType;
-    typedef TSDataIn DataIn;
-    typedef typename TSDataIn::InitBundle InitBundle;
-
-  public:
-    typedef SparseRefinementCenterData<AtomicType> RefinementCenterData;
-
-   
+    using AtomicType = typename TSDataIn::AtomicType ;
+    using DataIn = TSDataIn ;
+    using RefinementCenterData =  SparseRefinementCenterData<AtomicType> ;
+    
    private: 
     size_t ndata;
     size_t dimension; //note that this dimension is the max non-sparsity, NOT the true vector-space dimension. 
@@ -414,7 +382,7 @@ class SparseVectorData{
       return ndata;
     }
     
-    void append(const Sample & s){
+    void append(const SparseVectorSample<AtomicType> & s){
       ndata += 1;
       data.insert(data.end(), s.values, s.values + s.size);
       data.resize(ndata*dimension);
@@ -423,12 +391,12 @@ class SparseVectorData{
       sizes.push_back(s.size);
     }
     
-    const Sample at_for_metric(size_t j) const {
-      return Sample(sizes[j], data.data() + j*dimension, indices_s.data() + j*dimension);
+    SparseVectorSample<AtomicType> at_for_metric(size_t j) const {
+      return SparseVectorSample<AtomicType>(sizes[j], data.data() + j*dimension, indices_s.data() + j*dimension);
     }
 
-    const Sample at_for_move(size_t j) const {
-      return Sample(sizes[j], data.data() + j*dimension, indices_s.data() + j*dimension);
+    SparseVectorSample<AtomicType> at_for_move(size_t j) const {
+      return SparseVectorSample<AtomicType>(sizes[j], data.data() + j*dimension, indices_s.data() + j*dimension);
     }
         
     void remove_last(){
@@ -441,7 +409,7 @@ class SparseVectorData{
       sizes.resize(ndata);
     }
     
-    void replace_with(size_t j, const Sample & s){
+    void replace_with(size_t j, const SparseVectorSample<AtomicType> & s){
       for (size_t d = 0; d < s.size; ++d){
         data[j*dimension + d] = *(s.values + d);
         indices_s[j*dimension + d] = *(s.indices + d);
@@ -486,14 +454,10 @@ class SparseVectorData{
 
 template <typename TDataIn>
 class BaseDataRooted{
-  
-  private:
-    typedef typename TDataIn::Sample Sample;
-    typedef typename std::remove_const<typename std::remove_pointer<Sample>::type>::type NP_Sample;
-  
+    
   public:
+
     typedef TDataIn DataIn;
-    typedef typename TDataIn::InitBundle InitBundle;
  
   protected:
     size_t ndata;    
@@ -555,13 +519,13 @@ class VDataRooted : public  BaseDataRooted <TDataIn>{
     using BaseDataRooted<TDataIn>::dimension;
 
   public:
-    typedef typename TDataIn::Sample Sample;
+    using Sample = typename TDataIn::Sample;
     
     typedef TDataIn DataIn;
 
     VDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDataIn> (datain, as_empty) {}
 
-    const Sample at_for_metric(size_t j) const {
+    const AtomicType * const at_for_metric(size_t j) const {
       return ptr_datain->data + IDs[j]*dimension;
     }  
 };
@@ -596,13 +560,12 @@ template <typename TDataIn>
 class SparseVectorDataRooted : public BaseDataRooted<TDataIn>{
 
 
-  public: 
+  public:
     using BaseDataRooted<TDataIn>::ptr_datain;
     using BaseDataRooted<TDataIn>::IDs;
     using BaseDataRooted<TDataIn>::dimension;
 
   public:
-    typedef typename TDataIn::Sample Sample;
     typedef TDataIn DataIn;
     using AtomicType = typename TDataIn::AtomicType;
 
@@ -612,8 +575,8 @@ class SparseVectorDataRooted : public BaseDataRooted<TDataIn>{
     
     SparseVectorDataRooted (const DataIn & datain, bool as_empty) : BaseDataRooted<TDataIn> (datain, as_empty) {}
     
-    const Sample at_for_metric(size_t j) const {
-      return Sample(ptr_datain->get_size(IDs[j]), ptr_datain->get_data(IDs[j]), ptr_datain->get_indices_s(IDs[j]));
+    SparseVectorSample<AtomicType> at_for_metric(size_t j) const {
+      return SparseVectorSample<AtomicType>(ptr_datain->get_size(IDs[j]), ptr_datain->get_data(IDs[j]), ptr_datain->get_indices_s(IDs[j]));
     }
     
 };

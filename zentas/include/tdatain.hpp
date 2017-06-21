@@ -21,6 +21,7 @@ the GNU General Public License along with zentas. If not, see
 #include <algorithm>
 #include <sstream>
 #include <fstream>
+
 #include "zentaserror.hpp"
 
 // TODO rename this file.
@@ -60,10 +61,6 @@ struct VariableLengthSample{
     }
 };
 
-
-
-
-
 template <typename TAtomic>
 struct VariableLengthInitBundle{
   public:
@@ -73,73 +70,102 @@ struct VariableLengthInitBundle{
     VariableLengthInitBundle(size_t ndata, const size_t * const sizes, const TAtomic * const data): ndata(ndata), sizes(sizes), data(data) {}
 };
 
-
-
-
 template <typename TAtomic>
-struct BaseInitBundle{
+struct ConstLengthInitBundle{
   public:    
     size_t ndata;
     size_t dimension;
     const TAtomic * const data;
-    BaseInitBundle(size_t ndata, size_t dimension, const TAtomic * const data): ndata(ndata), dimension(dimension), data(data) {}
+    ConstLengthInitBundle(size_t ndata, size_t dimension, const TAtomic * const data): ndata(ndata), dimension(dimension), data(data) {}
+};
+
+
+template <typename TAtomic>
+struct SparseVectorDataInitBundle : public VariableLengthInitBundle<TAtomic> {
+  public:
+    const size_t * const indices_s;
+    SparseVectorDataInitBundle(size_t ndata, const size_t * const sizes, const TAtomic * const data, const size_t * const indices_s):
+    VariableLengthInitBundle<TAtomic>(ndata, sizes, data), indices_s(indices_s) {}
 };
 
 
 template <typename TAtomic>
 struct BaseDataIn{
   public:
-    typedef TAtomic AtomicType;
-    typedef const TAtomic * Sample;
-    typedef BaseInitBundle<TAtomic> InitBundle;
-    size_t ndata;
-    size_t dimension;
-    const Sample data;
-
-  public:
-    BaseDataIn(size_t ndata, size_t dimension, const TAtomic * const data): ndata(ndata), dimension(dimension), data(data) {}
-    BaseDataIn(const InitBundle & ib): BaseDataIn(ib.ndata, ib.dimension, ib.data) {}
     
+    /* used downstream ? */
+    using AtomicType = TAtomic;
+    
+    size_t ndata;
+    /* dimension takes on a different meaning, 
+     * for ConstLength (true dimension) and 
+     * VarLength (maximum index)  */
+    size_t dimension;
+    const TAtomic * const data;
+
+    BaseDataIn(size_t ndata, size_t dimension, const TAtomic * const data): ndata(ndata), dimension(dimension), data(data) {}
+    BaseDataIn(const ConstLengthInitBundle<TAtomic> & ib): BaseDataIn(ib.ndata, ib.dimension, ib.data) {}
+
      size_t get_ndata() const {
       return ndata;
     }
     
-    Sample at_for_metric(size_t i) const {
-      return data + dimension*i;
-    }
-    
-    std::string string_for_sample(size_t i) const{
-      (void)i;
-      return "currently no string function for BaseDataIn";          
+    virtual std::string string_for_sample(size_t i) const{
+      std::stringstream ss;
+      ss << "currently no string function, this is from BaseDataIn. To display sample " << i << " requires that the virtual method be specialised";
+      return ss.str();
     }
 };
 
 
-/* The basis for string and sparse vector input data : ndata samples, each of a distinct length */
+/* The basis for dense vector data */
 template <typename TAtomic>
-class BaseVarLengthDataIn {
-  
+struct BaseConstLengthDataIn : public BaseDataIn<TAtomic>{
   public:
-    typedef VariableLengthInitBundle<TAtomic> InitBundle;
-    typedef const VariableLengthSample<TAtomic> Sample;
-    typedef TAtomic AtomicType;
-    size_t ndata;
-    /* a hack to get acceptance by metric (in l2 for sparse). TODO : redesign / clean-up */
-    size_t dimension = std::numeric_limits<size_t>::max();
-    
+  
+    using Sample = const TAtomic * const;
+
+  public:
+    BaseConstLengthDataIn(const ConstLengthInitBundle<TAtomic> & ib): BaseDataIn<TAtomic>(ib) {}
+    const TAtomic * const at_for_metric(size_t i) const {
+      return BaseConstLengthDataIn::data + BaseConstLengthDataIn::dimension*i;
+    }
+};
+
+template <typename TAtomic> 
+struct DenseVectorDataUnrootedIn : public BaseConstLengthDataIn<TAtomic> {
+  public:
+    DenseVectorDataUnrootedIn(const ConstLengthInitBundle<TAtomic> & ib):BaseConstLengthDataIn<TAtomic>(ib) {}    
+    const TAtomic * const at_for_move(size_t i) const {
+      return BaseConstLengthDataIn<TAtomic>::data + BaseConstLengthDataIn<TAtomic>::dimension*i;
+    }
+};
+
+template <typename TAtomic> 
+struct DenseVectorDataRootedIn : public BaseConstLengthDataIn<TAtomic> {
+  public:    
+    DenseVectorDataRootedIn(const ConstLengthInitBundle<TAtomic> & ib):BaseConstLengthDataIn<TAtomic>(ib) {}
+    size_t at_for_move(size_t i) const {
+      return i;
+    } 
+};
+
+
+
+
+/* The basis for string and sparse vector input data  */
+template <typename TAtomic>
+class BaseVarLengthDataIn : public BaseDataIn<TAtomic>{
+  
   protected:
     const size_t * const sizes;
-    const TAtomic * const data;
     std::unique_ptr<size_t> up_c_sizes;
     size_t * c_sizes;
     size_t max_size;
     double mean_size;
    
   public:
-    BaseVarLengthDataIn(size_t ndata, const size_t * const sizes, const TAtomic * const data):
-    ndata(ndata), sizes(sizes), data(data), up_c_sizes(new size_t [ndata + 1]), max_size(0), mean_size(0){
-      
-      
+    BaseVarLengthDataIn(size_t ndata, const size_t * const sizes, const TAtomic * const data): BaseDataIn<TAtomic>(ndata, std::numeric_limits<size_t>::max(), data), sizes(sizes), up_c_sizes(new size_t [ndata + 1]), max_size(0), mean_size(0) {
       c_sizes = up_c_sizes.get();
       c_sizes[0] = 0;
       for (size_t i = 0; i < ndata; ++i){
@@ -153,21 +179,35 @@ class BaseVarLengthDataIn {
       }
     }
     
-    BaseVarLengthDataIn(const InitBundle & ib): BaseVarLengthDataIn(ib.ndata, ib.sizes, ib.data) {}
-
-     size_t get_ndata() const{
-      return ndata;
-    }
-    
+    BaseVarLengthDataIn(const VariableLengthInitBundle<TAtomic> & ib): BaseVarLengthDataIn(ib.ndata, ib.sizes, ib.data) {}
 
      size_t get_size(size_t i) const{
       return sizes[i];
     }
     
      const TAtomic * get_data(size_t i) const{
-      return data + c_sizes[i];
+      return BaseDataIn<TAtomic>::data + c_sizes[i];
     }
         
+
+    std::string string_for_sample(size_t i) const{
+      std::stringstream ss;
+      ss << "{";
+      for (size_t d = 0; d < sizes[i]; ++d){
+        ss << BaseDataIn<TAtomic>::data[c_sizes[i] + d];
+      }
+      ss << "}";
+      return ss.str();          
+    }
+    
+    void unrooted_viability_test(){
+      if (static_cast<double>(max_size) > 5.*mean_size){
+        std::stringstream ss;
+        ss << "In unrooted_viability_test, with mean size=" << mean_size << " and max size=" << max_size << ". The max size is more than 5 times larger than mean size. This means a potentially large waste of memory, and `cold cache'. Consider the rooted version of this algorithm. (rooted = true).";
+        throw zentas::zentas_error(ss.str());
+      }
+    }
+  
     size_t get_max_size() const{
       return max_size;
     }
@@ -175,54 +215,7 @@ class BaseVarLengthDataIn {
       return mean_size;
     }
 
-    std::string string_for_sample(size_t i) const{
-      std::stringstream ss;
-      ss << "{";
-      for (size_t d = 0; d < sizes[i]; ++d){
-        ss << data[c_sizes[i] + d];
-      }
-      ss << "}";
-      return ss.str();          
-    }  
-
 };
-
-
-template <typename TAtomic> 
-struct DenseVectorDataUnrootedIn : public BaseDataIn<TAtomic> {
-  
-  public:
-    using BaseDataIn<TAtomic>::data;
-    using BaseDataIn<TAtomic>::dimension;
-    typedef typename BaseDataIn<TAtomic>::InitBundle InitBundle;
-    typedef typename BaseDataIn<TAtomic>::Sample Sample;
-
-    
-    DenseVectorDataUnrootedIn(const InitBundle & ib):BaseDataIn<TAtomic>(ib) {}
-    
-    const Sample at_for_move(size_t i) const {
-      return data + dimension*i;
-    }
-};
-
-template <typename TAtomic> 
-struct DenseVectorDataRootedIn : public BaseDataIn<TAtomic> {
-  
-  public:
-    typedef typename BaseDataIn<TAtomic>::InitBundle InitBundle;
-    typedef typename BaseDataIn<TAtomic>::Sample Sample;
-
-    
-    DenseVectorDataRootedIn(const InitBundle & ib):BaseDataIn<TAtomic>(ib) {}
-    
-    size_t at_for_move(size_t i) const {
-      return i;
-    }  
-};
-
-
-
-
 
 
 template <typename TAtomic>
@@ -231,36 +224,14 @@ class BaseStringDataIn: public BaseVarLengthDataIn<TAtomic> {
   
   public:
 
-    using BaseVarLengthDataIn<TAtomic>::sizes;
-    using BaseVarLengthDataIn<TAtomic>::data;
-    using BaseVarLengthDataIn<TAtomic>::c_sizes;
+    using Sample = VariableLengthSample<TAtomic>;
     
-    typedef VariableLengthInitBundle<TAtomic> InitBundle;
-    typedef const VariableLengthSample<TAtomic> Sample;
-    typedef TAtomic AtomicType;
-
-    
-    BaseStringDataIn(const InitBundle & ib): BaseVarLengthDataIn<TAtomic>(ib) {}
-        
-  
+    BaseStringDataIn(const VariableLengthInitBundle<TAtomic> & ib): BaseVarLengthDataIn<TAtomic>(ib) {}
     const Sample at_for_metric(size_t i) const{
-      return Sample(sizes[i], data + c_sizes[i]);
+      return Sample(BaseVarLengthDataIn<TAtomic>::sizes[i], BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
-    
-
 };
 
-template <typename TAtomic>
-struct SparseVectorDataUnrootedInInitBundle{
-  
-  public:
-    size_t ndata;
-    const size_t * const sizes;
-    const TAtomic * const data;
-    const size_t * const indices_s;
-    
-    SparseVectorDataUnrootedInInitBundle(size_t ndata, const size_t * const sizes, const TAtomic * const data, const size_t * const indices_s):ndata(ndata), sizes(sizes), data(data), indices_s(indices_s) {}
-};
 
 
 
@@ -268,26 +239,9 @@ template <typename TAtomic>
 class StringDataUnrootedIn : public BaseStringDataIn<TAtomic>{
   
   public:
-    using BaseVarLengthDataIn<TAtomic>::max_size;
-    using BaseVarLengthDataIn<TAtomic>::mean_size;
-    using BaseVarLengthDataIn<TAtomic>::sizes;
-    using BaseVarLengthDataIn<TAtomic>::data;
-    using BaseVarLengthDataIn<TAtomic>::c_sizes;
-    typedef typename BaseVarLengthDataIn<TAtomic>::Sample Sample;
-    typedef typename BaseVarLengthDataIn<TAtomic>::InitBundle InitBundle;
-    
-  
-    StringDataUnrootedIn(const InitBundle & ib): BaseStringDataIn<TAtomic>(ib) {
-      if (static_cast<double>(max_size) > 5.*mean_size){
-        
-        std::stringstream ss;
-        ss << "mean size : " << mean_size << "  max size : " << max_size << "\n" << "The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true).";
-        throw zentas::zentas_error(ss.str());
-      }
-    }
-    
-    const Sample at_for_move(size_t i) const{
-      return Sample(sizes[i], data + c_sizes[i]);
+    StringDataUnrootedIn(const VariableLengthInitBundle<TAtomic> & ib): BaseStringDataIn<TAtomic>(ib) { BaseVarLengthDataIn<TAtomic>::unrooted_viability_test(); }
+    const VariableLengthSample<TAtomic> at_for_move(size_t i) const{
+      return VariableLengthSample<TAtomic>(BaseVarLengthDataIn<TAtomic>::sizes[i], BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
 };
 
@@ -296,8 +250,8 @@ template <typename TAtomic>
 class StringDataRootedIn : public BaseStringDataIn<TAtomic>{
   
   public:
-    typedef typename BaseVarLengthDataIn<TAtomic>::InitBundle InitBundle;
-    StringDataRootedIn(const InitBundle & ib): BaseStringDataIn<TAtomic>(ib){
+
+    StringDataRootedIn(const VariableLengthInitBundle<TAtomic> & ib): BaseStringDataIn<TAtomic>(ib){
       
     }
     size_t at_for_move(size_t i) const{
@@ -308,70 +262,52 @@ class StringDataRootedIn : public BaseStringDataIn<TAtomic>{
 
 /* For sparse vector data */
 template <typename TAtomic>
-class SparseVectorDataUnrootedInBase : public BaseVarLengthDataIn<TAtomic> {  
+class SparseVectorDataInBase : public BaseVarLengthDataIn<TAtomic> {  
   
   public:
-    typedef SparseVectorDataUnrootedInInitBundle<TAtomic> InitBundle;
-    typedef const SparseVectorSample<TAtomic> Sample;
-    typedef TAtomic AtomicType;  
-    using BaseVarLengthDataIn<TAtomic>::sizes;
-    using BaseVarLengthDataIn<TAtomic>::data;
-    using BaseVarLengthDataIn<TAtomic>::c_sizes;
+    using Sample = SparseVectorSample<TAtomic>; 
     
   protected:
     const size_t * const indices_s;
 
   public:
-    SparseVectorDataUnrootedInBase(const InitBundle & ib): BaseVarLengthDataIn<TAtomic>(ib.ndata, ib.sizes, ib.data), indices_s(ib.indices_s) {}
+    SparseVectorDataInBase(const SparseVectorDataInitBundle<TAtomic> & ib): BaseVarLengthDataIn<TAtomic>(ib.ndata, ib.sizes, ib.data), indices_s(ib.indices_s) {}
         
      const size_t * get_indices_s(size_t i) const{
-      return indices_s + c_sizes[i];
+      return indices_s + BaseVarLengthDataIn<TAtomic>::c_sizes[i];
     }
     
-    const Sample at_for_metric(size_t i) const{
-      return Sample(sizes[i], data + c_sizes[i], indices_s + c_sizes[i]);
+    const SparseVectorSample<TAtomic> at_for_metric(size_t i) const{
+      return SparseVectorSample<TAtomic>(
+      BaseVarLengthDataIn<TAtomic>::sizes[i], 
+      BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i], 
+      indices_s + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
 };
 
 
 template <typename TAtomic>
-class SparseVectorDataUnrootedIn : public SparseVectorDataUnrootedInBase<TAtomic>{
-
-
-  public:
-
-    using SparseVectorDataUnrootedInBase<TAtomic>::max_size;
-    using SparseVectorDataUnrootedInBase<TAtomic>::mean_size;
-    using SparseVectorDataUnrootedInBase<TAtomic>::sizes;
-    using SparseVectorDataUnrootedInBase<TAtomic>::data;
-    using SparseVectorDataUnrootedInBase<TAtomic>::indices_s;
-    using SparseVectorDataUnrootedInBase<TAtomic>::c_sizes;
-    typedef typename SparseVectorDataUnrootedInBase<TAtomic>::Sample Sample;
-    typedef typename SparseVectorDataUnrootedInBase<TAtomic>::InitBundle InitBundle;
+class SparseVectorDataUnrootedIn : public SparseVectorDataInBase<TAtomic>{
   
-    SparseVectorDataUnrootedIn(const InitBundle & ib): SparseVectorDataUnrootedInBase<TAtomic>(ib) {
-      if (static_cast<double>(max_size) > 5.*mean_size){
-        std::stringstream ss;
-        ss << "mean size : " << mean_size << "  max size : " << max_size << "\n" << "The max size is more than 5 times the mean size. This means a potentially huge waste of memory. Consider the rooted version (rooted = true) if implemented.";
-        throw zentas::zentas_error(ss.str());
-      }
-    }
+  public:  
+    SparseVectorDataUnrootedIn(const SparseVectorDataInitBundle<TAtomic> & ib): 
+    SparseVectorDataInBase<TAtomic>(ib) { BaseVarLengthDataIn<TAtomic>::unrooted_viability_test(); }
 
-    const Sample at_for_move(size_t i) const{
-      return Sample(sizes[i], data + c_sizes[i], indices_s + c_sizes[i]);
+    SparseVectorSample<TAtomic> at_for_move(size_t i) const{
+      return SparseVectorSample<TAtomic>(
+      BaseVarLengthDataIn<TAtomic>::sizes[i], 
+      BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i], 
+      SparseVectorDataInBase<TAtomic>::indices_s + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
 };
 
 
 
 template <typename TAtomic>
-class SparseVectorDataRootedIn : public SparseVectorDataUnrootedInBase<TAtomic>{
+class SparseVectorDataRootedIn : public SparseVectorDataInBase<TAtomic>{
   
   public:
-    typedef typename SparseVectorDataUnrootedInBase<TAtomic>::InitBundle InitBundle;
-    
-    SparseVectorDataRootedIn(const InitBundle & ib): SparseVectorDataUnrootedInBase<TAtomic>(ib){}
-    
+    SparseVectorDataRootedIn(const SparseVectorDataInitBundle<TAtomic> & ib): SparseVectorDataInBase<TAtomic>(ib){}    
     size_t at_for_move(size_t i) const{
       return i;
     }

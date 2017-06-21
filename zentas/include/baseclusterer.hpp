@@ -242,6 +242,7 @@ public:
 
   typedef typename TData::DataIn DataIn;
   using AtomicType = typename DataIn::AtomicType;
+  using Sample = typename DataIn::Sample;
 
   using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::cluster_datas;
   using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::get_ndata;
@@ -320,8 +321,9 @@ public:
     }
   }
   
-  virtual void set_rf_center_data(size_t) override final {
-    //metric.set_minimiser(energy, [this, k](size_t j){return cluster_datas[k].at_for_metric(j);}, get_ndata(k), rf_center_data.at_for_change(k));
+  virtual void set_rf_center_data(size_t k) override final {
+    std::function<Sample (size_t)> f_sample ([this, k](size_t j){return cluster_datas[k].at_for_metric(j);});
+    metric.set_minimiser(energy, f_sample, get_ndata(k), rf_center_data.at_for_change(k));
   }
 
   
