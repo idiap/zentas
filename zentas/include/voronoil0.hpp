@@ -53,6 +53,12 @@ class VoronoiL0 : public SkeletonClusterer {
   virtual std::string get_round_summary() final override;
   virtual void update_sample_info() override final;    
   virtual bool update_centers() override final;
+  
+  
+  virtual void refine_sample_info() override final {default_refine_sample_info();}
+  virtual void custom_refine_center_center_info() override final {} 
+  virtual void custom_initialise_refinement_variables() override final {optimised_refinement = false;}
+
 
 };
 

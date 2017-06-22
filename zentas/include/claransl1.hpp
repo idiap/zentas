@@ -121,7 +121,11 @@ class ClaransL1 : public BaseClarans {
       //BaseClarans<TMetric, TData>::basic_clarans_update_sample_info();
       update_sample_info_l1(dists_centers_old_k_to, dists_centers_new_k_to);
     }
-    
+
+    /* refinement is basic */
+    virtual void refine_sample_info() override final {default_refine_sample_info();}
+    virtual void custom_refine_center_center_info() override final {} 
+    virtual void custom_initialise_refinement_variables() override final {optimised_refinement = false;}    
 
 };
 

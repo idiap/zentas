@@ -39,11 +39,11 @@ def dense_data_example():
   """
   
   
-  ndata = int(1e3)
+  ndata = int(100)
   dimension = 4
   npr.seed(1011)
   data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float32)  
-  z = pyzentas.pyzen(K = 2e1, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 10, seed = 1011, nthreads = 1, patient = False, with_tests = True, algorithm = "clarans", level = 3)
+  z = pyzentas.pyzen(K = 10, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 10, seed = 1011, nthreads = 1, patient = False, with_tests = True, algorithm = "clarans", level = 2)
   #, , 
   
   do_vdimap = False

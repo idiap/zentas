@@ -63,7 +63,7 @@ class LpMetricInitializer{
 
 
 template <typename TNumber>
-class LpDistance{
+class BaseLpDistance{
 
   public:
 
@@ -71,7 +71,7 @@ class LpDistance{
     size_t ncalcs = 0;
     size_t calccosts = 0;
 
-    LpDistance(size_t dimension):dimension(dimension) {}
+    BaseLpDistance(size_t dimension):dimension(dimension) {}
   
      size_t get_ncalcs(){
       return ncalcs;
@@ -86,36 +86,90 @@ class LpDistance{
     virtual void set_distance(const SparseVectorRfCenter<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) = 0;
     virtual void set_distance(const SparseVectorRfCenter<TNumber> & a, const SparseVectorRfCenter<TNumber> & b, double threshold, double & distance) = 0;
     
-    
-    void set_minimiser(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const minimiser){
-      throw zentas::zentas_error("cannot minimise");
+
+    virtual void set_center(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const ptr_center){
+      (void)energy; (void)f_sample; (void)ndata; (void)ptr_center;
+      throw zentas::zentas_error("cannot set vector center : from BaseLpDistance base class dense");
     }
     
-    virtual void set_minimiser(const std::string & energy, const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, size_t ndata, SparseVectorRfCenter<TNumber> * const minimiser){
-      throw zentas::zentas_error("cannot minimise");
+    virtual void set_center(const std::string & energy, const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, size_t ndata, SparseVectorRfCenter<TNumber> * const ptr_center){
+      (void)energy; (void)f_sample; (void)ndata; (void)ptr_center;
+      throw zentas::zentas_error("cannot set vector center : from BaseLpDistance base class sparse");
     }
     
 };
 
+template <typename TNumber>
+class L2Minimiser{
+  public:
+  
+  size_t dimension;
+  L2Minimiser(size_t dimension_):dimension(dimension_) {};
 
-template <typename TNumber, class CorrectThreshold, class CorrectDistance, class UpdateDistance>
-class TLpDistance : public LpDistance<TNumber>{
+    void set_center(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const ptr_center){
+      
+      
+      if (energy != "quadratic"){
+        throw zentas::zentas_error("cannot yet perform L2 metric minimisation unless the energy is quadratic");
+      }
+      
+      for (size_t d = 0; d < dimension; ++d){
+        ptr_center[d] = 0;
+      }
+      
+      const TNumber * sample;
+      for (size_t j = 0; j < ndata; ++j){
+        sample = f_sample(j);
+        for (size_t d = 0; d < dimension; ++d){
+          ptr_center[d] += sample[d];
+        }
+      }
+      for (size_t d = 0; d < dimension; ++d){
+        ptr_center[d] /= static_cast<TNumber>(ndata);
+      }
+    }
+    
+    void set_center(const std::string & energy, const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, size_t ndata, SparseVectorRfCenter<TNumber> * const minimiser){
+      (void)energy; (void)f_sample; (void)ndata; (void)minimiser;
+      throw zentas::zentas_error("cannot set vector center yet : from L2Minimiser base class sparse");
+    }
+  
+};
+
+
+class NoimplMinimiser{
+  public:
+  size_t dimension;
+  NoimplMinimiser(size_t dimension_):dimension(dimension_) {};
+ 
+  template <typename TPointerCenter, typename TFunction>
+  void set_center(const std::string & energy, const TFunction & f_sample, size_t ndata, TPointerCenter ptr_center){
+    (void)energy; (void)f_sample; (void)ndata; (void)ptr_center;
+    throw zentas::zentas_error("unable to set vector center");
+  } 
+};
+
+template <typename TNumber, class CorrectThreshold, class CorrectDistance, class UpdateDistance, class FMinimiser>
+class TLpDistance : public BaseLpDistance<TNumber>{
 
   public:
   
-    using LpDistance<TNumber>::dimension;
-    using LpDistance<TNumber>::ncalcs;
-    using LpDistance<TNumber>::calccosts;
-
-    TLpDistance(size_t dimension): LpDistance<TNumber>(dimension) {}
+    using BaseLpDistance<TNumber>::dimension;
+    using BaseLpDistance<TNumber>::ncalcs;
+    using BaseLpDistance<TNumber>::calccosts;
 
   private:
     CorrectThreshold correct_threshold;
     CorrectDistance correct_distance;
     UpdateDistance update_distance;
+    FMinimiser f_minimiser;
+
+  public:
+    TLpDistance(size_t dimension): BaseLpDistance<TNumber>(dimension), f_minimiser(dimension) {}
+
   
     
-    void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & a_distance){
+    void set_distance(const TNumber * const & a, const TNumber * const & b, double threshold, double & a_distance) override final{
       ++ncalcs;
       a_distance = 0;       
       double diff;
@@ -133,7 +187,7 @@ class TLpDistance : public LpDistance<TNumber>{
     }
     
 
-    void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) {
+    void set_distance(const SparseVectorSample<TNumber> & a, const SparseVectorSample<TNumber> & b, double threshold, double & distance) override final{
 
       ++ncalcs;
       distance = 0;
@@ -187,14 +241,25 @@ class TLpDistance : public LpDistance<TNumber>{
       correct_distance(threshold);
     }
     
-    void set_distance(const SparseVectorRfCenter<TNumber> & , const SparseVectorSample<TNumber> & , double , double & ) {
-      //TODO 
+    void set_distance(const SparseVectorRfCenter<TNumber> &, const SparseVectorSample<TNumber> &, double, double &) {
+      //TODO
     }
 
-    void set_distance(const SparseVectorRfCenter<TNumber> & , const SparseVectorRfCenter<TNumber> & , double , double & ) {
+    void set_distance(const SparseVectorRfCenter<TNumber> & , const SparseVectorRfCenter<TNumber> &, double, double &) {
       //TODO 
     }    
+
+
+    virtual void set_center(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const ptr_center) override final{
+      f_minimiser.set_center(energy, f_sample, ndata, ptr_center);
+    }
+    
+    virtual void set_center(const std::string & energy, const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, size_t ndata, SparseVectorRfCenter<TNumber> * const ptr_center) override final{
+      f_minimiser.set_center(energy, f_sample, ndata, ptr_center);
+    }
+
 };
+
 
 class NullOpDouble{
   public:
@@ -238,16 +303,16 @@ class MaxDiff{
 
 
 template <typename TNumber>
-using L0Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, NonZero>;
+using L0Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, NonZero, NoimplMinimiser>;
 
 template <typename TNumber>
-using L1Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, AbsDiff>;
+using L1Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, AbsDiff, NoimplMinimiser>;
 
 template <typename TNumber>
-using L2Distance = TLpDistance<TNumber, SquareDouble, RootDouble, SquareDiff>;
+using L2Distance = TLpDistance<TNumber, SquareDouble, RootDouble, SquareDiff, L2Minimiser<TNumber>>;
 
 template <typename TNumber>
-using L_oo_Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, MaxDiff>;
+using L_oo_Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, MaxDiff, NoimplMinimiser>;
 
 
 
@@ -264,15 +329,14 @@ class LpMetric{
     typedef LpMetricInitializer Initializer;    
   
   private:
-    std::unique_ptr<LpDistance<AtomicType>>  uptr_lpdistance;
+    std::unique_ptr<BaseLpDistance<AtomicType>>  uptr_lpdistance;
 
   public:
     LpMetric(const TVDataIn & datain, size_t nthreads, const LpMetricInitializer & l2mi):p(l2mi.p) 
       {
       
       //quelch warning.
-      nthreads = 0;
-      nthreads += 1;
+      (void)nthreads;
       
       if (p == '2'){
         uptr_lpdistance.reset(new L2Distance<AtomicType>(datain.dimension));
@@ -316,8 +380,8 @@ class LpMetric{
 
     
     template <typename TPointerCenter, typename TFunction>
-    void set_minimiser(const std::string & energy, const TFunction & f_sample, size_t ndata, TPointerCenter ptr_center){
-      uptr_lpdistance->set_minimiser(energy, f_sample, ndata, ptr_center);
+    void set_center(const std::string & energy, const TFunction & f_sample, size_t ndata, TPointerCenter ptr_center){
+      uptr_lpdistance->set_center(energy, f_sample, ndata, ptr_center);
     }
 
   

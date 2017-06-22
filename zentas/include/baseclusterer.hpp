@@ -123,11 +123,7 @@ class BaseClusterer : public TOpt{
   virtual std::string string_for_sample(size_t k, size_t j) override final {
     return cluster_datas[k].string_for_sample(j);
   }
-  
-  virtual std::string string_for_center(size_t k) override final {
-    return centers_data.string_for_sample(k);
-  }
-  
+    
   virtual void append_from_ID(size_t k, size_t i) override final {
     cluster_datas[k].append(ptr_datain->at_for_move(i));
   }
@@ -222,6 +218,10 @@ public:
     metric.set_distance(centers_data.at_for_metric(k1), centers_data.at_for_metric(k2), threshold, adistance);
   }
 
+  virtual std::string string_for_center(size_t k) override final {
+    return centers_data.string_for_sample(k);
+  }
+
   
 };
 
@@ -236,7 +236,7 @@ public:
   typedef typename TData::RefinementCenterData RefinementCenterData;
 
   /* TODO make sure rf_sum_data is only used if TMetric is l2.  */
-  RefinementCenterData rf_sum_data;
+  //RefinementCenterData rf_sum_data;
   RefinementCenterData rf_center_data;
   RefinementCenterData old_rf_center_data;
 
@@ -253,32 +253,33 @@ public:
 
   Clusterer(const ClustererInitBundle<DataIn, LpMetric<typename TData::DataIn>> & ib): BaseClusterer<LpMetric<typename TData::DataIn>, TData, TOpt> (ib), 
   
-  rf_sum_data(ib.datain.dimension), rf_center_data(ib.datain.dimension), old_rf_center_data(ib.datain.dimension) {}
+  //rf_sum_data(ib.datain.dimension), 
+  rf_center_data(ib.datain.dimension), old_rf_center_data(ib.datain.dimension) {}
 
   /* refinement matters */
 
 
-  virtual void add_to_refinement_sum(size_t k, size_t j) override final{
-    rf_sum_data.add(k, cluster_datas[k].at_for_metric(j));
-  }
+  //virtual void add_to_refinement_sum(size_t k, size_t j) override final{
+    //rf_sum_data.add(k, cluster_datas[k].at_for_metric(j));
+  //}
   
-  virtual void subtract_from_refinement_sum(size_t k, size_t j) override final{
-    rf_sum_data.subtract(k, cluster_datas[k].at_for_metric(j));
-  }
+  //virtual void subtract_from_refinement_sum(size_t k, size_t j) override final{
+    //rf_sum_data.subtract(k, cluster_datas[k].at_for_metric(j));
+  //}
 
-  virtual void set_refinement_center_as_sum_mean(size_t k) override final{
-    if (get_ndata(k) == 0){
-      rf_center_data.scale(k, rf_sum_data.at_for_metric(k), 0);
-    }
-    else{
-      rf_center_data.scale(k, rf_sum_data.at_for_metric(k), 1./get_ndata(k));
-    }
+  //virtual void set_refinement_center_as_sum_mean(size_t k) override final{
+    //if (get_ndata(k) == 0){
+      //rf_center_data.scale(k, rf_sum_data.at_for_metric(k), 0);
+    //}
+    //else{
+      //rf_center_data.scale(k, rf_sum_data.at_for_metric(k), 1./get_ndata(k));
+    //}
     
-  }
+  //}
   
-  virtual void append_zero_to_rf_sum_data() override final{
-    rf_sum_data.append_zero();
-  }
+  //virtual void append_zero_to_rf_sum_data() override final{
+    //rf_sum_data.append_zero();
+  //}
   
   virtual void append_zero_to_rf_center_data() override final{
     rf_center_data.append_zero();
@@ -288,9 +289,9 @@ public:
     old_rf_center_data.append_zero();
   }  
 
-  virtual void zero_refinement_sum(size_t k) override final{
-    rf_sum_data.set_zero(k);
-  }
+  //virtual void zero_refinement_sum(size_t k) override final{
+    //rf_sum_data.set_zero(k);
+  //}
 
   virtual void set_old_rf_center_data(size_t k) override final{
     old_rf_center_data.replace_with(k, rf_center_data.at_for_metric(k));
@@ -321,9 +322,22 @@ public:
     }
   }
   
+  virtual std::string string_for_center(size_t k) override final {
+    
+    if (in_refinement == false){  
+      return centers_data.string_for_sample(k);
+    }
+    else{
+      return rf_center_data.string_for_sample(k);
+    }
+  }
+  
+  
+  
   virtual void set_rf_center_data(size_t k) override final {
     std::function<Sample (size_t)> f_sample ([this, k](size_t j){return cluster_datas[k].at_for_metric(j);});
-    metric.set_minimiser(energy, f_sample, get_ndata(k), rf_center_data.at_for_change(k));
+    metric.set_center(energy, f_sample, get_ndata(k), rf_center_data.at_for_change(k));
+
   }
 
   

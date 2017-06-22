@@ -144,9 +144,11 @@ class BaseClarans : public SkeletonClusterer {
   virtual void set_to_zero_custom_cluster_statistics(size_t k) final override;
   void set_second_nearest(size_t k_first_nearest, const double * const distances, size_t & k_second_nearest, double & d_second_nearest);
   
+
   
   protected:
   
+  void unset_clarans_variable_for_optimised_refinement();
   void refresh_energy_margins(size_t k, size_t j);
   double get_delta_hat_l3(size_t k1, size_t k2, size_t j2, double d_nearest_k1, const double * const cc);
   void center_center_info_test_l1(const std::vector<XNearestInfo> & center_nearest_center);

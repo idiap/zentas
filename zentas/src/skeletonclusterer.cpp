@@ -977,8 +977,10 @@ void SkeletonClusterer::cluster_statistics_test(){
   if (E__0 != get_E_total()){
     throw zentas::zentas_error(errs);
   }
-  
-  custom_cluster_statistics_test();
+
+  if (optimised_refinement == false){
+    custom_cluster_statistics_test();
+  }
   
 }
   
@@ -1057,7 +1059,10 @@ void SkeletonClusterer::info_tests(){
       }          
     }      
   }
-  custom_info_test();
+  
+  if (optimised_refinement == false){
+    custom_info_test();
+  }
 }
   
 void SkeletonClusterer::custom_ndata_test(){}
@@ -1071,7 +1076,11 @@ void SkeletonClusterer::ndata_tests(){
     }
     ndata_internal += get_ndata(k);
   }
-  custom_ndata_test();
+  
+  if (optimised_refinement == false){
+    custom_ndata_test();
+  }
+  
   size_t ndata_target;
 
   if (in_refinement == true){
@@ -1281,6 +1290,26 @@ void SkeletonClusterer::redistribute(){
   size_t j;
   size_t j_new;
   
+  
+            
+  std::function<void(size_t, size_t, size_t)> bc_custom_append ([](size_t, size_t, size_t){});
+  if (in_refinement == true){
+  
+  } 
+  else{
+    bc_custom_append = [this](size_t k_new, size_t k, size_t j){custom_append(k_new, k, j);};
+  }
+  
+  std::function<void(size_t, size_t, size_t, size_t)> bc_custom_replace_with ([](size_t, size_t, size_t, size_t){});
+  if (in_refinement == true){
+    
+  } 
+  else{
+    bc_custom_replace_with = [this](size_t k_new, size_t j_new, size_t k, size_t j){custom_replace_with(k_new, j_new, k,j);};
+  }
+
+  
+  
   std::vector<size_t> redistribute_order (K, 0);
   set_redistribute_order(redistribute_order);
   
@@ -1325,7 +1354,9 @@ void SkeletonClusterer::redistribute(){
           nearest_1_infos[k_new].push_back(nearest_1_infos[k][j]);
           sample_IDs[k_new].push_back(sample_IDs[k][j]);
           append_across(k_new, k, j);
-          custom_append(k_new, k, j);
+          
+          
+          bc_custom_append(k_new, k, j);
         }
         
         /* case 2 : k_new, j_new goes on the tail, then k,j goes in at k_new, j_new */
@@ -1344,14 +1375,14 @@ void SkeletonClusterer::redistribute(){
           sample_IDs[k_new].push_back(sample_IDs[k_new][j_new]);
           
           append_across(k_new, k_new, j_new);
-          custom_append(k_new, k_new, j_new);
+          bc_custom_append(k_new, k_new, j_new);
           
           /* putting k, j in where space has been made for it */
           nearest_1_infos[k_new][j_new] = nearest_1_infos[k][j];
           sample_IDs[k_new][j_new] = sample_IDs[k][j];
           replace_with(k_new, j_new, k, j);
           
-          custom_replace_with(k_new, j_new, k,j);
+          bc_custom_replace_with(k_new, j_new, k,j);
           
           /* k_new, j_new is still going to move when k_new immigration starts. 
            * Record that k_new, j_new has moved to tail, and leave a notive (max size_t) 
@@ -1698,7 +1729,7 @@ void SkeletonClusterer::reset_sample_infos_basic(size_t k, size_t j){
 }
 
 void SkeletonClusterer::reset_sample_infos(size_t k, size_t j){
-  //mowri << k << "--" << j << " " << zentas::Flush;
+
   reset_sample_infos_basic(k,j);
   if (k != nearest_1_infos[k][j].a_x){
     std::lock_guard<std::mutex> lock(mutex0);
@@ -1764,16 +1795,27 @@ void SkeletonClusterer::initialise_center_indices()  {
 }
  
  
-void SkeletonClusterer::default_refine_sample_info(){  
+void SkeletonClusterer::default_refine_sample_info(){ 
   for (size_t k = 0; k < K; ++k){
     for (size_t j = 0; j < get_ndata(k); ++j){
-      reset_sample_infos(k,j);
+      double adistance;
+      size_t min_k;
+      double min_distance = std::numeric_limits<double>::max();
+      for (size_t kp = 0; kp < K; ++kp){
+        set_center_sample_distance(kp, k, j, min_distance, adistance);
+        if (adistance < min_distance){
+          min_distance = adistance;
+          min_k = kp;
+        }
+      }
+      reset_nearest_info(k,j, min_k, min_distance, f_energy(min_distance));
     }
   }
 }
 
 
 void SkeletonClusterer::run_refinement(){
+  
   if (in_refinement == false){
     throw zentas::zentas_error("in run_refinement, but in_refinement is false. This is not correct");
   }
@@ -1789,50 +1831,23 @@ bool SkeletonClusterer::halt_refinement(){
 }
 
 
-bool SkeletonClusterer::default_l2_quadratic_refine_centers(){
+bool SkeletonClusterer::refine_centers(){
 
   bool has_changed = false;
-  for (size_t k = 0; k < K; ++k){ 
+  for (size_t k = 0; k < K; ++k){
     set_old_rf_center_data(k);
-    /* metric dependent : */
+    /* metric dependent function, room for optimisation (l2 quadratic could track changing membership) */
     set_rf_center_data(k);
     cluster_has_changed[k] = equals_rf_new_and_old(k);
     has_changed = cluster_has_changed[k] == true ? has_changed : true;
   }
   return has_changed;
-
-  //bool has_changed = false;
-  //for (size_t k = 0; k < K; ++k){
-    //
-    //zero_refinement_sum(k);
-  //}
-  //for (size_t k = 0; k < K; ++k){
-    //for (size_t j = 0; j < get_ndata(k); ++j){
-      //add_to_refinement_sum(k, j);
-    //}
-    
-    //set_refinement_center_as_sum_mean(k);
-    //cluster_has_changed[k] = equals_rf_new_and_old(k);
-    //has_changed = cluster_has_changed[k] == true ? has_changed : true;
-  //}
-  
-  //return has_changed;
 }
 
 
-void SkeletonClusterer::default_refine_center_center_info(){
+void SkeletonClusterer::refine_center_center_info(){
   set_center_center_info();
-}
-
-void SkeletonClusterer::default_initialise_refinement_variables(){
-  std::cout << "in default_initialise_refinement_variables" << std::endl;
-  for (size_t k = 0; k < K; ++k){
-
-    append_zero_to_rf_sum_data();
-    append_zero_to_rf_center_data();
-    append_zero_to_old_rf_center_data();
-
-  }
+  custom_refine_center_center_info();
 }
 
 
@@ -1840,8 +1855,10 @@ void SkeletonClusterer::prepare_for_refinement(){
 
   for (size_t k = 0; k < K; ++k){
     put_sample_in_cluster(center_IDs[k]);
+    append_zero_to_rf_center_data();
+    append_zero_to_old_rf_center_data();
   }
-  initialise_refinement_variables();
+  custom_initialise_refinement_variables();
   in_refinement = true;
 }
 

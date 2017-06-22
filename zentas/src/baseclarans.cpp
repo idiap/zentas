@@ -501,7 +501,11 @@ double BaseClarans::get_delta_E_hoeffding_l3(size_t k1, size_t k2, size_t j2, do
 
 
 
-
+void BaseClarans::unset_clarans_variable_for_optimised_refinement(){ 
+  nearest_2_infos.resize(0);
+  energy_margins.resize(0);
+  cluster_statistics.resize(0);
+}
 
 
 bool BaseClarans::update_centers_greedy(){
@@ -1039,16 +1043,18 @@ void BaseClarans::pll_update_sample_info_l1(size_t k, size_t j_a, size_t j_z, do
  * ********************************** */
  
 void BaseClarans::custom_ndata_test() {
-  for (size_t k = 0; k < K; ++k){
-    if (energy_margins[k].size() != get_ndata(k)){
-      mowri << "k = " << k <<zentas::Endl;
-      mowri << "size of energy_margins[k] " << energy_margins[k].size() << zentas::Endl;
-      mowri << "size of cluster_datas[k] " << get_ndata(k) << zentas::Endl;
-      mowri << "size of nearest_2_infos[k] " << nearest_2_infos[k].size() << zentas::Endl;
-      
-      throw zentas::zentas_error("custom ndata test failed");
-    }
-  }  
+  
+   for (size_t k = 0; k < K; ++k){
+      if (energy_margins[k].size() != get_ndata(k)){
+        mowri << "k = " << k <<zentas::Endl;
+        mowri << "size of energy_margins[k] " << energy_margins[k].size() << zentas::Endl;
+        mowri << "size of cluster_datas[k] " << get_ndata(k) << zentas::Endl;
+        mowri << "size of nearest_2_infos[k] " << nearest_2_infos[k].size() << zentas::Endl;
+        
+        throw zentas::zentas_error("custom ndata test failed");
+      }
+    } 
+   
 }
 
 void BaseClarans::clarans_statistics_test() {
@@ -1102,9 +1108,9 @@ void BaseClarans::custom_cluster_statistics_test() {
 void BaseClarans::increment_custom_cluster_statistics(size_t k, size_t j) {
   cluster_statistics[k].increment(get_d1(k,j), get_e1(k,j), nearest_2_infos[k][j].d_x, nearest_2_infos[k][j].e_x);
   
-  if (nearest_2_infos[k][j].e_x - get_e1(k,j) != energy_margins[k][j]){
-    throw zentas::zentas_error("internal problem detected with energy margin");
-  }
+  //if (nearest_2_infos[k][j].e_x - get_e1(k,j) != energy_margins[k][j]){
+    //throw zentas::zentas_error("internal problem detected with energy margin");
+  //}
      
 }
 

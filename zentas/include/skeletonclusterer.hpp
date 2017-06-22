@@ -191,7 +191,7 @@ class SkeletonClusterer{
   std::vector<double> kmoo_cc;
   P2Bundle kmoo_p2bun;
   bool km_is_exhausted;
-    
+  //bool optimised_refinement;
   /* *****************
    * metric virtuals *
    * ***************** */
@@ -403,44 +403,31 @@ class SkeletonClusterer{
   
   void run_refinement();
   bool halt_refinement();
-  
-  bool default_l2_quadratic_refine_centers();
-  virtual bool refine_centers(){
-    return default_l2_quadratic_refine_centers();
-  }
-  
-  virtual void set_rf_center_data(size_t k) { (void)k; throw zentas::zentas_error("cannot set_rf_center_data yet in skeleton clusterer"); }
-  
-  void default_refine_center_center_info();
-  virtual void refine_center_center_info(){
-    default_refine_center_center_info();
-  }
-  
+  bool refine_centers();
   void default_refine_sample_info();
-  virtual void refine_sample_info(){
-    default_refine_center_center_info();
-  }
-  
-  void default_initialise_refinement_variables();
-  virtual void initialise_refinement_variables(){
-    default_initialise_refinement_variables();
-  }
-  
+
+  void refine_center_center_info();
   void prepare_for_refinement();
 
+  private:
+  virtual void refine_sample_info() = 0; // default_refine_sample_info
+  virtual void custom_refine_center_center_info() = 0;  
+  virtual void custom_initialise_refinement_variables() = 0;
 
-  
+
+
+  public:
   
   /* data */
   virtual void zero_refinement_sum(size_t k) { (void)k; throw zentas::zentas_error("zero_refinement_sum not possible"); };
   virtual void add_to_refinement_sum(size_t k, size_t j) {(void)k; (void)j; throw zentas::zentas_error("add_to_refinement_sum not possible"); };
   virtual void subtract_from_refinement_sum(size_t k, size_t j) {(void)k; (void)j;  throw zentas::zentas_error("subtract_from_refinement_sum not possible"); };
-  virtual void set_refinement_center_as_sum_mean(size_t k) {(void)k; throw zentas::zentas_error("set_refinement_center_as_sum_mean not possible"); };
-  virtual void append_zero_to_rf_sum_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_sum_data not possible"); }
   virtual void append_zero_to_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
   virtual void append_zero_to_old_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
   virtual void set_old_rf_center_data(size_t k){(void)k; throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
   virtual bool equals_rf_new_and_old(size_t k){(void)k; throw zentas::zentas_error("virtual function equals_rf_new_and_old not possible");}
+  virtual void set_rf_center_data(size_t k){(void)k; throw zentas::zentas_error("virtual function set_rf_center_data not possible"); }
+
 
   /* metric */
   /* The only two metrics needed are set_center_center_distances and set_center_sample_distance. 
