@@ -51,13 +51,6 @@ class ClaransL0 : public BaseClarans{
     virtual double get_delta_E(size_t k1, size_t k2, size_t j2, bool serial) override final;
     virtual void custom_info_test() override final;
     virtual void put_sample_in_cluster(size_t i) override final; 
-
-    /* refinement is basic */
-    virtual void refine_sample_info() override final {default_refine_sample_info();}
-    virtual void custom_refine_center_center_info() override final {} 
-    virtual void custom_initialise_refinement_variables() override final {optimised_refinement = false;}
-
-
 };
 
 } //namespace nszen

@@ -39,6 +39,8 @@ class TData{
 #include "zentaserror.hpp"
 #include "sparsevectorrfcenter.hpp"
 
+#include "tdatain.hpp"
+
 namespace nszen{  
 
 
@@ -65,8 +67,8 @@ class SparseRefinementCenterData{
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set to zero");
   }
 
-  void scale(size_t, const RfCenter &, double){
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY scale");
+  void set_as_scaled(size_t, const RfCenter &, double){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set_as_scaled");
   }
 
   const RfCenter & at_for_metric(size_t) const {
@@ -102,6 +104,9 @@ class SparseRefinementCenterData{
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY string_for_sample");
   }
   
+  void set_sum_abs(size_t, double &){
+    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set_sum_abs");
+  }
 };
 
 
@@ -111,7 +116,7 @@ class VCenterData{
  public:
   
   size_t ndata;    
-  const size_t dimension;
+  size_t dimension;
   std::vector<TAtomic> data;
 
   VCenterData (size_t dimension_):ndata(0), dimension(dimension_){
@@ -137,7 +142,7 @@ class VCenterData{
   }
 
 
-  void scale(size_t i, const TAtomic * const datapoint, double alpha){
+  void set_as_scaled(size_t i, const TAtomic * const datapoint, double alpha){
     for (size_t d = 0; d < dimension; ++d){
       data[i*dimension + d] = *(datapoint + d)*alpha;            
     }
@@ -183,7 +188,6 @@ class VCenterData{
     double abs_sum = 0.; 
     double sum_abs = 0.;
     for (size_t d = 0; d < dimension; ++d){
-
       abs_sum += std::abs(data[i*dimension + d] -  *(datapoint + d));
       sum_abs += std::abs(data[i*dimension + d]) +  std::abs(*(datapoint + d));
     }
@@ -192,22 +196,45 @@ class VCenterData{
     return relative_change < 1e-7;
   }
   
+  
+  void set_sum_abs(size_t i, double & sum_abs){
+    sum_abs = 0;
+    for (size_t d = 0; d < dimension; ++d){
+      sum_abs += std::abs(data[i*dimension + d]);
+    }
+  }
+  
 };
+
+
 
 
 template <typename TDataIn>
 class VData{
-  
+
+  // does this imply default move constructor copy constructor are generated?
+  public:
+    VData () = default; 
+        
   public:
     using AtomicType = typename TDataIn::AtomicType;
     using RefinementCenterData = VCenterData<AtomicType>;
         
   public:
     typedef TDataIn DataIn;
+
+
+    // how to make sure that the returned pointer is not used after this object is deleted?  
+    //ConstLengthInitBundle self_as_tdatain;
+    ConstLengthInitBundle<AtomicType> get_as_datain_ib(){
+      return {ndata, dimension, data.data()};
+    }
+
      
+
   private:
     size_t ndata;    
-    const size_t dimension;
+    size_t dimension;
     std::vector<AtomicType> data;
 
     
@@ -217,8 +244,8 @@ class VData{
         throw zentas::zentas_error("Currently, there is no implementation for constructing VData from DenseVectorDataUnrootedIn with data, due to the lack of any apparent need");
       }
     }
-    
-     size_t get_ndata() const{
+        
+    size_t get_ndata() const{
       return ndata;
     }
     
@@ -276,6 +303,9 @@ class VData{
 template <typename TSDataIn>
 class SData{
   
+  public:
+    SData() = default;
+
 
   public:
     using Sample = typename TSDataIn::Sample;
@@ -358,11 +388,22 @@ class SData{
 template <typename TSDataIn>
 class SparseVectorData{
   
+  public:
+    SparseVectorData() = default;
+
+
+  
 
   public:
     using AtomicType = typename TSDataIn::AtomicType ;
     using DataIn = TSDataIn ;
-    using RefinementCenterData =  SparseRefinementCenterData<AtomicType> ;
+    using RefinementCenterData = SparseRefinementCenterData<AtomicType> ;
+
+    // how to make sure that the returned pointer is not used after this object is deleted?  
+    SparseVectorDataInitBundle<AtomicType> get_as_datain_ib(){
+      return {ndata, sizes.data(), data.data(), indices_s.data()};
+    }
+
     
    private: 
     size_t ndata;
@@ -454,16 +495,24 @@ class SparseVectorData{
 
 template <typename TDataIn>
 class BaseDataRooted{
+
+
+
+  public:
+    BaseDataRooted() = default;
+
+
+
+
     
   public:
-
     typedef TDataIn DataIn;
  
   protected:
     size_t ndata;    
-    const size_t dimension;
+    size_t dimension;
     std::vector<size_t> IDs;
-    const  TDataIn * const  ptr_datain;
+    const  TDataIn *  ptr_datain;
   
   public: 
     BaseDataRooted (const DataIn & datain, bool as_empty): ndata(0), dimension(datain.dimension), ptr_datain(&datain){
@@ -507,13 +556,24 @@ class BaseDataRooted{
 
 template <typename TDataIn>
 class VDataRooted : public  BaseDataRooted <TDataIn>{
+  
 
+
+
+  public:
+    VDataRooted() = default;
+
+
+    
   public:
     using AtomicType = typename TDataIn::AtomicType;
     typedef VCenterData<AtomicType> RefinementCenterData;
 
+    ConstLengthInitBundle<AtomicType> get_as_datain_ib(){
+      throw zentas::zentas_error("the function get_as_datain_ib needs to be implemented for rooted (dense) data (data needs to be made from indices) ");
+    }
+
         
-  public:
     using BaseDataRooted<TDataIn>::ptr_datain;
     using BaseDataRooted<TDataIn>::IDs;
     using BaseDataRooted<TDataIn>::dimension;
@@ -535,6 +595,9 @@ class VDataRooted : public  BaseDataRooted <TDataIn>{
 template <typename TDataIn>
 class SDataRooted : public BaseDataRooted<TDataIn> {
 
+
+  public:
+    SDataRooted() = default;
     
   public: 
     using BaseDataRooted<TDataIn>::ptr_datain;
@@ -559,6 +622,10 @@ class SDataRooted : public BaseDataRooted<TDataIn> {
 template <typename TDataIn>
 class SparseVectorDataRooted : public BaseDataRooted<TDataIn>{
 
+    
+
+  public:
+    SparseVectorDataRooted() = default;
 
   public:
     using BaseDataRooted<TDataIn>::ptr_datain;
@@ -569,6 +636,11 @@ class SparseVectorDataRooted : public BaseDataRooted<TDataIn>{
     typedef TDataIn DataIn;
     using AtomicType = typename TDataIn::AtomicType;
 
+    SparseVectorDataInitBundle<AtomicType> get_as_datain_ib(){
+      throw zentas::zentas_error("the function get_as_datain_ib needs to be implemented for rooted (sparse) data (data needs to be made from indices) ");
+    }
+
+
   public:
     
     typedef SparseRefinementCenterData<AtomicType> RefinementCenterData;
@@ -578,6 +650,8 @@ class SparseVectorDataRooted : public BaseDataRooted<TDataIn>{
     SparseVectorSample<AtomicType> at_for_metric(size_t j) const {
       return SparseVectorSample<AtomicType>(ptr_datain->get_size(IDs[j]), ptr_datain->get_data(IDs[j]), ptr_datain->get_indices_s(IDs[j]));
     }
+    
+
     
 };
 

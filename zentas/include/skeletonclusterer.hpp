@@ -174,7 +174,7 @@ class SkeletonClusterer{
   ncalcs_update_centers_start, 
   ncalcs_update_centers_end, 
   ncalcs_update_sample_info_end;
-  bool in_refinement {false};
+
   size_t max_time_micros;
   double min_mE;
   size_t * const labels;
@@ -191,8 +191,8 @@ class SkeletonClusterer{
   std::vector<double> kmoo_cc;
   P2Bundle kmoo_p2bun;
   bool km_is_exhausted;
-  //bool optimised_refinement;
-  /* *****************
+ 
+   /* *****************
    * metric virtuals *
    * ***************** */
   virtual double get_rel_calccosts() = 0;
@@ -204,6 +204,7 @@ class SkeletonClusterer{
   virtual void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) = 0;
   virtual void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) = 0;
   virtual void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) = 0;
+  virtual bool get_do_refinement() = 0;
 
   /* ***************
    * data virtuals *
@@ -228,6 +229,7 @@ class SkeletonClusterer{
   virtual void reset_p2buns_dt(unsigned n_bins) = 0;
   virtual void kmoo_finish_with() = 0;
   virtual void centers_replace_with_sample(size_t k1, size_t k2, size_t j2) = 0;
+  virtual void swap_data(size_t k1, size_t k2) = 0;
 
 
   /* general rule : functions with suffix 
@@ -276,7 +278,7 @@ class SkeletonClusterer{
   
   void run_kmedoids();    
   
-  void clustering_loop_scaffolding();  
+  void core_kmedoids_loops();  
   void populate_labels();
   void go();
       
@@ -398,21 +400,62 @@ class SkeletonClusterer{
   void populate_afk_mc2();
   void initialise_center_indices();
   
-  /* refinement (k-means etc.) */
+
   public:
-  
+
+  void initialise_refinement();
   void run_refinement();
+
+
+
+
+
+
+  /* refinement (k-means etc.) functions defined in refinement.cpp */
+
+  std::vector<std::vector<double>> lower_2;
+  std::vector<std::vector<size_t>> v_b; // second nearest, when set.
+  std::vector<std::vector<double>> upper_1;
+  std::vector<double> delta_C;
+  std::vector<double> u1_C; // upper bound on furthest cluster member.   
+  size_t rf_n_groups;
+  std::vector<double> l_gC; //of size K * rf_n_groups.
+  std::vector<size_t> n_in_group;
+  std::vector<size_t> cum_in_group;
+  std::vector<double> max_delta_group; //of size rf_n_groups.
+  std::vector<size_t> rf_groups;
+  std::vector<std::vector<size_t>> rf_glt_ID; 
+  std::vector<double> rf_l_groups; // lower bounds on distances to groups. size ndata*rf_n_groups. mapped from rf_glt_ID. 
+  std::vector<size_t> rf_t_groups; // times when lower bounds set. size ndata*rf_n_groups.  mapped from rf_glt_ID.  
+  std::vector<double> rf_cum_u_delta_gC; // upper bounds on distances moved since start, by group (of size T*rf_n_groups) 
+  size_t rf_round;
+  
   bool halt_refinement();
-  bool refine_centers();
-  void default_refine_sample_info();
+  bool rf_update_centers();
+  bool is_rf_correct_d1_round();
+  void rf_set_2_smallest(size_t k, size_t j, size_t & min_k1, double & min_d1, size_t & min_k2, double & min_d2);
+  void rf_update_center_center_info();
+  void rf_update_sample_info();
+  void rf_update_sample_info_standard();  
+  void rf_update_sample_info_hamerly();
+  void rf_update_sample_info_exponion();
+  void rf_swap(size_t k1, size_t k2);
+  virtual void custom_initialise_refinement() {}
+  virtual void custom_rf_clear_initmem() {}
+  std::string rf_get_round_summary();
+  void rf_redistribute();
+  void rf_update_energies();
+  void rf_tighten_nearest(size_t k);
+  bool is_rf_tighten_cluster_radius_round();
+  void custom_swap(size_t k1, size_t k2);
+  void rf_custom_append(size_t k_new, size_t k, size_t j);
+  void rf_custom_replace_with_last(size_t k, size_t j);
+  void rf_custom_remove_last(size_t k);
+  void rf_post_center_update_test();
+  void rf_post_sample_update_test();
+  void rf_post_redistribute_test();
+  void rf_post_update_statistics_test();
 
-  void refine_center_center_info();
-  void prepare_for_refinement();
-
-  private:
-  virtual void refine_sample_info() = 0; // default_refine_sample_info
-  virtual void custom_refine_center_center_info() = 0;  
-  virtual void custom_initialise_refinement_variables() = 0;
 
 
 
@@ -423,15 +466,23 @@ class SkeletonClusterer{
   virtual void add_to_refinement_sum(size_t k, size_t j) {(void)k; (void)j; throw zentas::zentas_error("add_to_refinement_sum not possible"); };
   virtual void subtract_from_refinement_sum(size_t k, size_t j) {(void)k; (void)j;  throw zentas::zentas_error("subtract_from_refinement_sum not possible"); };
   virtual void append_zero_to_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
+  virtual void append_zero_to_rf_sum_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_sum_data not possible");  }
+  //virtual void a_to_rf_sum_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_sum_data not possible");  }
   virtual void append_zero_to_old_rf_center_data(){throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
   virtual void set_old_rf_center_data(size_t k){(void)k; throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");  }
-  virtual bool equals_rf_new_and_old(size_t k){(void)k; throw zentas::zentas_error("virtual function equals_rf_new_and_old not possible");}
+  virtual void set_delta_rf_new_and_old(size_t k, double threshold, double &) {(void)k; (void)threshold; throw zentas::zentas_error("virtual function get_delta_rf_new_and_old not possible");}
+  virtual void set_sum_abs_rf_new_and_old(size_t k, double &) {(void)k; throw zentas::zentas_error("virtual function get_sum_abs_rf_new_and_old not possible");}
   virtual void set_rf_center_data(size_t k){(void)k; throw zentas::zentas_error("virtual function set_rf_center_data not possible"); }
-
+  virtual std::string string_for_rf_center(size_t k){(void)k; throw zentas::zentas_error("strinf_for_rf_center not possible");}
 
   /* metric */
-  /* The only two metrics needed are set_center_center_distances and set_center_sample_distance. 
-   * The decision to use centers (medoids) or refinement centers (centroids) is managed in baseclusterer. */
+  virtual void set_rf_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance)
+  {(void)k; (void)k1; (void)j1; (void)threshold; (void)distance; throw zentas::zentas_error("virtual function set_rf_center_sample_distance not possible"); }
+  virtual void set_rf_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance)
+  {(void)k1; (void)k2; (void)threshold; (void)adistance; throw zentas::zentas_error("virtual function set_rf_center_center_distance not possible"); }
+  virtual std::vector<size_t> get_subclustered_centers_labels(size_t sub_K) {(void)sub_K; throw zentas::zentas_error("cluster_centers not possible"); };
+  virtual void rf_cumulative_correction(size_t k_new, size_t k, size_t j) {(void)k_new, (void)k; (void)j; throw zentas::zentas_error("rf_cumulative_correction not possible"); };
+  virtual void rf_increment_sum(size_t k, size_t j) {(void)k; (void)j; throw zentas::zentas_error("rf_increment_sum not possible"); };
 
 };
 

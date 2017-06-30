@@ -80,6 +80,39 @@ class BaseClarans : public SkeletonClusterer {
   
   public:
   
+  //TODO : move to cpp file. also, cc in level 2,3 should be freed.
+  void base_clarans_custom_initialise_refinement(){
+
+    lower_2.resize(K);
+    v_b.resize(K);
+    upper_1.resize(K);
+    for (size_t k = 0; k < K; ++k){
+      lower_2[k].resize(get_ndata(k));
+      v_b[k].resize(get_ndata(k));
+      upper_1[k].resize(get_ndata(k));
+      for (size_t j = 0; j < get_ndata(k); ++j){
+        lower_2[k][j] = nearest_2_infos[k][j].d_x;
+        v_b[k][j] = nearest_2_infos[k][j].a_x;
+        upper_1[k][j] = nearest_1_infos[k][j].d_x;
+      }
+    }
+    delta_C.resize(K, 0);
+    u1_C.resize(K, std::numeric_limits<double>::max());
+  }
+  
+  virtual void custom_initialise_refinement() override final{
+    base_clarans_custom_initialise_refinement();
+  }
+  
+  virtual void custom_rf_clear_initmem() override final{
+    energy_margins.resize(0);
+    nearest_2_infos.resize(0);
+    cluster_statistics.resize(0);    
+  }
+  
+  
+  
+  
   BaseClarans(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb):
   SkeletonClusterer(sb),nearest_2_infos(sb.K), energy_margins(sb.K), cluster_statistics(sb.K), n_proposals(0), max_proposals(eb.clarans.max_proposals), patient(eb.clarans.patient) {      
   }
@@ -148,7 +181,6 @@ class BaseClarans : public SkeletonClusterer {
   
   protected:
   
-  void unset_clarans_variable_for_optimised_refinement();
   void refresh_energy_margins(size_t k, size_t j);
   double get_delta_hat_l3(size_t k1, size_t k2, size_t j2, double d_nearest_k1, const double * const cc);
   void center_center_info_test_l1(const std::vector<XNearestInfo> & center_nearest_center);

@@ -98,9 +98,11 @@ int cluster_dense(){
   
   bool do_vdimap = false;
   
+  bool do_refinement = false;
+  
   //and finally, we cluster. 
   nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, nullptr, //indices_init.data(), 
-  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff, do_vdimap);
+  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff, do_vdimap, do_refinement);
 
   //labels and indices_final have now been set, and can now used for the next step in your application. 
   

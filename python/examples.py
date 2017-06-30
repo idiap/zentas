@@ -20,7 +20,7 @@ from IPython.core.debugger import Tracer
 
 def tests():
   
-  ndata = int(1e2)
+  ndata = int(1e3)
   K = 5
   dimension = 2
   npr.seed(1011)
@@ -38,16 +38,31 @@ def dense_data_example():
   cluster dense data ndata points in dimension `dimension'.
   """
   
-  
-  ndata = int(100)
-  dimension = 4
+  import kmeans
+  import random 
+
   npr.seed(1011)
-  data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float32)  
-  z = pyzentas.pyzen(K = 10, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 10, seed = 1011, nthreads = 1, patient = False, with_tests = True, algorithm = "clarans", level = 2)
+  random.seed(1011)
+  
+  K = int(1e2)
+  ndata = int(1e5)
+
+  indices = random.sample(xrange(ndata), K)
+  indices = np.array(indices, dtype = np.uint64)
+  indices.sort()
+  
+  dimension = 8
+  data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float64)  
+  z = pyzentas.pyzen(init = indices, K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 0, max_time = 0, seed = 1022, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
   #, , 
   
   do_vdimap = False
-  tangerine =  z.den(data, do_vdimap)
+  do_refinement = True
+  tangerine =  z.den(data, do_vdimap, do_refinement)
+  
+  
+  #X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 2, n_threads = 1, algorithm = "syin-sn")
+  #X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 2, n_threads = 1, algorithm = "exp-ns")
 
 def sparse_data_example():
 

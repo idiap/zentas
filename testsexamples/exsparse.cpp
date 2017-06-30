@@ -61,8 +61,9 @@ int cluster_sparse(){
   double critical_radius = 0;
   double exponent_coeff = 0;
   bool with_tests = false;
+  bool do_refinement = false;
 
-  nszen::sparse_vector_zentas(ndata, sizes.data(), data_in.data(), indices.data(), K, indices_init.data(), initialisation_method, algorithm, level, max_proposals,  capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff);
+  nszen::sparse_vector_zentas(ndata, sizes.data(), data_in.data(), indices.data(), K, indices_init.data(), initialisation_method, algorithm, level, max_proposals,  capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff, do_refinement);
   
   std::cout << std::endl;
   for (size_t i = 0; i < ndata; ++i){

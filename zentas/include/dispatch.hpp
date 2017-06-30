@@ -28,8 +28,6 @@ void dispatch(std::string algorithm, size_t level, TInitBundle & datain_ib, size
 
 
   nszen::SkeletonClustererInitBundle sc(K, datain_ib.ndata, bigbang, indices_init, initialisation_method, max_time, min_mE, max_rounds, nthreads, seed, energy, with_tests, indices_final, labels, &energy_initialiser);
-  
-  
   ExtrasBundle eb(max_proposals, patient);
   ClustererInitBundle<DataIn, TMetric> ib(sc, datain, metric_initializer, eb);
   

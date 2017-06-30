@@ -101,12 +101,14 @@ struct BaseDataIn{
      * for ConstLength (true dimension) and 
      * VarLength (maximum index)  */
     size_t dimension;
-    const TAtomic * const data;
+    const TAtomic * data;
 
     BaseDataIn(size_t ndata, size_t dimension, const TAtomic * const data): ndata(ndata), dimension(dimension), data(data) {}
     BaseDataIn(const ConstLengthInitBundle<TAtomic> & ib): BaseDataIn(ib.ndata, ib.dimension, ib.data) {}
 
-     size_t get_ndata() const {
+    BaseDataIn() = default;
+    
+    size_t get_ndata() const {
       return ndata;
     }
     
@@ -130,6 +132,9 @@ struct BaseConstLengthDataIn : public BaseDataIn<TAtomic>{
     const TAtomic * const at_for_metric(size_t i) const {
       return BaseConstLengthDataIn::data + BaseConstLengthDataIn::dimension*i;
     }
+    
+    BaseConstLengthDataIn() = default;
+    
 };
 
 template <typename TAtomic> 
@@ -139,6 +144,8 @@ struct DenseVectorDataUnrootedIn : public BaseConstLengthDataIn<TAtomic> {
     const TAtomic * const at_for_move(size_t i) const {
       return BaseConstLengthDataIn<TAtomic>::data + BaseConstLengthDataIn<TAtomic>::dimension*i;
     }
+    
+    DenseVectorDataUnrootedIn() = default;
 };
 
 template <typename TAtomic> 
@@ -147,7 +154,9 @@ struct DenseVectorDataRootedIn : public BaseConstLengthDataIn<TAtomic> {
     DenseVectorDataRootedIn(const ConstLengthInitBundle<TAtomic> & ib):BaseConstLengthDataIn<TAtomic>(ib) {}
     size_t at_for_move(size_t i) const {
       return i;
-    } 
+    }
+    
+    DenseVectorDataRootedIn() = default; 
 };
 
 
@@ -157,16 +166,21 @@ struct DenseVectorDataRootedIn : public BaseConstLengthDataIn<TAtomic> {
 template <typename TAtomic>
 class BaseVarLengthDataIn : public BaseDataIn<TAtomic>{
   
+  public:
+    BaseVarLengthDataIn() = default; 
+  
   protected:
-    const size_t * const sizes;
-    std::unique_ptr<size_t> up_c_sizes;
+    const size_t * sizes;
+    /* changed from up to vector, as easier default copying */
+    //std::unique_ptr<size_t []> up_c_sizes;
+    std::vector<size_t> v_c_sizes;
     size_t * c_sizes;
     size_t max_size;
     double mean_size;
    
   public:
-    BaseVarLengthDataIn(size_t ndata, const size_t * const sizes, const TAtomic * const data): BaseDataIn<TAtomic>(ndata, std::numeric_limits<size_t>::max(), data), sizes(sizes), up_c_sizes(new size_t [ndata + 1]), max_size(0), mean_size(0) {
-      c_sizes = up_c_sizes.get();
+    BaseVarLengthDataIn(size_t ndata, const size_t * const sizes, const TAtomic * const data): BaseDataIn<TAtomic>(ndata, std::numeric_limits<size_t>::max(), data), sizes(sizes), v_c_sizes(ndata + 1,0), max_size(0), mean_size(0) {
+      c_sizes = v_c_sizes.data();
       c_sizes[0] = 0;
       for (size_t i = 0; i < ndata; ++i){
         c_sizes[i+1] = c_sizes[i] + sizes[i];
@@ -230,6 +244,8 @@ class BaseStringDataIn: public BaseVarLengthDataIn<TAtomic> {
     const Sample at_for_metric(size_t i) const{
       return Sample(BaseVarLengthDataIn<TAtomic>::sizes[i], BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
+    
+    BaseStringDataIn() = default;
 };
 
 
@@ -243,6 +259,8 @@ class StringDataUnrootedIn : public BaseStringDataIn<TAtomic>{
     const VariableLengthSample<TAtomic> at_for_move(size_t i) const{
       return VariableLengthSample<TAtomic>(BaseVarLengthDataIn<TAtomic>::sizes[i], BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
+    
+    StringDataUnrootedIn() = default;
 };
 
 
@@ -257,6 +275,8 @@ class StringDataRootedIn : public BaseStringDataIn<TAtomic>{
     size_t at_for_move(size_t i) const{
       return i;
     }
+    
+    StringDataRootedIn() = default;
 };
 
 
@@ -268,7 +288,7 @@ class SparseVectorDataInBase : public BaseVarLengthDataIn<TAtomic> {
     using Sample = SparseVectorSample<TAtomic>; 
     
   protected:
-    const size_t * const indices_s;
+    const size_t * indices_s;
 
   public:
     SparseVectorDataInBase(const SparseVectorDataInitBundle<TAtomic> & ib): BaseVarLengthDataIn<TAtomic>(ib.ndata, ib.sizes, ib.data), indices_s(ib.indices_s) {}
@@ -283,6 +303,8 @@ class SparseVectorDataInBase : public BaseVarLengthDataIn<TAtomic> {
       BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i], 
       indices_s + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
+    
+    SparseVectorDataInBase() = default;
 };
 
 
@@ -299,6 +321,10 @@ class SparseVectorDataUnrootedIn : public SparseVectorDataInBase<TAtomic>{
       BaseDataIn<TAtomic>::data + BaseVarLengthDataIn<TAtomic>::c_sizes[i], 
       SparseVectorDataInBase<TAtomic>::indices_s + BaseVarLengthDataIn<TAtomic>::c_sizes[i]);
     }
+    
+    SparseVectorDataUnrootedIn() = default;
+    
+    
 };
 
 
@@ -311,6 +337,8 @@ class SparseVectorDataRootedIn : public SparseVectorDataInBase<TAtomic>{
     size_t at_for_move(size_t i) const{
       return i;
     }
+    
+    SparseVectorDataRootedIn() = default;
 };
 
 

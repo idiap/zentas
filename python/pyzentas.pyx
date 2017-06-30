@@ -34,10 +34,10 @@ cdef extern from "zentasinfo.hpp" namespace "nszen":
 cdef extern from "zentas.hpp" namespace "nszen":
 
   # dense vectors 
-  void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap) except +;
+  void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement) except +;
 
   # sparse vectors 
-  void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff) except +;
+  void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_refinement) except +;
 
   # strings / sequences 
   void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff) except +;
@@ -200,9 +200,9 @@ class pyzen(object):
   ################# dense vectors ##################
   ##################################################
   
-  def base_vzentas(self, floating87 [:] X_v, do_vdimap, size_t [:] indices_init, pms):
+  def base_vzentas(self, floating87 [:] X_v, do_vdimap, do_refinement, size_t [:] indices_init, pms):
 
-    cdef void (*cw_vzentas)(size_t, size_t, const floating87 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap) except +
+    cdef void (*cw_vzentas)(size_t, size_t, const floating87 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement) except +
   
     if floating87 is double:
       cw_vzentas=&vzentas[double]
@@ -212,11 +212,11 @@ class pyzen(object):
 
     cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
     
-    cw_vzentas(pms['ndata'], pms['dimension'], &X_v[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], &rb.indices_final[0], &rb.labels[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_vdimap)
+    cw_vzentas(pms['ndata'], pms['dimension'], &X_v[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], &rb.indices_final[0], &rb.labels[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_vdimap, do_refinement)
 
     return rb.get_dict()
 
-  def den(self, X, do_vdimap):
+  def den(self, X, do_vdimap, do_refinement):
     """
     make some comment
     """
@@ -228,7 +228,7 @@ class pyzen(object):
       raise RuntimeError("X should be 2-dimensional, i.e. X.shape = (ndata, dimension)")
     
     self.pms['ndata'], self.pms['dimension'] = X.shape    
-    return dangerwrap(lambda : self.base_vzentas(X.ravel(), do_vdimap, self.pms['indices_init'], self.pms))
+    return dangerwrap(lambda : self.base_vzentas(X.ravel(), do_vdimap, do_refinement, self.pms['indices_init'], self.pms))
 
 
   ####################################################
@@ -236,9 +236,9 @@ class pyzen(object):
   ####################################################
 
   
-  def base_sparse_vector_zentas(self, size_t [:] sizes, size_t [:] indices, floating87 [:] values, size_t [:] indices_init, pms):
+  def base_sparse_vector_zentas(self, size_t [:] sizes, size_t [:] indices, floating87 [:] values, do_refinement, size_t [:] indices_init, pms):
   
-    cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const floating87 * const, const size_t * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff) except +
+    cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const floating87 * const, const size_t * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_refinement) except +
 
     if floating87 is double:
       cw_sparse_vector_zentas=&sparse_vector_zentas[double]
@@ -248,11 +248,11 @@ class pyzen(object):
 
     cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
     
-    cw_sparse_vector_zentas(pms['ndata'], &sizes[0], &values[0], &indices[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'])
+    cw_sparse_vector_zentas(pms['ndata'], &sizes[0], &values[0], &indices[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_refinement)
 
     return rb.get_dict()
       
-  def spa(self, sizes, indices, values):
+  def spa(self, sizes, indices, values, do_refinement):
     """
     make some comment
     """
@@ -263,7 +263,7 @@ class pyzen(object):
     if (values.size != sizes.sum()):
       raise RuntimeError("the sum of sizes is not the size of values ")
             
-    return dangerwrap(lambda : self.base_sparse_vector_zentas(sizes, indices, values, self.pms['indices_init'], self.pms))
+    return dangerwrap(lambda : self.base_sparse_vector_zentas(sizes, indices, values, do_refinement, self.pms['indices_init'], self.pms))
 
 
   ##################################################

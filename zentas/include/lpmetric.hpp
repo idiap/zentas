@@ -43,9 +43,10 @@ class LpMetricInitializer{
 
   public:
     char p;
-    LpMetricInitializer(char p);
+    bool do_refinement;
+    LpMetricInitializer(char p, bool do_refinement);
     LpMetricInitializer();
-    void reset(std::string metric);
+    void reset(std::string metric, bool do_refinement);
 };
 
 
@@ -87,15 +88,37 @@ class BaseLpDistance{
     virtual void set_distance(const SparseVectorRfCenter<TNumber> & a, const SparseVectorRfCenter<TNumber> & b, double threshold, double & distance) = 0;
     
 
-    virtual void set_center(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const ptr_center){
+    virtual void set_center(const std::string & energy, 
+    const std::function<const TNumber * const (size_t)> & f_sample, 
+    size_t ndata, TNumber * const ptr_center){
       (void)energy; (void)f_sample; (void)ndata; (void)ptr_center;
       throw zentas::zentas_error("cannot set vector center : from BaseLpDistance base class dense");
     }
     
-    virtual void set_center(const std::string & energy, const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, size_t ndata, SparseVectorRfCenter<TNumber> * const ptr_center){
+    virtual void set_center(const std::string & energy, 
+    const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, 
+    size_t ndata, SparseVectorRfCenter<TNumber> * const ptr_center){
       (void)energy; (void)f_sample; (void)ndata; (void)ptr_center;
       throw zentas::zentas_error("cannot set vector center : from BaseLpDistance base class sparse");
     }
+
+
+    void update_sum(const std::string & energy, 
+    const std::function<const TNumber * const (size_t)> & f_add, size_t n_add, 
+    const std::function<const TNumber * const (size_t)> & f_subtract,  size_t n_subtract,
+    TNumber * const ptr_sum){
+      (void)energy; (void)f_add; (void)f_subtract; (void)n_add; (void)n_subtract; (void)ptr_sum;
+      throw zentas::zentas_error("cannot set vector center : from BaseLpDistance base class dense");
+    }
+    
+    void update_sum(const std::string & energy, 
+    const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_add, size_t n_add,
+    const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_subtract, size_t n_subtract,
+    SparseVectorRfCenter<TNumber> * const ptr_sum){
+      (void)energy; (void)f_add; (void)f_subtract; (void)n_add; (void)n_subtract; (void)ptr_sum;
+      throw zentas::zentas_error("cannot set vector center : from BaseLpDistance base class sparse");
+    }
+
     
 };
 
@@ -106,9 +129,9 @@ class L2Minimiser{
   size_t dimension;
   L2Minimiser(size_t dimension_):dimension(dimension_) {};
 
-    void set_center(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const ptr_center){
-      
-      
+    void set_center(const std::string & energy, 
+    const std::function<const TNumber * const (size_t)> & f_sample, 
+    size_t ndata, TNumber * const ptr_center){
       if (energy != "quadratic"){
         throw zentas::zentas_error("cannot yet perform L2 metric minimisation unless the energy is quadratic");
       }
@@ -129,7 +152,9 @@ class L2Minimiser{
       }
     }
     
-    void set_center(const std::string & energy, const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, size_t ndata, SparseVectorRfCenter<TNumber> * const minimiser){
+    void set_center(const std::string & energy, 
+    const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, 
+    size_t ndata, SparseVectorRfCenter<TNumber> * const minimiser){
       (void)energy; (void)f_sample; (void)ndata; (void)minimiser;
       throw zentas::zentas_error("cannot set vector center yet : from L2Minimiser base class sparse");
     }
@@ -332,6 +357,11 @@ class LpMetric{
     std::unique_ptr<BaseLpDistance<AtomicType>>  uptr_lpdistance;
 
   public:
+  
+    char get_p(){
+      return p;
+    }
+    
     LpMetric(const TVDataIn & datain, size_t nthreads, const LpMetricInitializer & l2mi):p(l2mi.p) 
       {
       
@@ -384,6 +414,10 @@ class LpMetric{
       uptr_lpdistance->set_center(energy, f_sample, ndata, ptr_center);
     }
 
+    template <typename TPointerCenter, typename TFunction>
+    void update_sum(const std::string & energy, const TFunction & f_add, size_t n_add, const TFunction & f_subtract, size_t n_subtract, TPointerCenter ptr_sum){
+      uptr_lpdistance->set_center(energy, f_add, n_add, f_subtract, n_subtract, ptr_sum);
+    }
   
   private:
     const char p;

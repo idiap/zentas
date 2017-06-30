@@ -5,11 +5,14 @@ namespace nszen{
 
 
     
-LpMetricInitializer::LpMetricInitializer(char p): p(p){}
+LpMetricInitializer::LpMetricInitializer(char p_, bool do_refinement_): p(p_), do_refinement(do_refinement_){}
     
 LpMetricInitializer::LpMetricInitializer(): p('!') {}
     
-void LpMetricInitializer::reset(std::string metric){
+void LpMetricInitializer::reset(std::string metric, bool do_refinement_){
+  
+  do_refinement = do_refinement_;
+  
   if (metric.compare("li") == 0){
     p = 'i';
   }

@@ -483,31 +483,6 @@ double BaseClarans::get_delta_E_hoeffding_l3(size_t k1, size_t k2, size_t j2, do
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void BaseClarans::unset_clarans_variable_for_optimised_refinement(){ 
-  nearest_2_infos.resize(0);
-  energy_margins.resize(0);
-  cluster_statistics.resize(0);
-}
-
-
 bool BaseClarans::update_centers_greedy(){
 
   bool accept = false;

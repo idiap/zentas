@@ -59,38 +59,24 @@ class BaseClaransL23 : public BaseClarans {
      * *************** no additional properties of samples, so default operators defined **********************
      * ********************************************************************************************************/
     virtual void put_sample_custom_in_cluster(size_t i, size_t k_first_nearest, const double * const distances) final override{
-      //if (in_refinement == false){
-        put_nearest_2_infos_margin_in_cluster(i, k_first_nearest, distances);
-      //}
+      put_nearest_2_infos_margin_in_cluster(i, k_first_nearest, distances);
     }
     
     
-    //virtual void reset_sample_custom(size_t k, size_t j, size_t nearest_center, const double * const distances) final override{
-      //reset_sample_nearest_2_infos_margin(k, j, nearest_center, distances);
-    //}
-
     virtual void custom_append(size_t k_to, size_t k, size_t j) final override{
-      //if (in_refinement == false){
-        nearest_2_infos_margin_append(k_to, k, j);
-      //}
+      nearest_2_infos_margin_append(k_to, k, j);
     }
     
     virtual void custom_replace_with_last(size_t k, size_t j) final override{
-      //if (in_refinement == false){
-        nearest_2_infos_margin_replace_with_last(k, j);
-      //}
+      nearest_2_infos_margin_replace_with_last(k, j);
     }
     
     virtual void custom_replace_with(size_t k1, size_t j1, size_t k2, size_t j2) final override{
-      //if (in_refinement == false){
-        nearest_2_infos_margin_replace_with(k1, j1, k2, j2);
-      //}
+      nearest_2_infos_margin_replace_with(k1, j1, k2, j2);
     }
     
     virtual void custom_remove_last(size_t k) final override{
-      //if (in_refinement == false){
-        nearest_2_infos_margin_remove_last(k);
-      //}
+      nearest_2_infos_margin_remove_last(k);
     }
 
     virtual void custom_info_test() override final {
@@ -132,27 +118,12 @@ class BaseClaransL23 : public BaseClarans {
     }
 
     virtual void put_sample_in_cluster(size_t i) override final {
-      
       triangular_put_sample_in_cluster(i, cc);
     }
     
-
     virtual void update_sample_info() override final{
       update_sample_info_l23(dists_centers_old_k_to, cc);
     }
-
-
-
-    /* refinement is basic FOR NOW : TODO exponion and syin eventually. Will require changes to tests (energy margins and 2nd centers lost) */
-    virtual void refine_sample_info() override final {default_refine_sample_info();}
-    virtual void custom_refine_center_center_info() override final {} 
-    virtual void custom_initialise_refinement_variables() override final {
-        
-      optimised_refinement = true;
-      //unset_clarans_variable_for_optimised_refinement();
-      
-    };    
-    
 };
 
 } //namespace nszen
