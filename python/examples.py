@@ -18,8 +18,14 @@ import pyzentas
 from IPython.core.debugger import Tracer 
 
 
-def tests():
+def easy_kmeans_example():
+  output = pyzentas.kmeans(X = npr.randn(100000, 3), K = 1000, maxtime = 10, capture_output = False)
+  return output 
   
+def tests():
+  """
+  run some tests to confirm the algorithms are working correctly. 
+  """
   ndata = int(1e3)
   K = 5
   dimension = 2
@@ -35,54 +41,39 @@ def tests():
 
 def dense_data_example():
   """
-  cluster dense data ndata points in dimension `dimension'.
+  cluster dense data points.
   """
-  
-  import kmeans
-  import random 
 
+  import random 
   npr.seed(1011)
   random.seed(1011)
-  
   K = int(1e3)
   ndata = int(7e4)
-
-  indices = random.sample(xrange(ndata), K)
-  indices = np.array(indices, dtype = np.uint64)
-  indices.sort()
-  
   dimension = 3
   data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float64)
-  
-  npr.seed()
-  seed = npr.randint(10000)
-    
+  seed = 1011
   z = pyzentas.pyzen(init = "kmeans++-5", K = K, metric = 'l1', energy = 'identity', exponent_coeff = 0,  max_rounds = 10000, max_time = 10000, max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
-  
   do_vdimap = False
   do_refinement = True
   refinement_algorithm = "exponion"
   rf_max_rounds = 3000;
   rf_max_time = 10000.;
-
   tangerine =  z.den(data, do_vdimap, do_refinement, refinement_algorithm, rf_max_rounds, rf_max_time)
 
-  #X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 1, n_threads = 1, algorithm = "yin-sn")
-  #X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 2, n_threads = 1, algorithm = "exp-ns")
+  run_eakmeans = False
+  if run_eakmeans:
+    # yinyang of eakmeans is ~35% faster.
+    import kmeans
+    indices = random.sample(xrange(ndata), K)
+    indices = np.array(indices, dtype = np.uint64)
+    indices.sort()
+    X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 1, n_threads = 1, algorithm = "yin-sn")
 
 def sparse_data_example():
-
-  #ndata = 5
-  #sizes = np.array([2,3,2,1,2], dtype = np.uint64)
-  #indices_s = np.array([1,2,
-  #1,2,3,
-  #8,9,
-  #8,
-  #8,9000], dtype = np.uint64)
-  #data = np.ones(sizes.sum())
-
-
-  ndata = 50000
+  """ 
+  cluster sparse data points.
+  """
+  ndata = 20000
   sizes = np.array(npr.randint(5,9, size = (ndata,)), dtype = np.uint64)
   indices_s = []
   for i in range(ndata):
@@ -92,14 +83,11 @@ def sparse_data_example():
     
   indices_s = np.array(indices_s, dtype = np.uint64)
   data = npr.randn(sizes.sum())
-  
   z = pyzentas.pyzen(K = 100, max_rounds = 10000, max_itok = 15.001, seed = npr.randint(1011), with_tests = False)
-
   do_refinement = True
   refinement_algorithm = "yinyang"
   rf_max_rounds = 3000;
   rf_max_time = 10000.;
-  
   
   X = z.spa(sizes, indices_s, data, do_refinement, refinement_algorithm, rf_max_rounds, rf_max_time)
 

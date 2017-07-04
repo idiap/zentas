@@ -223,9 +223,16 @@ class pyzen(object):
 
     return rb.get_dict()
 
-  def den(self, X, do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time):
+  def den(self, 
+    X, 
+    do_vdimap, 
+    do_refinement = False, 
+    rf_alg = "yinyang", 
+    rf_max_rounds = 99999, 
+    rf_max_time = 1e7
+    ):
     """
-    make some comment
+    den(se) clustering
     """
     
     if isinstance(X, list):
@@ -258,9 +265,17 @@ class pyzen(object):
 
     return rb.get_dict()
       
-  def spa(self, sizes, indices, values, do_refinement, rf_alg, rf_max_rounds, rf_max_time):
+  def spa(self, 
+    sizes, 
+    indices, 
+    values, 
+    do_refinement = False, 
+    rf_alg = "yinyang", 
+    rf_max_rounds = 99999, 
+    rf_max_time = 1e7
+    ):
     """
-    make some comment
+    spa(rse) clustering
     """
     self.pms['ndata'] = sizes.size
     if (indices.size != sizes.sum()):
