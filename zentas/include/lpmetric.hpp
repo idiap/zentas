@@ -44,9 +44,14 @@ class LpMetricInitializer{
   public:
     char p;
     bool do_refinement;
-    LpMetricInitializer(char p, bool do_refinement);
+    std::string rf_alg;
+    size_t rf_max_rounds;
+    double rf_max_time;
+
+
+    LpMetricInitializer(char p, bool do_refinement, std::string rf_alg, size_t rf_max_rounds, double rf_max_time);
     LpMetricInitializer();
-    void reset(std::string metric, bool do_refinement);
+    void reset(std::string metric, bool do_refinement, std::string rf_alg, size_t rf_max_rounds, double rf_max_time);
 };
 
 
@@ -133,6 +138,12 @@ class L2Minimiser{
     const std::function<const TNumber * const (size_t)> & f_sample, 
     size_t ndata, TNumber * const ptr_center){
       if (energy != "quadratic"){
+        if (energy == "identity"){
+          throw zentas::zentas_error(
+          "request to find the center with L2 metric and identity energy not implemented."
+          "I'm considering the algorithm in 'Geometric Median in Nearly Linear Time' of Cohen et al. "
+          "Currently only quadratic energy is supported for L2 metric (so vanilla k-means). ");
+        }
         throw zentas::zentas_error("cannot yet perform L2 metric minimisation unless the energy is quadratic");
       }
       
@@ -156,10 +167,50 @@ class L2Minimiser{
     const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, 
     size_t ndata, SparseVectorRfCenter<TNumber> * const minimiser){
       (void)energy; (void)f_sample; (void)ndata; (void)minimiser;
-      throw zentas::zentas_error("cannot set vector center yet : from L2Minimiser base class sparse");
-    }
-  
+      throw zentas::zentas_error("cannot set vector centers for sparse data yet : from L2Minimiser base class sparse. ");
+    }  
 };
+
+
+template <typename TNumber>
+class L1Minimiser{
+  public:
+  
+  size_t dimension;
+  L1Minimiser(size_t dimension_):dimension(dimension_) {};
+
+    void set_center(const std::string & energy, 
+    const std::function<const TNumber * const (size_t)> & f_sample, 
+    size_t ndata, TNumber * const ptr_center){
+      if (energy != "identity"){
+        throw zentas::zentas_error("cannot yet perform L1 metric minimisation unless the energy is identity (ie loss is sum of l1 distances to nearest centers)");
+      }
+      
+      std::vector<TNumber> data_by_dimension(dimension*ndata);
+      const TNumber * sample;
+      for (size_t j = 0; j < ndata; ++j){
+        sample = f_sample(j);
+        for (size_t d = 0; d < dimension; ++d){
+          data_by_dimension[d*ndata + j] += sample[d];
+        }
+      }
+      
+      //get medians in each dimension.
+      for (size_t d = 0; d < dimension; ++d){
+        std::nth_element(data_by_dimension.begin() + d*ndata, data_by_dimension.begin() + d*ndata + ndata/2, data_by_dimension.begin() + (d+1)*ndata);
+        ptr_center[d] = data_by_dimension[d*ndata + ndata/2];
+      }
+    }
+    
+    void set_center(const std::string & energy, 
+    const std::function<const SparseVectorSample<TNumber> & (size_t)> & f_sample, 
+    size_t ndata, SparseVectorRfCenter<TNumber> * const minimiser){
+      (void)energy; (void)f_sample; (void)ndata; (void)minimiser;
+      throw zentas::zentas_error("cannot set vector centers for sparse data yet : from L1Minimiser base class sparse. ");
+    }  
+};
+
+
 
 
 class NoimplMinimiser{
@@ -170,12 +221,15 @@ class NoimplMinimiser{
   template <typename TPointerCenter, typename TFunction>
   void set_center(const std::string & energy, const TFunction & f_sample, size_t ndata, TPointerCenter ptr_center){
     (void)energy; (void)f_sample; (void)ndata; (void)ptr_center;
-    throw zentas::zentas_error("unable to set vector center");
+    throw zentas::zentas_error("unable to set vector space center. "
+    "Recall that refinement consists of alternating between updating labels, and updating centers. "
+    "The problem here is in updating the centers, zentas does not currently support all metric-energy combinations here. "
+    "(Should I implement a generic convex solver for all convex energies?)");
   } 
 };
 
 template <typename TNumber, class CorrectThreshold, class CorrectDistance, class UpdateDistance, class FMinimiser>
-class TLpDistance : public BaseLpDistance<TNumber>{
+class TLpDistance : public BaseLpDistance<TNumber> {
 
   public:
   
@@ -204,10 +258,12 @@ class TLpDistance : public BaseLpDistance<TNumber>{
         diff = *(a + d) - *(b + d);
         update_distance(a_distance, diff);
         if (a_distance > threshold){
-          break;
+          a_distance = std::numeric_limits<double>::max();
+          calccosts += (1 + d);
+          return;
         }
       }
-      calccosts += (d == dimension ? d : 1 + d);
+      calccosts += dimension;
       correct_distance(a_distance);
     }
     
@@ -223,6 +279,7 @@ class TLpDistance : public BaseLpDistance<TNumber>{
       double diff;
     
       correct_threshold(threshold);
+      
       while (indices_remain && distance <= threshold){
         if (a.indices[a_pos] == b.indices[b_pos]){
           diff = a.values[a_pos] - b.values[b_pos];
@@ -238,7 +295,7 @@ class TLpDistance : public BaseLpDistance<TNumber>{
         }
         
         else{
-          diff = a.values[b_pos];
+          diff = b.values[b_pos];
           ++b_pos;
           indices_remain = b_pos < b.size;
         }
@@ -250,29 +307,82 @@ class TLpDistance : public BaseLpDistance<TNumber>{
     
     
       while (a_pos != a.size && distance < threshold){
-        diff = a.values[b_pos];
+        diff = a.values[a_pos];
         update_distance(distance, diff);
         calccosts += 1;
         ++a_pos;
       }
       
-      while (b_pos != b.size and distance < threshold){
+      while (b_pos != b.size && distance < threshold){
         diff = b.values[b_pos];
         update_distance(distance, diff);
         calccosts += 1;
         ++b_pos;        
-      }            
+      }
       
-      correct_distance(threshold);
+      correct_distance(distance);
     }
     
-    void set_distance(const SparseVectorRfCenter<TNumber> &, const SparseVectorSample<TNumber> &, double, double &) {
-      //TODO
+    void set_distance(const SparseVectorRfCenter<TNumber> & c_in, const SparseVectorSample<TNumber> & x, double threshold, double & distance) {
+
+      ++ncalcs;
+      distance = 0;
+      correct_threshold(threshold);
+      
+      SparseVectorRfCenter<TNumber> c(c_in);
+      
+      for (size_t d = 0; d < x.size; ++d){
+        
+        if (c.count(x.indices[d]) == 1){
+          update_distance(distance, c.at(x.indices[d]) - x.values[d]);
+          c[x.indices[d]] = 0;
+        }
+        else{
+          update_distance(distance, x.values[d]);
+          calccosts += 1;
+        }
+      }
+      
+      if (distance < threshold){
+        for(auto iter = c.cbegin(); iter != c.cend(); ++iter){
+          update_distance(distance, iter->second);
+          calccosts += 1;
+        }
+      }
+      correct_distance(distance);
     }
 
-    void set_distance(const SparseVectorRfCenter<TNumber> & , const SparseVectorRfCenter<TNumber> &, double, double &) {
-      //TODO 
-    }    
+    void set_distance(const SparseVectorRfCenter<TNumber> & c1, const SparseVectorRfCenter<TNumber> & c2, double threshold, double & distance) {
+      
+      ++ncalcs;
+      distance = 0;
+      correct_threshold(threshold);
+      
+      for(auto iter = c1.cbegin(); iter != c1.cend(); ++iter){
+        calccosts += 1;
+        if (c2.count(iter->first) == 0){
+          update_distance(distance, iter->second);
+        }
+        else{
+          update_distance(distance, iter->second - c2.at(iter->first));
+        }
+        if (distance > threshold){
+          break;
+        }
+      }
+      
+      for(auto iter = c2.cbegin(); iter != c2.cend(); ++iter){
+        if (c1.count(iter->first) == 0){
+          update_distance(distance, iter->second);
+          calccosts += 1;
+        }
+        if (distance > threshold){
+          break;
+        }
+      }
+      
+      correct_distance(distance);
+    }
 
 
     virtual void set_center(const std::string & energy, const std::function<const TNumber * const (size_t)> & f_sample, size_t ndata, TNumber * const ptr_center) override final{
@@ -331,7 +441,7 @@ template <typename TNumber>
 using L0Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, NonZero, NoimplMinimiser>;
 
 template <typename TNumber>
-using L1Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, AbsDiff, NoimplMinimiser>;
+using L1Distance = TLpDistance<TNumber, NullOpDouble, NullOpDouble, AbsDiff, L1Minimiser<TNumber>>;
 
 template <typename TNumber>
 using L2Distance = TLpDistance<TNumber, SquareDouble, RootDouble, SquareDiff, L2Minimiser<TNumber>>;

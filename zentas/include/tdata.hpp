@@ -36,6 +36,7 @@ class TData{
 
 #include <sstream>
 #include <vector>
+#include <unordered_map>
 #include "zentaserror.hpp"
 #include "sparsevectorrfcenter.hpp"
 
@@ -48,31 +49,60 @@ namespace nszen{
 template <typename TAtomic>
 class SparseRefinementCenterData{
 
- public:
-  
+  public:  
   using RfCenter = SparseVectorRfCenter<TAtomic>;
-   
+
+  private:
+  std::vector<RfCenter> cdata;
+
+  public:  
+  
   SparseRefinementCenterData(size_t dimension){(void)dimension;} //maybe use dimension to initialise size of maps
 
   
-  void add(size_t, const SparseVectorSample<TAtomic> &){
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY add");
+  void add(size_t i, const SparseVectorSample<TAtomic> & svs){
+    for (size_t d = 0; d < svs.size; ++d){
+      if (cdata[i].count(svs.indices[d]) == 1){
+        cdata[i][svs.indices[d]] += svs.values[d];
+      }
+      else{
+        cdata[i][svs.indices[d]] = svs.values[d];
+      }
+      if (cdata[i].at(svs.indices[d]) == 0){
+        cdata[i].erase(svs.indices[d]);
+      }
+    }
   }
 
-  void subtract(size_t, const SparseVectorSample<TAtomic> &){
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY subtract");
+  void subtract(size_t i, const SparseVectorSample<TAtomic> & svs){
+    for (size_t d = 0; d < svs.size; ++d){
+      if (cdata[i].count(svs.indices[d]) == 1){
+        cdata[i][svs.indices[d]] -= svs.values[d];
+      }
+      else{
+        cdata[i][svs.indices[d]] = -svs.values[d];
+      }
+      
+      if (cdata[i].at(svs.indices[d]) == 0){
+        cdata[i].erase(svs.indices[d]);
+      }
+    }
+    
   }
   
   void set_to_zero(size_t){
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set to zero");
   }
 
-  void set_as_scaled(size_t, const RfCenter &, double){
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set_as_scaled");
+  void set_as_scaled(size_t i, const RfCenter & rfc, double alpha){
+    cdata[i] = rfc;
+    for(auto iter = cdata[i].begin(); iter != cdata[i].end(); ++iter){
+      iter->second *= alpha;
+    }
   }
 
-  const RfCenter & at_for_metric(size_t) const {
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY return at_for_metric");
+  const RfCenter & at_for_metric(size_t i) const {
+    return cdata[i];
   }
 
   RfCenter * at_for_change(size_t) {
@@ -80,7 +110,7 @@ class SparseRefinementCenterData{
   }
     
   void append_zero(){
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY append_zero");
+    cdata.emplace_back(std::unordered_map<size_t, TAtomic> {});
   }
 
   void set_zero(size_t){
@@ -89,9 +119,7 @@ class SparseRefinementCenterData{
 
 
   void replace_with(size_t j, const RfCenter & t){
-    (void)j;
-    (void)t;
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY replace_with");
+    cdata[j] = t;
   }
 
   bool equals (size_t j, const RfCenter & t){
@@ -104,8 +132,11 @@ class SparseRefinementCenterData{
     throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY string_for_sample");
   }
   
-  void set_sum_abs(size_t, double &){
-    throw zentas::zentas_error("SparseRefinementCenterData cannot CURRENTLY set_sum_abs");
+  void set_sum_abs(size_t i, double & sum_abs){
+    sum_abs = 0;
+    for(auto iter = cdata[i].cbegin(); iter != cdata[i].cend(); ++iter){
+      sum_abs += std::abs(iter->second);
+    }
   }
 };
 

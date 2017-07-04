@@ -1,11 +1,13 @@
 #ifndef ZENTAS_SPARSEVECTORRFCENTER_HPP
 #define ZENTAS_SPARSEVECTORRFCENTER_HPP
 
-template <typename TAtomic>
-struct SparseVectorRfCenter{ /* Sparse vector sample */
-  // TODO : a map of some sort.
+#include <unordered_map>
 
-};
+// TODO : currently computing distances involiving SparseVectorRfCenters is slow
+// it can probably be optimised is a hand-crafted data structure is used to store sparse centers
+
+template <typename TAtomic>
+using SparseVectorRfCenter = std::unordered_map<size_t, TAtomic>;
 
 
 template <typename TAtomic>

@@ -56,13 +56,13 @@ std::string XNearestInfo::get_string(){
 
 
 
-SkeletonClustererInitBundle::SkeletonClustererInitBundle(size_t K_, size_t nd_, std::chrono::time_point<std::chrono::high_resolution_clock> bb_, const size_t * const center_indices_init_predefined_, const std::string & init_method_, double max_time_, double min_mE_, size_t max_rounds_, size_t nthreads_, size_t seed_, const std::string & energy_,  bool with_tests_, size_t * const indices_final_, size_t * const labels_, const EnergyInitialiser * ptr_energy_initialiser_): K(K_), ndata(nd_), bigbang(bb_), center_indices_init_predefined(center_indices_init_predefined_), init_method(init_method_), max_time(max_time_), min_mE(min_mE_), max_rounds(max_rounds_), nthreads(nthreads_), seed(seed_), energy(energy_), with_tests(with_tests_), indices_final(indices_final_), labels(labels_), ptr_energy_initialiser(ptr_energy_initialiser_) {}
+SkeletonClustererInitBundle::SkeletonClustererInitBundle(size_t K_, size_t nd_, std::chrono::time_point<std::chrono::high_resolution_clock> bb_, const size_t * const center_indices_init_predefined_, const std::string & init_method_, double max_time_, double min_mE_, double max_itok_, size_t max_rounds_, size_t nthreads_, size_t seed_, const std::string & energy_,  bool with_tests_, size_t * const indices_final_, size_t * const labels_, const EnergyInitialiser * ptr_energy_initialiser_, bool do_balance_labels_): K(K_), ndata(nd_), bigbang(bb_), center_indices_init_predefined(center_indices_init_predefined_), init_method(init_method_), max_time(max_time_), min_mE(min_mE_), max_itok(max_itok_), max_rounds(max_rounds_), nthreads(nthreads_), seed(seed_), energy(energy_), with_tests(with_tests_), indices_final(indices_final_), labels(labels_), ptr_energy_initialiser(ptr_energy_initialiser_), do_balance_labels(do_balance_labels_) {}
   
 
 SkeletonClusterer::SkeletonClusterer(const SkeletonClustererInitBundle & sb):
 
     
-mowri(true, false, ""), K(sb.K), bigbang(sb.bigbang), ndata(sb.ndata), initialisation_method(sb.init_method), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0), round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), max_time_micros(static_cast<size_t>(sb.max_time*1000000.)), min_mE(sb.min_mE), labels(sb.labels), nthreads(sb.nthreads), nthreads_fl(static_cast<double> (nthreads)), max_rounds(sb.max_rounds), energy(sb.energy), with_tests(sb.with_tests), gen(sb.seed), kmoo_cc(K*K), kmoo_p2bun(ndata)
+mowri(true, false, ""), K(sb.K), bigbang(sb.bigbang), ndata(sb.ndata), initialisation_method(sb.init_method), nearest_1_infos(K), sample_IDs(K), to_leave_cluster(K), cluster_has_changed(K, true), cluster_energies(K,0), cluster_mean_energies(K), E_total(std::numeric_limits<double>::max()), old_E_total(0), round(0), v_center_indices_init(K), center_indices_init(v_center_indices_init.data()), max_time_micros(static_cast<size_t>(sb.max_time*1000000.)), min_mE(sb.min_mE), max_itok(sb.max_itok), labels(sb.labels), nthreads(sb.nthreads), nthreads_fl(static_cast<double> (nthreads)), max_rounds(sb.max_rounds), energy(sb.energy), with_tests(sb.with_tests), gen(sb.seed), kmoo_cc(K*K), kmoo_p2bun(ndata), do_balance_labels(sb.do_balance_labels)
 
   
 {
@@ -698,27 +698,42 @@ void SkeletonClusterer::set_center_center_distance_nothreshold(size_t k1, size_t
 void SkeletonClusterer::output_halt_kmedoids_reason(){
   
   unsigned n_reasons = 0;
-  mowri << "halted because: " << zentas::Endl;
+  mowri << "halted k-medoids because: " << zentas::Flush;
   if (time_total >= max_time_micros){
-    mowri << "  (" << n_reasons+1 << ") exceeded max_time (" << max_time_micros/1000. << ")" << zentas::Endl;
+    mowri << "  [" << n_reasons+1 << "] exceeded max_time (" << max_time_micros/1000. << ")" << zentas::Flush;
     ++n_reasons;
   }
   if (round >= max_rounds){
-    mowri << "  (" << n_reasons+1 << ") exceeded max_rounds (" << max_rounds << ")" << zentas::Endl;
+    mowri << "  [" << n_reasons+1 << "] exceeded max_rounds (" << max_rounds << ")" << zentas::Flush;
     ++n_reasons;
   }
   if (E_total / static_cast<double>(ndata) < min_mE){
-    mowri << "  (" << n_reasons+1 << ") mE below termination min_mE (" << min_mE << ")" << zentas::Endl;        
+    mowri << "  [" << n_reasons+1 << "] mE below termination min_mE (" << min_mE << ")" << zentas::Flush;;        
     ++n_reasons;
   }
-  if (n_reasons == 0){
-    mowri << "   round without any center update" << zentas::Endl;
+  
+  if (time_total >= (max_itok + 1) * (time_to_initialise_centers + time_initialising)){
+    mowri << "  [" << n_reasons+1 << "] exceeded ratio max_itok (itialize : k-medoids <= " << max_itok << ")" << zentas::Flush;
+    ++n_reasons;    
   }
+  
+  
+  
+  
+  if (n_reasons == 0){
+    mowri << "   round without any center update" << zentas::Flush;
+  }
+  
+  mowri << zentas::Endl;
   
 }
 
 bool SkeletonClusterer::halt_kmedoids(){
-  bool do_not_halt = (time_total < max_time_micros) && (round < max_rounds) && (E_total / static_cast<double>(ndata)) >= min_mE;
+  bool do_not_halt = (time_total < max_time_micros) && 
+                     (round < max_rounds) && 
+                     ((E_total / static_cast<double>(ndata)) >= min_mE) &&
+                     time_total < (max_itok + 1) * (time_to_initialise_centers + time_initialising);
+
   return (do_not_halt == false);
 };
 
@@ -761,7 +776,6 @@ void SkeletonClusterer::update_t_update_all_cluster_stats_end(){
 
 void SkeletonClusterer::run_kmedoids(){
   core_kmedoids_loops();
-  mowri << get_equals_line(get_round_summary().size());
   output_halt_kmedoids_reason();      
 }
 
@@ -836,13 +850,133 @@ void SkeletonClusterer::populate_labels(){
 }
 
 void SkeletonClusterer::go(){
+
+  if (with_tests == true){  
+    mowri << "\n\nRUNNING WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
+  }
+
+  mowri << 
+R"((The prevent output to terminal, set capture_output to false)
+(For a description of column statistics, consider function get_output_verbose_string())
+)";      
+
+  std::string init1foo = "Will now initialize with method: " + initialisation_method + ".";
+  mowri << '\n' << init1foo << '\n';
+  //mowri << get_char_line(init1foo.size(), '-');
   initialise_all();
+
+
+  std::string kmefact = "Will now run k-medoids a.k.a  k-centers with method: " +  get_kmedoids_method_string() + ".";
+  mowri << '\n' << kmefact << '\n';
+  mowri << get_equals_line(get_round_summary().size());
   run_kmedoids();
-  if (get_do_refinement() == true){
+  
+  if (do_refinement == true){
+    refine_start = std::chrono::high_resolution_clock::now();    
+
+    std::string inifact = "Will now initialize for refinement with method: " + rf_alg + ".";
+    mowri << '\n' << inifact << '\n';
+    mowri << get_equals_line(get_round_summary().size());
     initialise_refinement();
+
+    std::string runfact = "Will now run refinement.";
+    mowri << '\n' << runfact << '\n';
+    mowri << get_equals_line(rf_get_round_summary().size());
     run_refinement();
+
+
+    std::string finalref = "Refinement complete, presenting final statistics.";
+    mowri << '\n' << finalref << '\n';
+    mowri << get_equals_line(rf_get_round_summary().size());
+    auto final_line = rf_get_round_summary();
+    mowri << final_line << '\n';
+    
+
   }
   populate_labels();
+  
+  if (do_balance_labels == true && do_refinement == true){
+    throw zentas::zentas_error("balancing labels is only an option when there is no refinement");
+  }
+
+  if (do_balance_labels == true){
+    balance_the_labels();
+  }
+}
+
+void SkeletonClusterer::balance_the_labels(){
+
+  // clusters with less than 1/ballyfactor * (ndata/K) will greedily steal members from nearest clusters, 
+  // until all clusters have at least 1/ballyfactor * (ndata/K) members.
+   
+  const double ballyfactor = 1.5;  
+  
+  if (ndata < 3*K){
+    throw zentas::zentas_error("zentas does not support balancing when ndata < 3K");
+  }
+  
+  size_t min_per_cluster = std::max<size_t>(2, static_cast<size_t> ((ndata) / (ballyfactor*K)));
+  std::vector<std::vector<size_t>> ids(K);
+  for (size_t i = 0; i < ndata; ++i){
+    ids[labels[i]].push_back(i);
+  }
+  
+  if (min_per_cluster*K > ndata){
+    throw zentas::zentas_error(" min_per_cluster*K > ndata : does not make sense");
+  }
+  
+  double cc_dist;
+  std::vector<std::tuple<double, size_t>> dk (K);
+  for (size_t k = 0; k < K; ++k){
+    //if cluster k is too small, 
+    if (ids[k].size() < min_per_cluster){
+      
+      //get the distances to the other clusters, and sort from nearest to farthest.
+      for (size_t kp = 0; kp < K; ++kp){
+        set_center_center_distance_nothreshold(k, kp, cc_dist);
+        dk[kp] = std::make_tuple (cc_dist, kp); 
+      }
+      std::sort(dk.begin(), dk.end(), [](std::tuple<double, size_t> & x1, std::tuple<double, size_t> & x2){ return std::get<0>(x1) < std::get<0>(x2);});
+      if (std::get<0>(dk[0]) > std::get<0>(dk[1])){
+        std::stringstream ss;
+        ss << "sorting order seems incorrect in balance_the_labels:\n";
+        for (size_t kpp = 0; kpp < K; ++ kpp){
+          ss << std::get<0>(dk[kpp]) << " ";
+        }
+        throw zentas::zentas_error(ss.str());
+      }
+      
+      //going through the `other' clusters, 
+      for (auto & x : dk){
+        size_t kp = std::get<1>(x);
+        //while the other cluster can lose elements while remaining large enough and k is still too small, make a switch.
+        while (ids[kp].size() > min_per_cluster && ids[k].size() < min_per_cluster){
+          labels[ids[kp].back()] = k;
+          ids[k].push_back(ids[kp].back());
+          ids[kp].pop_back();
+          if (ids[k].size() == min_per_cluster){
+            break;
+          }
+        }
+        if (ids[k].size() == min_per_cluster){
+          break;
+        }        
+      }
+      if (ids[k].size() != min_per_cluster){
+        std::stringstream ss;
+        ss << "ids[k] size should be min_per_cluster here.\n";
+        ss << "ids[k] has size " << ids[k].size() << ", and min_per_cluster is " << min_per_cluster << ".\n";
+        ss << "ndata is " << ndata << " and K is " << K << "\n";
+        throw zentas::zentas_error(ss.str());
+      }      
+    }
+  }
+    
+  for (size_t k = 0; k < K; ++k){
+    if (ids[k].size() < min_per_cluster)  {
+      throw zentas::zentas_error("balancing appears to have failed, this is a logic error of jn.");
+    }
+  }
 }
 
 
@@ -1419,15 +1553,7 @@ void SkeletonClusterer::remove_with_tail_pull(size_t k, size_t j){
 
 
 void SkeletonClusterer::initialise_all() {
-  if (with_tests == true){  
-    mowri << "\n\nRUNNING WITH TESTS ENABLED : WILL BE SLOW" <<zentas::Endl;
-  }
 
-  mowri << 
-R"((The prevent output to terminal, set capture_output to false)
-(For a description of column statistics, consider function get_output_verbose_string())
-)";      
-  mowri << get_equals_line(get_round_summary().size());
   
   if (with_tests == true){
     fundamental_triangle_inequality_test();
@@ -1466,6 +1592,7 @@ R"((The prevent output to terminal, set capture_output to false)
   auto t1 = std::chrono::high_resolution_clock::now();
   time_initialising = std::chrono::duration_cast<std::chrono::microseconds>(t1 - tstart).count();
   ncalcs_initialising = get_ncalcs();
+  mowri << get_equals_line(get_round_summary().size());
   mowri << get_round_summary() << zentas::Endl;
 }
 

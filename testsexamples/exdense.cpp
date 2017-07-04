@@ -65,6 +65,9 @@ int cluster_dense(){
   //if the mean energy drops below this, stop and return. make this 0 if you don't want this to be your stopping criterion
   double min_mE = 0.;
   
+  // maximum ratio of times between initialisation (like k-means++) and running of k-medoids.
+  double max_itok = 100.0;
+  
   //save the final results (center indices and assignments) to these:
   std::vector<size_t> indices_final (K);
   std::vector<size_t> labels (ndata);
@@ -100,9 +103,18 @@ int cluster_dense(){
   
   bool do_refinement = false;
   
+  std::string rf_alg = "none";
+
+  size_t rf_max_rounds = 0;
+  double rf_max_time = 0;
+
+  bool do_balance_labels = false;
+  
   //and finally, we cluster. 
   nszen::vzentas<TFloat>(ndata, dimension, data.data(), K, nullptr, //indices_init.data(), 
-  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff, do_vdimap, do_refinement);
+  initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, max_itok, indices_final.data(), labels.data(), metric, nthreads, max_rounds, patient, energy, with_tests, rooted, critical_radius, exponent_coeff, do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, do_balance_labels);
+
+
 
   //labels and indices_final have now been set, and can now used for the next step in your application. 
   

@@ -23,7 +23,7 @@ the GNU General Public License along with zentas. If not, see
 namespace nszen{
 
 
-void textfilezentas(std::vector<std::string> filenames, std::string outfilename, std::string costfilename, size_t K, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, std::string metric, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, std::string initialisation_method){
+void textfilezentas(std::vector<std::string> filenames, std::string outfilename, std::string costfilename, size_t K, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, double max_itok, std::string metric, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, std::string initialisation_method, bool do_balance_labels){
   
   
   
@@ -215,7 +215,7 @@ void textfilezentas(std::vector<std::string> filenames, std::string outfilename,
   
   /* (5) call szentas */
   const size_t * const indices_init = nullptr;  
-  szentas(ndata, sizes, ptr_datain, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, indices_final, labels, metric, nthreads, max_rounds, patient, energy, with_tests, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr, critical_radius, exponent_coeff);
+  szentas(ndata, sizes, ptr_datain, K, indices_init, initialisation_method, algorithm, level, max_proposals, capture_output, text, seed, max_time, min_mE, max_itok, indices_final, labels, metric, nthreads, max_rounds, patient, energy, with_tests, rooted, with_cost_matrices, dict_size, c_indel, c_switch, c_indel_arr, c_switch_arr, critical_radius, exponent_coeff, do_balance_labels);
   
   
   

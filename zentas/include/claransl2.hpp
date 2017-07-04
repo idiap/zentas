@@ -22,7 +22,9 @@ namespace nszen{
  class ClaransL2 : public BaseClaransL23 {
 
   public:
-  
+
+  virtual std::string get_kmedoids_method_string() override final {return "clarans-2";}    
+      
   ClaransL2(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): BaseClaransL23 (sb, eb) {}
 
   private:

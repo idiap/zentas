@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <tuple>
 #include <map>
+#include <iostream>
 
 namespace nszen{
   
@@ -19,21 +20,47 @@ return {
 }
 
 
+std::map<std::string, std::string> get_rf_dict(){
+  return {
+  {"do_refinement", "whether or not to perform refinement (which is K-Means in l2 with quadratic energy) after K-Medoids halts"},
+  {"refinement_algorithm", "the algorithm to use for refinement. Currently it is one of `exponion' and `yinyang'. `exponion' is generally best in low (<5) dimensions."},
+  {"rf_max_rounds", "the maximum number of rounds of refinement before halting."},
+  {"rf_max_time", "the maximum amount of time in seconds of refinenment before halting."},
+  };
+}
+
+auto rf_dict = get_rf_dict();
+
 std::map<std::string, std::string> get_spa_dict(){
-return {
-{"sizes", "an array containing the number of non-zero elements of each sparse vector"},
-{"indices", "the indices at which the values are non-zero"},
-{"values", "the non-zero values"},
-};
+  std::map<std::string, std::string> spa_dict = {
+  {"sizes", "an array containing the number of non-zero elements of each sparse vector"},
+  {"indices", "the indices at which the values are non-zero"},
+  {"values", "the non-zero values"},
+  };
+  
+  for (auto & x : rf_dict){
+    spa_dict[x.first] = x.second;
+  }
+
+  return spa_dict;
 }
 
 std::map<std::string, std::string> get_den_dict(){
-return {
-{"X", "the data, ndata x dimension (contiguous within sample)"},
-{"do_vdimap", "if true, the data is transformed so that latter indices have lower variance, enabling earlier stopping. The distances are preserved by the transformation up to floating point rounding errors, so that clustering results should be exactly the same, if used or not. "},
-};
+  std::map<std::string, std::string> den_dict = {
+  {"X", "the data, ndata x dimension (contiguous within sample)"},
+  {"do_vdimap", "if true, the data is transformed so that latter indices have lower variance, enabling earlier stopping. The distances are preserved by the transformation up to floating point rounding errors, so that clustering results should be exactly the same, if used or not. "},
+  };
+
+  for (auto & x : rf_dict){
+    den_dict[x.first] = x.second;
+  }
+
+  return den_dict;
 }
 
+
+
+  
 
 auto spa_dict = get_spa_dict();
 auto seq_dict = get_seq_dict();
@@ -99,14 +126,15 @@ std::map<std::string, std::string> get_output_keys(){
 const std::map<std::string, std::string> output_keys = get_output_keys();
 
 std::string get_us(){
-  return "Newling and Fleuret, 2017";
+  return "Newling and Fleuret, 2017 (arXiv 1609.04723)";
 }
 
 std::string get_basic_info(){
   std::stringstream ss;
-  ss << "Partitional clustering around samples, also known as K-Medoids. The objective to minimise is: [sum over sample indices i] E(d(i)), where d(i) = [min over center indices k] distance (x(i), x(c(k))) and E is an energy function. Samples may be dense vectors (2-D numpy arrays), sparse vectors or sequences, with diverse metrics and energies supported as described below. For more information, see " << get_us() << ".";
+  ss << "Partitional clustering around samples, also known as K-Medoids or K-Centers. The objective to minimise is: [sum over sample indices i] E(d(i)), where d(i) = [min over center indices k] distance (x(i), x(c(k))) and E is an energy function. Samples may be dense vectors (2-D numpy arrays), sparse vectors or sequences, with diverse metrics and energies supported as described below. Refinement can then be performed if samples belong to a vector space (dense and sparse vectors) using a fast algorithm. For more information, see " << get_us() << ".";
   return ss.str();  
 }
+
 
 
 std::map<std::string, std::tuple<std::string, std::string> > get_parameter_info_map(){
@@ -131,6 +159,7 @@ std::map<std::string, std::tuple<std::string, std::string> > get_parameter_info_
   
   pim["min_mE"] = std::make_tuple("The minimum energy for which clarans/voronoi will start a new round, below this the algorithm will halt.", "0");
   
+  pim["max_itok"] = std::make_tuple("The maximum ratio of time spent initialising, with k-means++ for example, and running K-Medoids. If this is 5.0 for example, and initialisation took 1.2 seconds, then K-Medoids will halt after 6 seconds. ", "1e7");
 
   
   
@@ -169,6 +198,7 @@ std::map<std::string, std::tuple<std::string, std::string> > get_parameter_info_
  
   pim["indices_init"] = std::make_tuple("(C++ specific) pointer to initialising indices (if from_indices_init) or nullptr", "nullptr");
 
+  pim["do_balance_labels"] = std::make_tuple("if True, following K-Medoids samples will be reassigned greedily so as to make the counts more balanced. This feature is ad hoc, and only in initialisation for refinement. ", "False");
 
 
   pim["(out) indices_final"] = std::make_tuple("A K-element array, the indices of the samples which are the final centers. Specifically, indices_final[k] is an integer in [0, ndata) for 0 <= k < K", "none");
@@ -187,7 +217,7 @@ const std::map<std::string,std::tuple<std::string, std::string>> parameter_info_
 
 
 std::vector<std::string> get_python_constructor_parms(){
-  std::vector<std::string> X = {"K", "algorithm", "level", "max_proposals", "max_rounds", "max_time", "min_mE", "patient", "capture_output", "nthreads", "rooted", "metric", "energy", "with_tests", "exponent_coeff", "critical_radius", "seed", "init"};
+  std::vector<std::string> X = {"K", "algorithm", "level", "max_proposals", "max_rounds", "max_time", "min_mE", "max_itok", "patient", "capture_output", "nthreads", "rooted", "metric", "energy", "with_tests", "exponent_coeff", "critical_radius", "seed", "init", "do_balance_labels"};
   std::sort(X.begin(), X.end());
   return X;
 }
@@ -243,14 +273,21 @@ std::string squish_shift(std::string s, size_t n_chars_per_line = 82, size_t ind
  * ************************************** *
  * ************************************** */
 
-std::string get_equals_line(size_t n){
+
+std::string get_char_line(size_t n, char c){
   std::stringstream ss;
   for (size_t i = 0; i < n; ++i){
-    ss << "=";
+    ss << c;
   }
-  ss << "\n";
+  ss << '\n';
   return ss.str();
 }
+
+std::string get_equals_line(size_t n){
+  return get_char_line(n, '=');
+}
+
+  
 
 
 
@@ -284,6 +321,18 @@ std::string get_python_init_string(){
     ss << squish_shift(get_parameter_info_string(x));
     ss << "\n";
   }
+  
+  bool print_init_defaults_string = false;
+  if (print_init_defaults_string == true){
+    std::cout << "# generated in zentasinfo.cpp, to sync default params with info string *#14641#*" << '\n';
+    for (auto & x : python_constructor_parms){    
+      std::cout << x << " = " << get_parameter_default_string(x) << ",\n";
+    }
+    std::cout << "# kwargs used just to give hints for the bad input argument message\n";
+    std::cout << "**kwargs):\n";
+    
+  }
+
   return ss.str();
 }
 
@@ -318,6 +367,9 @@ std::string get_cluster_func_string(std::vector<std::string> dict_keys, std::map
     ss << x << "\n" << squish_shift(dict_map.at(x)) << "\n";
   }
   ss << "\n" << get_python_outdict_string();
+
+
+
   return ss.str();
 }
 
@@ -332,11 +384,11 @@ std::string get_python_seq_string(){
 
 
 std::string get_python_spa_string(){
-  return get_cluster_func_string({"sizes", "indices", "values"}, spa_dict);
+  return get_cluster_func_string({"sizes", "indices", "values", "do_refinement", "refinement_algorithm", "rf_max_rounds", "rf_max_time"}, spa_dict);
 }
 
 std::string get_python_den_string(){
-  return get_cluster_func_string({"X", "do_vdimap"}, den_dict);
+  return get_cluster_func_string({"X", "do_vdimap", "do_refinement", "refinement_algorithm", "rf_max_rounds", "rf_max_time"}, den_dict);
 }
 
   

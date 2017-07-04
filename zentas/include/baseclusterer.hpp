@@ -26,7 +26,7 @@ namespace nszen{
 /* in dispatch.hpp */
 template <typename TData, typename TMetric, typename TInitBundle>
 void zentas_base(
-const TInitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string initialisation_method, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser, const std::chrono::time_point<std::chrono::high_resolution_clock> & bigbang);
+const TInitBundle & datain_ib, size_t K, const size_t * const indices_init, std::string initialisation_method, std::string algorithm, size_t level, size_t max_proposals, bool capture_output, std::string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, size_t nthreads, size_t max_rounds, bool patient, std::string energy, bool with_tests, const typename TMetric::Initializer & metric_initializer, const EnergyInitialiser & energy_initialiser, const std::chrono::time_point<std::chrono::high_resolution_clock> & bigbang, bool do_balance_labels);
 
 template <class TDataIn, class TMetric>
 struct ClustererInitBundle{
@@ -211,7 +211,10 @@ public:
   using BaseClusterer <TMetric, TData, TOpt>::cluster_datas;
   
   typedef typename TData::DataIn DataIn;
-  Clusterer(const ClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer<TMetric, TData, TOpt> (ib) {}      
+  Clusterer(const ClustererInitBundle<DataIn, TMetric> & ib): BaseClusterer<TMetric, TData, TOpt> (ib) {
+    SkeletonClusterer::do_refinement = false;  
+    SkeletonClusterer::rf_alg = "non-refiner-therefore-no-rf_alg";  
+  }
 
   virtual void set_center_sample_distance(size_t k, size_t k1, size_t j1, double threshold, double & distance)  override final   {
     metric.set_distance(centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
@@ -224,12 +227,6 @@ public:
   virtual std::string string_for_center(size_t k) override final {
     return centers_data.string_for_sample(k);
   }
-  
-  virtual bool get_do_refinement() override final{
-    return false;
-  }
-
-  
 };
 
 
@@ -260,70 +257,38 @@ public:
   using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::bigbang;
   using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::K;
   using BaseClusterer <LpMetric<DataIn>, TData, TOpt>::mowri;
+  
 
-  bool do_refinement;
+
+  
+  
 
   Clusterer(const ClustererInitBundle<DataIn, LpMetric<typename TData::DataIn>> & ib): BaseClusterer<LpMetric<typename TData::DataIn>, TData, TOpt> (ib), 
-  rf_center_data(ib.datain.dimension), rf_sum_data(ib.datain.dimension), old_rf_center_data(ib.datain.dimension), do_refinement(ib.metric_initializer.do_refinement) {}
-
-
-  virtual bool get_do_refinement() override final{
-    return do_refinement;
-  }  
-  
-  //TODO : migrate this to skeleton clusterer. 
-  virtual std::vector<size_t> get_subclustered_centers_labels(size_t sub_K) override final{
+  rf_center_data(ib.datain.dimension), rf_sum_data(ib.datain.dimension), old_rf_center_data(ib.datain.dimension){
     
-    mowri << "clustering the centers ... " << zentas::Flush; 
-    auto sub_bigbang = std::chrono::high_resolution_clock::now(); 
+    SkeletonClusterer::do_refinement = ib.metric_initializer.do_refinement;
+    SkeletonClusterer::rf_alg = ib.metric_initializer.rf_alg;
+    SkeletonClusterer::rf_max_rounds = ib.metric_initializer.rf_max_rounds;
+    SkeletonClusterer::rf_max_time_micros = static_cast<size_t>(ib.metric_initializer.rf_max_time*1000000.);
+    
+  }
+  
+
+  virtual void perform_subclustering(size_t sub_K, const size_t * sub_indices_init, const std::string & sub_initialisation_method, const std::string & sub_algorithm, size_t sub_level, size_t sub_max_proposals, bool sub_capture_output, std::string & sub_output_text, size_t sub_seed, double sub_max_time, double sub_min_mE, double sub_max_itok, size_t * const sub_indices_final, size_t * const sub_labels, size_t sub_nthreads, size_t sub_max_rounds, bool sub_patient, std::string sub_energy, bool sub_with_tests, const std::chrono::time_point<std::chrono::high_resolution_clock> & sub_bigbang, bool do_balance_labels) override final
+  {
+    EnergyInitialiser sub_ei;
     auto datain_ib = centers_data.get_as_datain_ib();
+    LpMetricInitializer sub_mi(metric.get_p(), false, "none", 0, 0); // same lp as parent, but no refinement.  
+  
     if (K != datain_ib.ndata){
       throw zentas::zentas_error("weird, K is not centers_tdatain.get_ndata()...");
     }
-    
-    const size_t *  sub_indices_init = nullptr;
-    std::string sub_initialisation_method = "kmeans++-5";
-    double sub_max_time = SkeletonClusterer::time_total/(1000*1000*200.); // spent 1/200th of time so far.
-    double sub_min_mE = 0;
-    size_t sub_max_rounds = 10000000;
-    size_t sub_max_proposals = 10000000;
-    bool sub_patient = true;
-    size_t sub_nthreads = 1;
-    size_t sub_seed = 1011;
-    std::string sub_energy = "cubic";
-    bool sub_with_tests = SkeletonClusterer::with_tests;
-    std::vector<size_t> sub_v_indices_final(sub_K);
-    std::vector<size_t> sub_v_labels(K);
-    EnergyInitialiser sub_ei;
-    LpMetricInitializer sub_mi(metric.get_p(), false); // same lp as parent, but no refinement.
-    std::string sub_algorithm("clarans");
-    size_t sub_level = 3;
-    bool sub_capture_output = true;
-    std::string sub_output_text;
-    
+
     
     zentas_base<TData, LpMetric<typename TData::DataIn>>
-    (datain_ib, sub_K, sub_indices_init, sub_initialisation_method, sub_algorithm, sub_level, sub_max_proposals, sub_capture_output, sub_output_text, sub_seed, sub_max_time, sub_min_mE, sub_v_indices_final.data(), sub_v_labels.data(), sub_nthreads, sub_max_rounds, sub_patient, sub_energy, sub_with_tests, sub_mi, sub_ei, sub_bigbang);
-    
-    mowri << "done, the final line was:" << zentas::Endl;
-
-    auto firstx = sub_output_text.find_last_of("R");
-    auto frag = sub_output_text.substr(firstx);
-    auto lastx = frag.find("\n");
-    auto lastline = frag.substr(0, lastx);
-    for (size_t i = 0; i < lastline.size(); ++i){
-      mowri << "-";
-    }
-    mowri << "\n" << lastline << "\n";
-    for (size_t i = 0; i < lastline.size(); ++i){
-      mowri << "-";
-    }
-    mowri << "\n";
-    
-    return sub_v_labels;
-
+    (datain_ib, sub_K, sub_indices_init, sub_initialisation_method, sub_algorithm, sub_level, sub_max_proposals, sub_capture_output, sub_output_text, sub_seed, sub_max_time, sub_min_mE, sub_max_itok, sub_indices_final, sub_labels, sub_nthreads, sub_max_rounds, sub_patient, sub_energy, sub_with_tests, sub_mi, sub_ei, sub_bigbang, do_balance_labels);    
   }
-  
+    
   virtual void append_zero_to_rf_center_data() override final{
     rf_center_data.append_zero();
   }

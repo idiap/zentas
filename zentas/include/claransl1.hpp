@@ -34,6 +34,8 @@ class ClaransL1 : public BaseClarans {
 
   public:
     
+    virtual std::string get_kmedoids_method_string() override final {return "clarans-1";}    
+    
     ClaransL1(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): 
     BaseClarans (sb, eb),
     up_dists_centers_old_k_to(new double [sb.K]), dists_centers_old_k_to(up_dists_centers_old_k_to.get()), up_dists_centers_new_k_to(new double [sb.K]), dists_centers_new_k_to(up_dists_centers_new_k_to.get()){

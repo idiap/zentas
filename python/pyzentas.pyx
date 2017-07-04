@@ -34,16 +34,16 @@ cdef extern from "zentasinfo.hpp" namespace "nszen":
 cdef extern from "zentas.hpp" namespace "nszen":
 
   # dense vectors 
-  void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement) except +;
+  void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement, string rf_alg,size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +;
 
   # sparse vectors 
-  void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_refinement) except +;
+  void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_refinement, string rf_alg, size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +;
 
   # strings / sequences 
-  void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff) except +;
+  void szentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, bool with_cost_matrices, size_t dict_size, double c_indel, double c_switch, const double * const c_indel_arr, const double * const c_switches_arr, double critical_radius, double exponent_coeff, bool do_balance_labels) except +;
 
   # sequences from text file
-  void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, string initialisation_method) except +;
+  void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, string initialisation_method, bool do_balance_labels) except +;
 
 
 def dangerwrap(f):
@@ -100,29 +100,30 @@ class pyzen(object):
     pass  
 
   def __init__(self, 
-    # generated in zentasinfo.cpp, to sync default params with info string 
-    K = 0, 
-    algorithm = 'clarans', 
-    capture_output = False, 
-    critical_radius = 0, 
-    energy = 'quadratic', 
-    exponent_coeff = 0, 
-    init = 'kmeans++-20', 
-    level = 3, 
-    max_proposals = 1e6, 
-    max_rounds = 1e5, 
-    max_time = 10, 
-    metric = 'l2', 
-    min_mE = 0, 
-    nthreads = 1, 
-    patient = True, 
-    rooted = False, 
-    seed = 1011, 
-    with_tests = False, 
+    # generated in zentasinfo.cpp, to sync default params with info string *#14641#*
+    K = 0,
+    algorithm = 'clarans',
+    capture_output = False,
+    critical_radius = 0,
+    do_balance_labels = False,
+    energy = 'quadratic',
+    exponent_coeff = 0,
+    init = 'kmeans++-20',
+    level = 3,
+    max_itok = 1e7,
+    max_proposals = 1e6,
+    max_rounds = 1e5,
+    max_time = 10,
+    metric = 'l2',
+    min_mE = 0,
+    nthreads = 1,
+    patient = True,
+    rooted = False,
+    seed = 1011,
+    with_tests = False,
     # kwargs used just to give hints for the bad input argument message
     **kwargs):
       
-    
     if kwargs.keys():
       argstring = ""
       for x in kwargs.keys():
@@ -145,6 +146,8 @@ class pyzen(object):
           argstring += "Maybe instead of \'" + x + "\', you mean \'init\'? "
         if "verbose" in x or "output" in x or "capture" in x:
           argstring += "Maybe instead of \'" + x + "\', you mean \'capture_output\'? "
+        if "max_i" in x:
+          argstring += "Maybe instead of \'" + x + "\', you mean \'max_itor\'? "
 
       
       
@@ -162,6 +165,7 @@ class pyzen(object):
     'max_rounds': max_rounds,
     'max_time': max_time,
     'min_mE': min_mE,
+    'max_itok':max_itok,
     'patient': patient,
     'capture_output': capture_output,
     'nthreads': nthreads,
@@ -171,7 +175,9 @@ class pyzen(object):
     'with_tests':with_tests,
     'exponent_coeff': exponent_coeff,
     'seed': seed,
-    'critical_radius': critical_radius}
+    'critical_radius': critical_radius, 
+    'do_balance_labels' : do_balance_labels
+    }
 
     self.null = {
     'size_t': np.empty((1,), dtype = np.uint64),
@@ -200,9 +206,10 @@ class pyzen(object):
   ################# dense vectors ##################
   ##################################################
   
-  def base_vzentas(self, floating87 [:] X_v, do_vdimap, do_refinement, size_t [:] indices_init, pms):
+  
+  def base_vzentas(self, floating87 [:] X_v, do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, size_t [:] indices_init, pms):
 
-    cdef void (*cw_vzentas)(size_t, size_t, const floating87 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement) except +
+    cdef void (*cw_vzentas)(size_t, size_t, const floating87 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, double max_itok, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement, string rf_alg,  size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +
   
     if floating87 is double:
       cw_vzentas=&vzentas[double]
@@ -212,11 +219,11 @@ class pyzen(object):
 
     cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
     
-    cw_vzentas(pms['ndata'], pms['dimension'], &X_v[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], &rb.indices_final[0], &rb.labels[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_vdimap, do_refinement)
+    cw_vzentas(pms['ndata'], pms['dimension'], &X_v[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], pms['max_itok'], &rb.indices_final[0], &rb.labels[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, pms['do_balance_labels'])
 
     return rb.get_dict()
 
-  def den(self, X, do_vdimap, do_refinement):
+  def den(self, X, do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time):
     """
     make some comment
     """
@@ -228,17 +235,16 @@ class pyzen(object):
       raise RuntimeError("X should be 2-dimensional, i.e. X.shape = (ndata, dimension)")
     
     self.pms['ndata'], self.pms['dimension'] = X.shape    
-    return dangerwrap(lambda : self.base_vzentas(X.ravel(), do_vdimap, do_refinement, self.pms['indices_init'], self.pms))
-
+    return dangerwrap(lambda : self.base_vzentas(X.ravel(), do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, self.pms['indices_init'], self.pms))
 
   ####################################################
   ################## sparse vectors ##################
   ####################################################
 
   
-  def base_sparse_vector_zentas(self, size_t [:] sizes, size_t [:] indices, floating87 [:] values, do_refinement, size_t [:] indices_init, pms):
+  def base_sparse_vector_zentas(self, size_t [:] sizes, size_t [:] indices, floating87 [:] values, do_refinement, rf_alg, rf_max_rounds, rf_max_time, size_t [:] indices_init, pms):
   
-    cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const floating87 * const, const size_t * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_refinement) except +
+    cdef void (*cw_sparse_vector_zentas)(size_t, const size_t * const, const floating87 * const, const size_t * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, double max_itok, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_refinement, string rf_alg, size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +
 
     if floating87 is double:
       cw_sparse_vector_zentas=&sparse_vector_zentas[double]
@@ -248,11 +254,11 @@ class pyzen(object):
 
     cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
     
-    cw_sparse_vector_zentas(pms['ndata'], &sizes[0], &values[0], &indices[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_refinement)
+    cw_sparse_vector_zentas(pms['ndata'], &sizes[0], &values[0], &indices[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], pms['max_itok'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_refinement, rf_alg, rf_max_rounds, rf_max_time, pms['do_balance_labels'])
 
     return rb.get_dict()
       
-  def spa(self, sizes, indices, values, do_refinement):
+  def spa(self, sizes, indices, values, do_refinement, rf_alg, rf_max_rounds, rf_max_time):
     """
     make some comment
     """
@@ -263,7 +269,7 @@ class pyzen(object):
     if (values.size != sizes.sum()):
       raise RuntimeError("the sum of sizes is not the size of values ")
             
-    return dangerwrap(lambda : self.base_sparse_vector_zentas(sizes, indices, values, do_refinement, self.pms['indices_init'], self.pms))
+    return dangerwrap(lambda : self.base_sparse_vector_zentas(sizes, indices, values, do_refinement, rf_alg, rf_max_rounds, rf_max_time, self.pms['indices_init'], self.pms))
 
 
   ##################################################
@@ -272,7 +278,7 @@ class pyzen(object):
 
   def base_szentas(self, size_t [:] sizes, char_or_int [:] values, size_t [:] indices_init, with_cost_matrices, dict_size, c_indel, c_switch, double [:] c_indel_arr, double [:] c_switches_arr, pms):
 
-    cdef void (*cw_szentas)(size_t, const size_t * const, const char_or_int * const, size_t, const size_t * const, string initialisation_method, string, size_t, size_t, bool , string & , size_t, double, double min_mE, size_t * const , size_t * const, string, size_t, size_t, bool, string, bool, bool, bool, size_t, double, double, const double * const, const double * const, double critical_radius, double exponent_coeff) except +
+    cdef void (*cw_szentas)(size_t, const size_t * const, const char_or_int * const, size_t, const size_t * const, string initialisation_method, string, size_t, size_t, bool , string & , size_t, double, double min_mE, double max_itok, size_t * const , size_t * const, string, size_t, size_t, bool, string, bool, bool, bool, size_t, double, double, const double * const, const double * const, double critical_radius, double exponent_coeff, bool do_balance_labels) except +
     
     if char_or_int is int:
       cw_szentas = &szentas[int]
@@ -282,7 +288,7 @@ class pyzen(object):
 
     cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
         
-    cw_szentas(pms['ndata'], &sizes[0], &values[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], with_cost_matrices, dict_size, c_indel, c_switch, &c_indel_arr[0], &c_switches_arr[0], pms['critical_radius'], pms['exponent_coeff'])
+    cw_szentas(pms['ndata'], &sizes[0], &values[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], pms['max_itok'], &(rb.indices_final)[0], &(rb.labels)[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], with_cost_matrices, dict_size, c_indel, c_switch, &c_indel_arr[0], &c_switches_arr[0], pms['critical_radius'], pms['exponent_coeff'], pms['do_balance_labels'])
     
     return rb.get_dict()
   
@@ -342,7 +348,7 @@ class pyzen(object):
     dummy_ndata = 0
     cdef RetBundle rb = RetBundle(dummy_ndata, self.pms['K'])
 
-    textfilezentas(filenames_vec, outfilename, costfilename, pms['K'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], pms['initialisation_method'])
+    textfilezentas(filenames_vec, outfilename, costfilename, pms['K'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], pms['max_itok'], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], pms['initialisation_method'], pms['do_balanace_centers'])
     
     return rb.get_dict()
 
@@ -352,6 +358,26 @@ class pyzen(object):
   def get_output_verbose_string():
     return get_output_verbose_string()
 
+def kmeans(X, K, seed = 1011, maxtime = 1e9, capture_output = True):
+  """
+  Quick-and-easy vanilla k-means for the impatient. For more options, such as different metrics and extended stopping criteria, consider creating a pyzen object and using the class function den for dense clustering. Etc.
+  X:               2-D numpy array, ndata x dimension
+  seed:            random seed
+  maxtime:         maximum allotted time to run k-means (excluding initialisation)
+  capture_output:  if True, output string is returned in dict.  
+  """
+  
+  #max_itok will be the stopping criterion
+  z = pyzen(init = "kmeans++-5", K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0, max_rounds = 100000, max_time = 100000, max_itok = 10.0, seed = seed, nthreads = 1, patient = True, with_tests = False, algorithm = "clarans", level = 3, capture_output = capture_output)
+  
+  algorithm = "yinyang"
+  if X.shape[1] < 5 :
+    algorithm = "exponion"
+  
+  maxtime = 123123
+  return z.den(X, True, True, algorithm, 1000000, maxtime)
+  
+  
 pyzen.__init__.__func__.__doc__ = get_python_init_string()
 pyzen.txt_seq.__func__.__doc__ = get_python_txt_seq_string()
 pyzen.seq.__func__.__doc__ = get_python_seq_string()

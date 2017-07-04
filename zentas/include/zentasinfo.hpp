@@ -5,6 +5,7 @@
 namespace nszen{
 
 std::string get_equals_line(size_t);
+std::string get_char_line(size_t n, char c);
 std::string get_python_init_string();
 std::string get_python_outdict_string();
 std::string get_output_verbose_string();

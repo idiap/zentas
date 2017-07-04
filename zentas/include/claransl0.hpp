@@ -26,7 +26,8 @@ namespace nszen{
 class ClaransL0 : public BaseClarans{
 
   public:
-    
+
+    virtual std::string get_kmedoids_method_string() override final {return "clarans-0";}    
     
     ClaransL0(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb);
     

@@ -204,7 +204,7 @@ class BaseVarLengthDataIn : public BaseDataIn<TAtomic>{
     }
         
 
-    std::string string_for_sample(size_t i) const{
+    virtual std::string string_for_sample(size_t i) const{
       std::stringstream ss;
       ss << "{";
       for (size_t d = 0; d < sizes[i]; ++d){
@@ -286,11 +286,25 @@ class SparseVectorDataInBase : public BaseVarLengthDataIn<TAtomic> {
   
   public:
     using Sample = SparseVectorSample<TAtomic>; 
+    using BaseVarLengthDataIn<TAtomic>::c_sizes;
     
   protected:
     const size_t * indices_s;
 
   public:
+
+
+    virtual std::string string_for_sample(size_t i) const{
+      std::stringstream ss;
+      ss << "{";
+      for (size_t d = 0; d < BaseVarLengthDataIn<TAtomic>::sizes[i]; ++d){
+        ss << " " << indices_s[c_sizes[i] + d] << ":" <<  BaseDataIn<TAtomic>::data[c_sizes[i] + d] << " ";
+      }
+      ss << "}";
+      return ss.str();          
+    }
+
+
     SparseVectorDataInBase(const SparseVectorDataInitBundle<TAtomic> & ib): BaseVarLengthDataIn<TAtomic>(ib.ndata, ib.sizes, ib.data), indices_s(ib.indices_s) {}
         
      const size_t * get_indices_s(size_t i) const{

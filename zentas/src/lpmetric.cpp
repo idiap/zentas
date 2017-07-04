@@ -5,13 +5,17 @@ namespace nszen{
 
 
     
-LpMetricInitializer::LpMetricInitializer(char p_, bool do_refinement_): p(p_), do_refinement(do_refinement_){}
+LpMetricInitializer::LpMetricInitializer(char p_, bool do_refinement_, std::string rf_alg_, size_t rf_max_rounds_, double rf_max_time_): p(p_), do_refinement(do_refinement_), rf_alg(rf_alg_), rf_max_rounds(rf_max_rounds_), rf_max_time(rf_max_time_) {}
     
 LpMetricInitializer::LpMetricInitializer(): p('!') {}
     
-void LpMetricInitializer::reset(std::string metric, bool do_refinement_){
+void LpMetricInitializer::reset(std::string metric, bool do_refinement_, std::string rf_alg_, size_t rf_max_rounds_, double rf_max_time_){
   
   do_refinement = do_refinement_;
+  rf_alg = rf_alg_;
+  rf_max_rounds = rf_max_rounds_;
+  rf_max_time = rf_max_time_;
+
   
   if (metric.compare("li") == 0){
     p = 'i';

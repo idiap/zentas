@@ -83,22 +83,9 @@ class BaseClarans : public SkeletonClusterer {
   //TODO : move to cpp file. also, cc in level 2,3 should be freed.
   void base_clarans_custom_initialise_refinement(){
 
-    lower_2.resize(K);
-    v_b.resize(K);
-    upper_1.resize(K);
-    for (size_t k = 0; k < K; ++k){
-      lower_2[k].resize(get_ndata(k));
-      v_b[k].resize(get_ndata(k));
-      upper_1[k].resize(get_ndata(k));
-      for (size_t j = 0; j < get_ndata(k); ++j){
-        lower_2[k][j] = nearest_2_infos[k][j].d_x;
-        v_b[k][j] = nearest_2_infos[k][j].a_x;
-        upper_1[k][j] = nearest_1_infos[k][j].d_x;
-      }
-    }
-    delta_C.resize(K, 0);
-    u1_C.resize(K, std::numeric_limits<double>::max());
+    prd->initialise_from_n1n2(nearest_1_infos, nearest_2_infos);
   }
+  
   
   virtual void custom_initialise_refinement() override final{
     base_clarans_custom_initialise_refinement();
@@ -108,6 +95,8 @@ class BaseClarans : public SkeletonClusterer {
     energy_margins.resize(0);
     nearest_2_infos.resize(0);
     cluster_statistics.resize(0);    
+    
+    //TODO level 3 clear cc
   }
   
   

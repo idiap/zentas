@@ -23,6 +23,125 @@
 
 namespace nszen{
 
+enum class RfAlg {Exponion = 0, Yinyang = 1};
+
+
+/* Note on data layout here:
+ * The choice to store (a,d,e) contiguously initially 
+ * for clearer code. However, I have implemented a version 
+ * with a,d and e stored as separate vectors, and there 
+ * is no speed-up */
+struct XNearestInfo{
+  // the assigned center of the data point
+  size_t a_x;
+  // the distance to the assigned center
+  double d_x;
+  // the energy of d_x
+  double e_x;
+  
+  void reset(size_t new_a_x, double new_d_x, double new_e_x);
+  void reset(XNearestInfo & nearest_x_infos);
+  XNearestInfo(size_t a_x, double d_x, double e_x);
+  std::string get_string();
+  
+};
+
+
+
+
+
+
+class RefinementData{
+
+  /* refinement (k-means etc.) functions defined in refinement.cpp */
+
+public:
+
+
+  using XNInfos = std::vector<std::vector<XNearestInfo>>;
+
+  //ALL 
+  size_t K;
+  size_t ndata;
+  std::vector<std::vector<double>> lower_2;
+  std::vector<std::vector<double>> upper_1;
+  std::vector<double> delta_C;
+  size_t rf_n_groups;  
+  std::vector<size_t> n_in_group;
+  std::vector<size_t> cum_in_group;
+  std::vector<double> max_delta_group; //of size rf_n_groups.
+  std::vector<size_t> groups;
+  size_t rf_round;
+
+    
+  //EXPONION SPECIFIC
+  std::vector<std::vector<size_t>> v_b; // second nearest, when set.
+  std::vector<double> u1_C; // upper bound on furthest cluster member.   
+  std::vector<double> l_gC; //of size K * rf_n_groups.
+
+
+  //YINYANG SPECIFIC 
+  std::vector<double> l_gps; // lower bounds on distances to groups. size ndata*rf_n_groups. mapped from glt_ID. 
+  std::vector<size_t> t_gps; // times when lower bounds set. size ndata*rf_n_groups.  mapped from glt_ID.  
+  std::vector<std::vector<size_t>> glt_ID; 
+
+  
+  
+  void swap(size_t k1, size_t k2);
+  virtual void specific_swap(size_t k1, size_t k2) = 0;
+  virtual void specific_set_n_groups(size_t K, size_t ndata) = 0;
+  size_t get_ndata(size_t k);
+  
+  void initialise_from_n1n2(const XNInfos &  nearest_1_infos, const XNInfos & nearest_2_infos);
+  virtual void specific_initialise_from_n1n2(const XNInfos &  nearest_1_infos, const XNInfos & nearest_2_infos) = 0;
+  
+  void final_initialise_memory();
+  
+  virtual void specific_update_centers() = 0;
+
+  void custom_append(size_t k_new, size_t k, size_t j);
+  virtual void specific_custom_append(size_t k_new, size_t k, size_t j) = 0;
+
+  void custom_replace_with_last(size_t k, size_t j);
+  virtual void specific_custom_replace_with_last(size_t k, size_t j) = 0;
+
+  void custom_remove_last(size_t k);
+  virtual void specific_custom_remove_last(size_t k) = 0;
+  
+  virtual void specific_final_initialise_memory() = 0;
+
+  virtual bool is_exponion() = 0;
+};
+
+
+class ExponionData : public RefinementData{
+  using XNInfos = std::vector<std::vector<XNearestInfo>>;
+  virtual void specific_swap(size_t k1, size_t k2) override final;
+  virtual void specific_set_n_groups(size_t K, size_t ndata) override final;
+  virtual void specific_update_centers() override final;
+  virtual void specific_initialise_from_n1n2(const XNInfos &  nearest_1_infos, const XNInfos  & nearest_2_infos) override final;
+  virtual void specific_custom_append(size_t k_new, size_t k, size_t j) override final;
+  virtual void specific_custom_replace_with_last(size_t k, size_t j) override final;
+  virtual void specific_custom_remove_last(size_t k) override final;
+  virtual void specific_final_initialise_memory() override final;
+  virtual bool is_exponion() override final;
+
+};
+
+class YinyangData : public RefinementData{
+  virtual void specific_swap(size_t k1, size_t k2) override final;
+  virtual void specific_set_n_groups(size_t K, size_t ndata) override final;
+  virtual void specific_update_centers() override final;
+  virtual void specific_initialise_from_n1n2(const XNInfos &  nearest_1_infos, const XNInfos  & nearest_2_infos) override final;
+  virtual void specific_custom_append(size_t k_new, size_t k, size_t j) override final;
+  virtual void specific_custom_replace_with_last(size_t k, size_t j) override final;
+  virtual void specific_custom_remove_last(size_t k) override final;
+  virtual void specific_final_initialise_memory() override final;
+  virtual bool is_exponion() override final;
+ 
+  
+};
+
 
 /* k-means++ helper class */
 class P2Bundle{
@@ -73,25 +192,6 @@ class P2Bundle{
   
 };
 
-/* Note on data layout here:
- * The choice to store (a,d,e) contiguously initially 
- * for clearer code. However, I have implemented a version 
- * with a,d and e stored as separate vectors, and there 
- * is no speed-up */
-struct XNearestInfo{
-  // the assigned center of the data point
-  size_t a_x;
-  // the distance to the assigned center
-  double d_x;
-  // the energy of d_x
-  double e_x;
-  
-  void reset(size_t new_a_x, double new_d_x, double new_e_x);
-  void reset(XNearestInfo & nearest_x_infos);
-  XNearestInfo(size_t a_x, double d_x, double e_x);
-  std::string get_string();
-  
-};
 
 
 class SkeletonClustererInitBundle{
@@ -103,6 +203,7 @@ class SkeletonClustererInitBundle{
     std::string init_method;
     double max_time;
     double min_mE;
+    double max_itok;
     size_t max_rounds;
     size_t nthreads;
     size_t seed;
@@ -111,8 +212,9 @@ class SkeletonClustererInitBundle{
     size_t * const indices_final;
     size_t * const labels;
     const EnergyInitialiser * ptr_energy_initialiser;
+    bool do_balance_labels;
     
-  SkeletonClustererInitBundle(size_t K_, size_t nd_, std::chrono::time_point<std::chrono::high_resolution_clock> bb_, const size_t * const center_indices_init_predefined_, const std::string & init_method_, double max_time_, double min_mE_, size_t max_rounds_, size_t nthreads_, size_t seed_, const std::string & energy_,  bool with_tests_, size_t * const indices_final_, size_t * const labels_, const EnergyInitialiser * ptr_energy_initialiser_);
+  SkeletonClustererInitBundle(size_t K_, size_t nd_, std::chrono::time_point<std::chrono::high_resolution_clock> bb_, const size_t * const center_indices_init_predefined_, const std::string & init_method_, double max_time_, double min_mE_, double max_itok_, size_t max_rounds_, size_t nthreads_, size_t seed_, const std::string & energy_,  bool with_tests_, size_t * const indices_final_, size_t * const labels_, const EnergyInitialiser * ptr_energy_initialiser_, bool do_balance_labels_);
   
   
 };
@@ -175,8 +277,10 @@ class SkeletonClusterer{
   ncalcs_update_centers_end, 
   ncalcs_update_sample_info_end;
 
+
   size_t max_time_micros;
   double min_mE;
+  double max_itok;
   size_t * const labels;
   std::mutex mutex0;
   size_t nthreads;
@@ -192,6 +296,8 @@ class SkeletonClusterer{
   P2Bundle kmoo_p2bun;
   bool km_is_exhausted;
  
+  bool do_balance_labels;
+  
    /* *****************
    * metric virtuals *
    * ***************** */
@@ -204,7 +310,10 @@ class SkeletonClusterer{
   virtual void set_sampleID_sampleID_distance(size_t i1, size_t i2, double threshold, double & distance) = 0;
   virtual void set_sample_sample_distance(size_t k1, size_t j1, size_t k2, size_t j2, double threshold, double & adistance) = 0;
   virtual void set_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance) = 0;
-  virtual bool get_do_refinement() = 0;
+
+  bool halt_refinement();
+  void output_halt_refinement_reason();
+
 
   /* ***************
    * data virtuals *
@@ -247,6 +356,7 @@ class SkeletonClusterer{
 
   public:
   
+  virtual std::string get_kmedoids_method_string() = 0;
   virtual void set_center_center_info() = 0;
   virtual void update_center_center_info() = 0;
   void signal_cluster_change(size_t k);
@@ -280,6 +390,7 @@ class SkeletonClusterer{
   
   void core_kmedoids_loops();  
   void populate_labels();
+  void balance_the_labels();
   void go();
       
 
@@ -407,38 +518,31 @@ class SkeletonClusterer{
   void run_refinement();
 
 
+  bool do_refinement;
+  std::string rf_alg;
+  size_t rf_max_rounds;
+  size_t rf_max_time_micros;
+  std::chrono::time_point<std::chrono::high_resolution_clock> refine_start;
 
-
-
-
-  /* refinement (k-means etc.) functions defined in refinement.cpp */
-
-  std::vector<std::vector<double>> lower_2;
-  std::vector<std::vector<size_t>> v_b; // second nearest, when set.
-  std::vector<std::vector<double>> upper_1;
-  std::vector<double> delta_C;
-  std::vector<double> u1_C; // upper bound on furthest cluster member.   
-  size_t rf_n_groups;
-  std::vector<double> l_gC; //of size K * rf_n_groups.
-  std::vector<size_t> n_in_group;
-  std::vector<size_t> cum_in_group;
-  std::vector<double> max_delta_group; //of size rf_n_groups.
-  std::vector<size_t> rf_groups;
-  std::vector<std::vector<size_t>> rf_glt_ID; 
-  std::vector<double> rf_l_groups; // lower bounds on distances to groups. size ndata*rf_n_groups. mapped from rf_glt_ID. 
-  std::vector<size_t> rf_t_groups; // times when lower bounds set. size ndata*rf_n_groups.  mapped from rf_glt_ID.  
-  std::vector<double> rf_cum_u_delta_gC; // upper bounds on distances moved since start, by group (of size T*rf_n_groups) 
-  size_t rf_round;
+  std::unique_ptr<RefinementData> prd;
   
-  bool halt_refinement();
+  
   bool rf_update_centers();
   bool is_rf_correct_d1_round();
   void rf_set_2_smallest(size_t k, size_t j, size_t & min_k1, double & min_d1, size_t & min_k2, double & min_d2);
+  void rf_set_2_smallest_group(size_t k, size_t j, size_t g, size_t & min_k1, double & min_d1, size_t & min_k2, double & min_d2);  
+  void rf_set_2_smallest_group(size_t k, size_t j, size_t g, size_t & min_k1, double & min_d1, double & min_d2);
+  void rf_set_2_smallest_ws(size_t k, size_t j, const size_t * ks, size_t nks, size_t & min_k1, double & min_d1, double & min_d2);
   void rf_update_center_center_info();
   void rf_update_sample_info();
   void rf_update_sample_info_standard();  
   void rf_update_sample_info_hamerly();
   void rf_update_sample_info_exponion();
+  void rf_update_sample_info_yinyang();
+  void update_lt_pgs(size_t ID, size_t g, double v);
+  double rf_bound(size_t ID, size_t g);
+  void rf_update_sample_info_yinyang_v1();
+  void rf_update_sample_info_yinyang_v2();
   void rf_swap(size_t k1, size_t k2);
   virtual void custom_initialise_refinement() {}
   virtual void custom_rf_clear_initmem() {}
@@ -446,11 +550,10 @@ class SkeletonClusterer{
   void rf_redistribute();
   void rf_update_energies();
   void rf_tighten_nearest(size_t k);
+  //void rf_tighten_nearest_and_u1(size_t k);  
   bool is_rf_tighten_cluster_radius_round();
   void custom_swap(size_t k1, size_t k2);
-  void rf_custom_append(size_t k_new, size_t k, size_t j);
-  void rf_custom_replace_with_last(size_t k, size_t j);
-  void rf_custom_remove_last(size_t k);
+
   void rf_post_center_update_test();
   void rf_post_sample_update_test();
   void rf_post_redistribute_test();
@@ -480,9 +583,15 @@ class SkeletonClusterer{
   {(void)k; (void)k1; (void)j1; (void)threshold; (void)distance; throw zentas::zentas_error("virtual function set_rf_center_sample_distance not possible"); }
   virtual void set_rf_center_center_distance(size_t k1, size_t k2, double threshold, double & adistance)
   {(void)k1; (void)k2; (void)threshold; (void)adistance; throw zentas::zentas_error("virtual function set_rf_center_center_distance not possible"); }
-  virtual std::vector<size_t> get_subclustered_centers_labels(size_t sub_K) {(void)sub_K; throw zentas::zentas_error("cluster_centers not possible"); };
+  std::vector<size_t> get_subclustered_centers_labels(size_t sub_K);// {(void)sub_K; throw zentas::zentas_error("cluster_centers not possible"); };
   virtual void rf_cumulative_correction(size_t k_new, size_t k, size_t j) {(void)k_new, (void)k; (void)j; throw zentas::zentas_error("rf_cumulative_correction not possible"); };
   virtual void rf_increment_sum(size_t k, size_t j) {(void)k; (void)j; throw zentas::zentas_error("rf_increment_sum not possible"); };
+
+
+
+  virtual void perform_subclustering(size_t, const size_t *, const std::string & , const std::string & , size_t, size_t, bool, std::string &, size_t, double, double, double, size_t * const , size_t * const, size_t, size_t, bool, std::string, bool, const std::chrono::time_point<std::chrono::high_resolution_clock> &, bool){
+    throw zentas::zentas_error("virtual function perform_subclustering not possible");
+  }
 
 };
 

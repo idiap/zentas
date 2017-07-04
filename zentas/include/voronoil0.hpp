@@ -23,10 +23,14 @@ namespace nszen{
 class VoronoiL0 : public SkeletonClusterer {
  
   public:
-    
+
+  virtual std::string get_kmedoids_method_string() override final {return "Voronoi-0";}
+        
   VoronoiL0(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb); 
   private:     
   
+  
+
   virtual void put_sample_custom_in_cluster(size_t, size_t, const double * const) final override{}
   virtual void reset_sample_custom(size_t, size_t, size_t, const double * const) final override{}
   virtual void custom_append(size_t, size_t, size_t) final override{}

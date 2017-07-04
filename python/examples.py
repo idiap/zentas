@@ -44,39 +44,64 @@ def dense_data_example():
   npr.seed(1011)
   random.seed(1011)
   
-  K = int(1e2)
-  ndata = int(1e5)
+  K = int(1e3)
+  ndata = int(7e4)
 
   indices = random.sample(xrange(ndata), K)
   indices = np.array(indices, dtype = np.uint64)
   indices.sort()
   
-  dimension = 8
-  data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float64)  
-  z = pyzentas.pyzen(init = indices, K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 0, max_time = 0, seed = 1022, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
-  #, , 
+  dimension = 3
+  data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float64)
+  
+  npr.seed()
+  seed = npr.randint(10000)
+    
+  z = pyzentas.pyzen(init = "kmeans++-5", K = K, metric = 'l1', energy = 'identity', exponent_coeff = 0,  max_rounds = 10000, max_time = 10000, max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
   
   do_vdimap = False
   do_refinement = True
-  tangerine =  z.den(data, do_vdimap, do_refinement)
-  
-  
-  #X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 2, n_threads = 1, algorithm = "syin-sn")
+  refinement_algorithm = "exponion"
+  rf_max_rounds = 3000;
+  rf_max_time = 10000.;
+
+  tangerine =  z.den(data, do_vdimap, do_refinement, refinement_algorithm, rf_max_rounds, rf_max_time)
+
+  #X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 1, n_threads = 1, algorithm = "yin-sn")
   #X = kmeans.get_clustering(X = data, n_clusters = K, init = indices, verbose = 2, n_threads = 1, algorithm = "exp-ns")
 
 def sparse_data_example():
 
-  ndata = 5
-  sizes = np.array([2,3,2,1,2], dtype = np.uint64)
-  indices_s = np.array([1,2,
-  1,2,3,
-  8,9,
-  8,
-  8,9000], dtype = np.uint64)
-  data = np.ones(sizes.sum())
+  #ndata = 5
+  #sizes = np.array([2,3,2,1,2], dtype = np.uint64)
+  #indices_s = np.array([1,2,
+  #1,2,3,
+  #8,9,
+  #8,
+  #8,9000], dtype = np.uint64)
+  #data = np.ones(sizes.sum())
 
-  z = pyzentas.pyzen(K = 2, max_proposals = 1e3, seed = npr.randint(1011))
-  return z.spa(sizes, indices_s, data)
+
+  ndata = 50000
+  sizes = np.array(npr.randint(5,9, size = (ndata,)), dtype = np.uint64)
+  indices_s = []
+  for i in range(ndata):
+    new_indices = random.sample(xrange(10), sizes[i])
+    new_indices.sort()
+    indices_s.extend(new_indices)
+    
+  indices_s = np.array(indices_s, dtype = np.uint64)
+  data = npr.randn(sizes.sum())
+  
+  z = pyzentas.pyzen(K = 100, max_rounds = 10000, max_itok = 15.001, seed = npr.randint(1011), with_tests = False)
+
+  do_refinement = True
+  refinement_algorithm = "yinyang"
+  rf_max_rounds = 3000;
+  rf_max_time = 10000.;
+  
+  
+  X = z.spa(sizes, indices_s, data, do_refinement, refinement_algorithm, rf_max_rounds, rf_max_time)
 
   
 

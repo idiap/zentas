@@ -23,6 +23,8 @@ class ClaransL3 : public BaseClaransL23 {
 
   public: 
 
+  virtual std::string get_kmedoids_method_string() override final {return "clarans-3";}    
+    
   ClaransL3(const SkeletonClustererInitBundle & sb, const ExtrasBundle & eb): BaseClaransL23 (sb, eb) {}
     
   private:
