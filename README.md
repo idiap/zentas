@@ -1,57 +1,82 @@
-What
+# ZENTAS
+
+A C++ and (optional) Python tool for partitional clustering around centers.
+
+## WHAT
 -------------------------------------------
-Fast and versatile CLARANS, as described at xx-xx-xx containing
 
-(1) Shared library with C++ headers
+Highly optimised and versatile implementations of K-Medoids and K-Means. More information at [arXiv 1609.04723](https://arxiv.org/abs/1609.04723). 
 
-(2) Python library
 
-Requirements
+
+### K-Medoids a.k.a. K-Centers
 -------------------------------------------
-Minimal installation requirements:
 
--- Cmake version 3.0 or greater
+Given *N* elements *x(1)...x(N)*, select *K* elements indexed by *c(1)...c(K)*, so as to minimise  *sum(i=1...N) min(k=1...K) E(distance (x(i), x(c(k))))* where *distance* is a valid distance and *E* is a non-decreasing function with *E(0) = 0*.
 
+Metric *distance* options are  
+  * for sparse and dense vectors : l-0, l-1, l-2, l-infinity
+  * for sequence data : Levenshtein and Normalised Levenshtein.
+  
+  
+Energy *E* options are  
+  * identity, quadratic, cubic, square-potential, exponential, and logarithmic.
 
-In addition, for the Python library you will need:
-
--- Python and Cython
-
-
-Configuring
+### K-Means for dense and sparse vector data  
 -------------------------------------------
-If you do NOT want the Python library, comment out the final line in the topmost CMakeLists.txt file, so that it reads
-`#add_subdirectory(python)`
+   * minimise sum of squares of l2 distances to cluster mean   
+   * minimise sum of l1 distances to cluster dimension-wise median
 
 
-Building
+## PREREQUISITES
 -------------------------------------------
+* CMake
+* clang C++ compiler 
+* for the Python library: Cython and Python
+
+
+## CONFIGURE WITH CMAKE
+-------------------------------------------
+
+If you do NOT what the Python library, first comment out the line `add_subdirectory(python)` in CMakeLists.txt:
 
 ```
-mkdir build
-cd build
-cmake ..
-make 
-``` 
+#add_subdirectory(python)
+```
 
+Now create a build directory:
+```
+mkdir build; cd build;
+```
+
+Next configure cmake:
+```
+cmake ..
+```
+
+## BUILD
+-------------------------------------------
+The library can be built, from the `build` directory 
+
+```
+make -j4
+```
 
 The shared library should now be in ./build/zentas (libzentas.so in Linux) and the Python shared library in ./build/python (pyzentas.so in Linux). These can be moved/copied elsewhere manually. 
 
 
-Using
+## USING
 -------------------------------------------
-Example use cases of the C++ library and headers are in testsexamples, with the corresponding executables in build/testsexamples. There is an example of clustering dense vectors (exdense.cpp), sparse vectors (exsparse.cpp), and strings (exwords.cpp).
+Example use cases of the C++ library and headers are in testsexamples, with the corresponding executables in build/testsexamples. There is an example of clustering dense vectors (exdense.cpp), sparse vectors (exsparse.cpp), and sequences (exwords.cpp). 
 
-To use the Python library, make sure pyzentas.so is on PYTHONPATH, for example you can use `sys.path.append(/path/to/pyzentas.so)`. There is only one clustering function for all data types, metrics, energies and optimisation levels. To use pyzentas interactively (using iPython for example), try
-
+To use the Python library, make sure pyzentas.so is on PYTHONPATH, for example you can use `sys.path.append(/path/to/pyzentas.so)`. Examples using pyzentas are in python/examples.py.  More information can be obtained from the doc strings, try 
 ```
 import pyzentas
-pyzentas.pyzentas?
-```
-
-At the bottom of the function string are example uses. More examples using pyzentas are in python/examples.py
+help(pyzentas)
+``` 
 
 
-Doesn't work, or missing a feature?
+## Doesn't work, or missing a feature?
 -------------------------------------------
 Please raise an issue in the zentas repository
+
