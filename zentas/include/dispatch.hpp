@@ -1,3 +1,6 @@
+// Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
+// Written by James Newling <jnewling@idiap.ch>
+
 #ifndef ZEN_DISPATCH_HPP
 #define ZEN_DISPATCH_HPP
 
