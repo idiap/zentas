@@ -21,7 +21,7 @@ ctypedef fused floating87:
   cython.float
   cython.double
 
-cdef extern from "zentasinfo.hpp" namespace "nszen":
+cdef extern from "zentas/zentasinfo.hpp" namespace "nszen":
   
   string get_python_init_string() except +;
   string get_python_txt_seq_string() except +;
@@ -31,7 +31,7 @@ cdef extern from "zentasinfo.hpp" namespace "nszen":
   string get_output_verbose_string() except +;
 
 
-cdef extern from "zentas.hpp" namespace "nszen":
+cdef extern from "zentas/zentas.hpp" namespace "nszen":
 
   # dense vectors 
   void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement, string rf_alg,size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +;
