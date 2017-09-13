@@ -8,14 +8,23 @@ set(${PROJECT_NAME}_VERSION 0.1)
 set(${PROJECT_NAME}_VERSION_MAJOR 0)
 set(${PROJECT_NAME}_VERSION_MINOR 1)
 
-# this flag should not really be set in CMakeLists.txt.
-SET(CMAKE_BUILD_TYPE Release)
+option(BUILD_PYTHON_LIB "Build Python library" ON)
+option(BUILD_R_LIB "Build R library (NOT yet functioning)" OFF)
+option(BUILD_SHARED_LIBS "Build shared library" ON)
+
+## this flag should not really be set in CMakeLists.txt.
+#SET(CMAKE_BUILD_TYPE Release)
+
+set( CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." )
+
+#Where to find FindCython.cmake
+list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 
 find_package (Threads REQUIRED)
 
-option(BUILD_SHARED_LIBS "Build shared library" ON)
 
-# optional, comment out if clang is not available
+
+#preferred compiler. TODO : make optional.
 SET (CMAKE_CXX_COMPILER "clang++")
 
 add_definitions(-DPATH_DATADIR="${CMAKE_CURRENT_SOURCE_DIR}/data/")
@@ -23,8 +32,11 @@ add_definitions(-DPATH_DATADIR="${CMAKE_CURRENT_SOURCE_DIR}/data/")
 add_subdirectory(zentas)
 add_subdirectory(testsexamples)
 
-# python code. It requires cython (and only builds with certain versions). You might want to comment this out.
-add_subdirectory(python)
+if (BUILD_PYTHON_LIB)
+  find_package(Cython REQUIRED)
+  add_subdirectory(python)
+endif()
 
-#R code. You might want to comment this out.
-#add_subdirectory(R)
+if (BUILD_R_LIB)
+  add_subdirectory(R)
+endif()
