@@ -12,8 +12,8 @@ namespace zentas
 namespace outputwriting
 {
 
-OutputWriter::OutputWriter(bool to_terminal, bool to_file, std::string filename)
-  : to_terminal(to_terminal), to_file(to_file), filename(filename)
+OutputWriter::OutputWriter(bool to_terminal_, bool to_file_, std::string filename_)
+  : to_terminal(to_terminal_), to_file(to_file_), filename(filename_)
 {
   if (to_file == true)
   {

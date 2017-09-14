@@ -79,6 +79,7 @@ double BaseClarans::get_delta_hat_l3(
 
   /* some workers  */
   double dist_k_j2;
+  
   size_t random_index;
   std::vector<std::pair<size_t, size_t>> start_end;
   double adist;
@@ -197,7 +198,8 @@ double BaseClarans::get_delta_hat_l3(
       {
         /* unpack for convenience  */
         size_t k         = ndet_k[ki];
-        double dist_k_j2 = ndet_dists_k_j2[ki];
+        //double 
+        dist_k_j2 = ndet_dists_k_j2[ki];
         size_t s_index   = ndet_starting_inds[ki];
         size_t f_index   = ndet_final_inds[ki];
 
@@ -442,7 +444,8 @@ double BaseClarans::get_delta_E_hoeffding_l3(
       {
         /* unpack for convenience  */
         size_t k         = ndet_k[ki];
-        double dist_k_j2 = ndet_dists_k_j2[ki];
+        //double 
+        dist_k_j2 = ndet_dists_k_j2[ki];
         size_t s_index   = ndet_starting_inds[ki];
         size_t f_index   = ndet_final_inds[ki];
 

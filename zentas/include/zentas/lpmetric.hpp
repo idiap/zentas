@@ -67,7 +67,7 @@ class BaseLpDistance
   size_t ncalcs    = 0;
   size_t calccosts = 0;
 
-  BaseLpDistance(size_t dimension) : dimension(dimension) {}
+  BaseLpDistance(size_t d) : dimension(d) {}
 
   size_t get_ncalcs() { return ncalcs; }
 

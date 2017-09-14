@@ -39,7 +39,7 @@ struct VariableLengthSample
   public:
   size_t               size;
   const TAtomic* const values;
-  VariableLengthSample(size_t size, const TAtomic* const values) : size(size), values(values) {}
+  VariableLengthSample(size_t sz, const TAtomic* const vals) : size(sz), values(vals) {}
   std::string str() const
   {
     std::stringstream ss;
@@ -58,8 +58,8 @@ struct VariableLengthInitBundle
   size_t               ndata;
   const size_t* const  sizes;
   const TAtomic* const data;
-  VariableLengthInitBundle(size_t ndata, const size_t* const sizes, const TAtomic* const data)
-    : ndata(ndata), sizes(sizes), data(data)
+  VariableLengthInitBundle(size_t ndata_, const size_t* const sizes_, const TAtomic* const data_)
+    : ndata(ndata_), sizes(sizes_), data(data_)
   {
   }
 };
@@ -71,8 +71,8 @@ struct ConstLengthInitBundle
   size_t               ndata;
   size_t               dimension;
   const TAtomic* const data;
-  ConstLengthInitBundle(size_t ndata, size_t dimension, const TAtomic* const data)
-    : ndata(ndata), dimension(dimension), data(data)
+  ConstLengthInitBundle(size_t ndata_, size_t dimension_, const TAtomic* const data_)
+    : ndata(ndata_), dimension(dimension_), data(data_)
   {
   }
 };
@@ -82,11 +82,11 @@ struct SparseVectorDataInitBundle : public VariableLengthInitBundle<TAtomic>
 {
   public:
   const size_t* const indices_s;
-  SparseVectorDataInitBundle(size_t               ndata,
-                             const size_t* const  sizes,
-                             const TAtomic* const data,
-                             const size_t* const  indices_s)
-    : VariableLengthInitBundle<TAtomic>(ndata, sizes, data), indices_s(indices_s)
+  SparseVectorDataInitBundle(size_t               ndata_,
+                             const size_t* const  sizes_,
+                             const TAtomic* const data_,
+                             const size_t* const  indices_s_)
+    : VariableLengthInitBundle<TAtomic>(ndata_, sizes_, data_), indices_s(indices_s_)
   {
   }
 };
@@ -105,8 +105,8 @@ struct BaseDataIn
   size_t         dimension;
   const TAtomic* data;
 
-  BaseDataIn(size_t ndata, size_t dimension, const TAtomic* const data)
-    : ndata(ndata), dimension(dimension), data(data)
+  BaseDataIn(size_t ndata_, size_t dimension_, const TAtomic* const data_)
+    : ndata(ndata_), dimension(dimension_), data(data_)
   {
   }
   BaseDataIn(const ConstLengthInitBundle<TAtomic>& ib)
@@ -191,9 +191,9 @@ class BaseVarLengthDataIn : public BaseDataIn<TAtomic>
   double              mean_size;
 
   public:
-  BaseVarLengthDataIn(size_t ndata, const size_t* const sizes, const TAtomic* const data)
+  BaseVarLengthDataIn(size_t ndata, const size_t* const sizes_, const TAtomic* const data)
     : BaseDataIn<TAtomic>(ndata, std::numeric_limits<size_t>::max(), data),
-      sizes(sizes),
+      sizes(sizes_),
       v_c_sizes(ndata + 1, 0),
       max_size(0),
       mean_size(0)

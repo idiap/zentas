@@ -19,8 +19,8 @@ struct SparseVectorSample
   size_t               size;
   const TAtomic* const values;
   const size_t* const  indices;
-  SparseVectorSample(size_t size, const TAtomic* const values, const size_t* const indices)
-    : size(size), values(values), indices(indices)
+  SparseVectorSample(size_t sz, const TAtomic* const vals, const size_t* const inds)
+    : size(sz), values(vals), indices(inds)
   {
   }
 };

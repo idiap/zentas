@@ -49,11 +49,11 @@ struct ClustererInitBundle
   const TMetricInitializer&          metric_initializer;
   const ExtrasBundle&                eb;
 
-  ClustererInitBundle(const SkeletonClustererInitBundle& sc,
-                      const TDataIn&                     datain,
-                      const TMetricInitializer&          metric_initializer,
+  ClustererInitBundle(const SkeletonClustererInitBundle& sc_,
+                      const TDataIn&                     datain_,
+                      const TMetricInitializer&          metric_initializer_,
                       const ExtrasBundle&                eb_)
-    : sc(sc), datain(datain), metric_initializer(metric_initializer), eb(eb_)
+    : sc(sc_), datain(datain_), metric_initializer(metric_initializer_), eb(eb_)
   {
   }
 };

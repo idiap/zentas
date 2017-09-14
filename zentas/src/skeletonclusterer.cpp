@@ -51,7 +51,8 @@ void XNearestInfo::reset(XNearestInfo& nearest_x_infos)
   e_x = nearest_x_infos.e_x;
 }
 
-XNearestInfo::XNearestInfo(size_t a_x, double d_x, double e_x) : a_x(a_x), d_x(d_x), e_x(e_x) {}
+XNearestInfo::XNearestInfo(size_t a_x_, double d_x_, double e_x_) : a_x(a_x_), d_x(d_x_), e_x(e_x_) 
+{}
 
 std::string XNearestInfo::get_string()
 {
@@ -225,19 +226,19 @@ double SkeletonClusterer::get_time_remaining()
   }
 }
 
-size_t SkeletonClusterer::get_start(size_t ti, size_t nthreads, size_t j_A, size_t j_Z)
+size_t SkeletonClusterer::get_start(size_t ti, size_t nthreads_, size_t j_A, size_t j_Z)
 {
   size_t n_js = j_Z - j_A;
   double t_fl = static_cast<double>(ti);
-  size_t j_a  = j_A + (t_fl / static_cast<double>(nthreads)) * n_js;
+  size_t j_a  = j_A + (t_fl / static_cast<double>(nthreads_)) * n_js;
   return j_a;
 }
 
-size_t SkeletonClusterer::get_end(size_t ti, size_t nthreads, size_t j_A, size_t j_Z)
+size_t SkeletonClusterer::get_end(size_t ti, size_t nthreads_, size_t j_A, size_t j_Z)
 {
   size_t n_js = j_Z - j_A;
   double t_fl = static_cast<double>(ti);
-  size_t j_z  = j_A + ((t_fl + 1.) / static_cast<double>(nthreads)) * n_js;
+  size_t j_z  = j_A + ((t_fl + 1.) / static_cast<double>(nthreads_)) * n_js;
   return j_z;
 }
 
@@ -1292,9 +1293,9 @@ void SkeletonClusterer::to_leave_cluster_test()
         mowri << "j : " << x << zentas::Endl;
         mowri << "size of to_leave_cluster[k] " << to_leave_cluster[k].size() << zentas::Endl;
         mowri << "members of to_leave_cluster[k]" << zentas::Endl;
-        for (auto& x : to_leave_cluster[k])
+        for (auto& x_ : to_leave_cluster[k])
         {
-          mowri << x << " " << zentas::Flush;
+          mowri << x_ << " " << zentas::Flush;
         }
         mowri << "\n(a,d,e) : " << nearest_1_infos[k][x].get_string() << zentas::Endl;
         mowri << "\nto leave cluster but k is 'k'" << zentas::Endl;
@@ -1389,25 +1390,25 @@ void SkeletonClusterer::info_tests()
       if (d_first_nearest != nearest_1_infos[k][j].d_x)
       {
 
-        std::stringstream errm;
+        std::stringstream strerrm;
 
-        errm << "error detected : d_first_nearest != d_first_nearest\n";
-        errm << "k=" << k << "\n";
-        errm << "j=" << j << "\n";
-        errm << "the " << j << "'th sample in cluster " << k << " is " << string_for_sample(k, j)
+        strerrm << "error detected : d_first_nearest != d_first_nearest\n";
+        strerrm << "k=" << k << "\n";
+        strerrm << "j=" << j << "\n";
+        strerrm << "the " << j << "'th sample in cluster " << k << " is " << string_for_sample(k, j)
              << "\n";
-        errm << "cluster size is " << nearest_1_infos[k].size() << "\n";
-        errm << std::setprecision(20);
-        errm << "get_a1(k,j)=" << get_a1(k, j) << "\n";
-        errm << "just computed first nearest center index: " << k_first_nearest << "\n";
-        errm << "the " << k_first_nearest
+        strerrm << "cluster size is " << nearest_1_infos[k].size() << "\n";
+        strerrm << std::setprecision(20);
+        strerrm << "get_a1(k,j)=" << get_a1(k, j) << "\n";
+        strerrm << "just computed first nearest center index: " << k_first_nearest << "\n";
+        strerrm << "the " << k_first_nearest
              << "'th center is: " << string_for_center(k_first_nearest) << "\n";
-        errm << "just computed distance to this center is: " << d_first_nearest << "\n";
-        errm << "the recorded first nearest center index: " << nearest_1_infos[k][j].a_x << "\n";
-        errm << "the " << nearest_1_infos[k][j].a_x << "'th center is "
+        strerrm << "just computed distance to this center is: " << d_first_nearest << "\n";
+        strerrm << "the recorded first nearest center index: " << nearest_1_infos[k][j].a_x << "\n";
+        strerrm << "the " << nearest_1_infos[k][j].a_x << "'th center is "
              << string_for_center(nearest_1_infos[k][j].a_x) << "\n";
-        errm << "the recorded distance to this center is " << nearest_1_infos[k][j].d_x << "\n";
-        throw zentas::zentas_error(errm.str());
+        strerrm << "the recorded distance to this center is " << nearest_1_infos[k][j].d_x << "\n";
+        throw zentas::zentas_error(strerrm.str());
       }
 
       if (e_first_nearest != nearest_1_infos[k][j].e_x)
@@ -1521,9 +1522,9 @@ void SkeletonClusterer::post_initialise_centers_test()
       std::stringstream errm_ss;
       errm_ss << "initialising indices must be unique, received " << center_indices_init[k]
               << " at least twice. The initialising indices are \n";
-      for (size_t k = 0; k < K; ++k)
+      for (size_t k2 = 0; k2 < K; ++k2)
       {
-        errm_ss << " " << center_indices_init[k] << " ";
+        errm_ss << " " << center_indices_init[k2] << " ";
       }
       errm_ss << "\n";
       throw zentas::zentas_error(errm_ss.str());
@@ -1575,8 +1576,8 @@ void SkeletonClusterer::populate_afk_mc2()
   std::vector<size_t> pseudo_sample(n_pseudo_samples);
 
   double                                 d_ndata = static_cast<double>(ndata);
-  std::uniform_real_distribution<double> dis_uni01(0.0, 1.0);
-  double                                 rand_offset = dis_uni01(gen) / d_ndata;
+  std::uniform_real_distribution<double> dis_uni01_2(0.0, 1.0);
+  double                                 rand_offset = dis_uni01_2(gen) / d_ndata;
 
   unsigned running_index = 0;
   for (size_t i = 0; i < ndata; ++i)
@@ -1649,7 +1650,7 @@ void SkeletonClusterer::populate_afk_mc2()
 
       if ((e_proposal / e_current) * ((e0[sample_index_current] * 2 * ndata + e0_sum) /
                                       (e0[sample_index_proposal] * 2 * ndata + e0_sum)) >
-          dis_uni01(gen))
+          dis_uni01_2(gen))
       {
         e_current            = e_proposal;
         sample_index_current = sample_index_proposal;

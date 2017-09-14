@@ -486,9 +486,9 @@ std::string get_cluster_func_string(std::vector<std::string> dict_keys,
 
     if (dict_map.count(x) == 0)
     {
-      std::stringstream ss;
-      ss << "unrecognised key " << x << ".";
-      throw zentas::zentas_error(ss.str());
+      std::stringstream ss2;
+      ss2 << "(get_cluster_func_string) unrecognised key " << x << ".";
+      throw zentas::zentas_error(ss2.str());
     }
     ss << x << "\n" << squish_shift(dict_map.at(x)) << "\n";
   }

@@ -15,18 +15,18 @@
 namespace nszen
 {
 
-LevenshteinInitializer::LevenshteinInitializer(const size_t        dict_size,
-                                               const double        c_indel,
-                                               const double        c_switch,
-                                               const double* const c_indel_arr,
-                                               const double* const c_switch_arr,
-                                               bool                normalised)
-  : dict_size(dict_size),
-    c_indel(c_indel),
-    c_switch(c_switch),
-    c_indel_arr(c_indel_arr),
-    c_switch_arr(c_switch_arr),
-    normalised(normalised)
+LevenshteinInitializer::LevenshteinInitializer(const size_t        dict_size_,
+                                               const double        c_indel_,
+                                               const double        c_switch_,
+                                               const double* const c_indel_arr_,
+                                               const double* const c_switch_arr_,
+                                               bool                normalised_)
+  : dict_size(dict_size_),
+    c_indel(c_indel_),
+    c_switch(c_switch_),
+    c_indel_arr(c_indel_arr_),
+    c_switch_arr(c_switch_arr_),
+    normalised(normalised_)
 {
 
   bool do_tests = true;
@@ -140,18 +140,18 @@ LevenshteinInitializer::LevenshteinInitializer(const size_t        dict_size,
   }
 }
 
-LevenshteinInitializer::LevenshteinInitializer(const double c_indel,
-                                               const double c_switch,
-                                               bool         normalised)
-  : LevenshteinInitializer(0, c_indel, c_switch, nullptr, nullptr, normalised)
+LevenshteinInitializer::LevenshteinInitializer(const double c_indel_,
+                                               const double c_switch_,
+                                               bool         normalised_)
+  : LevenshteinInitializer(0, c_indel_, c_switch_, nullptr, nullptr, normalised_)
 {
 }
 
-LevenshteinInitializer::LevenshteinInitializer(const size_t        dict_size,
-                                               const double* const c_indel_arr,
-                                               const double* const c_switch_arr,
-                                               bool                normalised)
-  : LevenshteinInitializer(dict_size, 0., 0., c_indel_arr, c_switch_arr, normalised)
+LevenshteinInitializer::LevenshteinInitializer(const size_t        dict_size_,
+                                               const double* const c_indel_arr_,
+                                               const double* const c_switch_arr_,
+                                               bool                normalised_)
+  : LevenshteinInitializer(dict_size_, 0., 0., c_indel_arr_, c_switch_arr_, normalised_)
 {
 }
 
@@ -166,7 +166,7 @@ class MultiIndel
   const double* values;
 
   public:
-  MultiIndel(const double* const values) : values(values) {}
+  MultiIndel(const double* const vs) : values(vs) {}
   MultiIndel() {}
 
   double operator()(size_t i) const { return values[i]; }
@@ -180,7 +180,7 @@ class MultiSwitch
   const size_t  dict_size;
 
   public:
-  MultiSwitch(const double* const values, size_t dict_size) : values(values), dict_size(dict_size)
+  MultiSwitch(const double* const vals, size_t ds) : values(vals), dict_size(ds)
   {
   }
 
@@ -193,7 +193,7 @@ class ConstIndel
   double value;
 
   public:
-  ConstIndel(double value) : value(value) {}
+  ConstIndel(double val) : value(val) {}
   ConstIndel() {}
 
   double operator()(size_t) const { return value; }
@@ -205,7 +205,7 @@ class ConstSwitch
   double value;
 
   public:
-  ConstSwitch(double value) : value(value) {}
+  ConstSwitch(double v) : value(v) {}
 
   double operator()(int i, int j) const { return value * (i != j); }
 };
@@ -333,8 +333,8 @@ class LevenshteinMetric_X
   typedef typename TSDataIn::Sample Sample;
   typedef LevenshteinInitializer    Initializer;
 
-  LevenshteinMetric_X(const TSDataIn& datain, size_t nthreads, const LevenshteinInitializer& li)
-    : v_ncalcs(nthreads, 0),
+  LevenshteinMetric_X(const TSDataIn& datain, size_t nthreads_, const LevenshteinInitializer& li)
+    : v_ncalcs(nthreads_, 0),
 
       dict_size(li.dict_size),
       normalised(li.normalised),
@@ -344,14 +344,14 @@ class LevenshteinMetric_X
       av_c_indel(li.c_indel_arr),
       av_c_switch(li.c_switch_arr, dict_size),
 
-      v_n_cells_visited(nthreads, 0),
-      v_n_cells_visitable(nthreads, 0),
+      v_n_cells_visited(nthreads_, 0),
+      v_n_cells_visitable(nthreads_, 0),
       max_size(datain.get_max_size()),
 
       /* below : making 10*size + 10 makes no difference to performance (speed) */
       memory_size(4 * datain.get_max_size() + 10),
-      nthreads(nthreads),
-      v_mutex0(nthreads)
+      nthreads(nthreads_),
+      v_mutex0(nthreads_)
 
   {
     for (size_t ti = 0; ti < nthreads; ++ti)

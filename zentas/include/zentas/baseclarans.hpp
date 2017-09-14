@@ -41,8 +41,8 @@ struct BaseClaransInitBundle
   size_t max_proposals;
   bool   patient;
 
-  BaseClaransInitBundle(size_t max_proposals, bool patient)
-    : max_proposals(max_proposals), patient(patient)
+  BaseClaransInitBundle(size_t max_proposals_, bool patient_)
+    : max_proposals(max_proposals_), patient(patient_)
   {
   }
 };
