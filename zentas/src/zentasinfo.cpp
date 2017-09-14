@@ -79,6 +79,7 @@ std::map<std::string, std::string> get_den_dict()
   return den_dict;
 }
 
+// TODO : make const static variable of function (so that not constructed unless needed).
 auto spa_dict = get_spa_dict();
 auto seq_dict = get_seq_dict();
 auto den_dict = get_den_dict();
@@ -121,6 +122,7 @@ S cost_indel_S
 )"}};
 }
 
+// TODO : make const static variable of function (so that not constructed unless needed).
 std::map<std::string, std::string> txt_seq_dict = get_txt_seq_dict();
 
 std::map<std::string, std::string> get_output_keys()
@@ -163,6 +165,7 @@ std::map<std::string, std::string> get_output_keys()
     {"nprops", "(for clarans) the number of rejected proposals before one is accepted."}};
 }
 
+// TODO : make const static variable of function (so that not constructed unless needed).
 const std::map<std::string, std::string> output_keys = get_output_keys();
 
 std::string get_us() { return "Newling and Fleuret, 2017 (arXiv 1609.04723)"; }
@@ -180,6 +183,7 @@ std::string get_basic_info()
      << get_us() << ".";
   return ss.str();
 }
+
 
 std::map<std::string, std::tuple<std::string, std::string>> get_parameter_info_map()
 {
@@ -326,6 +330,7 @@ std::map<std::string, std::tuple<std::string, std::string>> get_parameter_info_m
   return pim;
 }
 
+// TODO : make const static variable of function (so that not constructed unless needed).
 const std::map<std::string, std::tuple<std::string, std::string>> parameter_info_map =
   get_parameter_info_map();
 
@@ -340,6 +345,7 @@ std::vector<std::string> get_python_constructor_parms()
   return X;
 }
 
+// TODO : make const static variable of function (so that not constructed unless needed).
 const std::vector<std::string> python_constructor_parms = get_python_constructor_parms();
 
 std::string get_parameter_info_string(std::string parameter)

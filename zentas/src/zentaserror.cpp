@@ -3,7 +3,6 @@
 
 #include <zentas/stringutilbase.hpp>
 #include <zentas/zentaserror.hpp>
-
 #include <iostream>
 #include <sstream>
 

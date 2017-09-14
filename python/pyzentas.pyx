@@ -124,6 +124,8 @@ class pyzen(object):
     # kwargs used just to give hints for the bad input argument message
     **kwargs):
       
+      
+    
     if kwargs.keys():
       argstring = ""
       for x in kwargs.keys():
@@ -158,7 +160,7 @@ class pyzen(object):
 
 
     self.pms = {
-    'K':K,
+    'K':int(K),
     'algorithm': algorithm, 
     'level': level,
     'max_proposals': max_proposals,
@@ -209,7 +211,9 @@ class pyzen(object):
   
   def base_vzentas(self, floating87 [:] X_v, do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, size_t [:] indices_init, pms):
 
+
     cdef void (*cw_vzentas)(size_t, size_t, const floating87 * const, size_t, const size_t * const, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool, string &, size_t seed, double max_time, double min_mE, double max_itok, size_t * const i_f, size_t * const labs, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement, string rf_alg,  size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +
+
   
     if floating87 is double:
       cw_vzentas=&vzentas[double]
@@ -218,6 +222,7 @@ class pyzen(object):
       cw_vzentas=&vzentas[float]
 
     cdef RetBundle rb = RetBundle(self.pms['ndata'], self.pms['K'])
+    
     
     cw_vzentas(pms['ndata'], pms['dimension'], &X_v[0], pms['K'], &indices_init[0], pms['initialisation_method'], pms['algorithm'], pms['level'], pms['max_proposals'], pms['capture_output'], rb.output_string, pms['seed'], pms['max_time'], pms['min_mE'], pms['max_itok'], &rb.indices_final[0], &rb.labels[0], pms['metric'], pms['nthreads'], pms['max_rounds'], pms['patient'], pms['energy'], pms['with_tests'], pms['rooted'], pms['critical_radius'], pms['exponent_coeff'], do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, pms['do_balance_labels'])
 
@@ -242,6 +247,9 @@ class pyzen(object):
       raise RuntimeError("X should be 2-dimensional, i.e. X.shape = (ndata, dimension)")
     
     self.pms['ndata'], self.pms['dimension'] = X.shape    
+    
+    
+    
     return dangerwrap(lambda : self.base_vzentas(X.ravel(), do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, self.pms['indices_init'], self.pms))
 
   ####################################################
@@ -272,7 +280,7 @@ class pyzen(object):
     do_refinement = False, 
     rf_alg = "yinyang", 
     rf_max_rounds = 99999, 
-    rf_max_time = 1e7
+    rf_max_time = int(1e7)
     ):
     """
     spa(rse) clustering
@@ -375,8 +383,9 @@ class pyzen(object):
 
 def kmeans(X, K, seed = 1011, maxtime = 1e9, capture_output = True):
   """
-  Quick-and-easy vanilla k-means for the impatient. For more options, such as different metrics and extended stopping criteria, consider creating a pyzen object and using the class function den for dense clustering. Etc.
+  Quick-and-easy vanilla k-means. For more options, such as different metrics and extended stopping criteria, consider creating a pyzen object and using the class function den for dense clustering. Etc.
   X:               2-D numpy array, ndata x dimension
+  K:               number of clusters
   seed:            random seed
   maxtime:         maximum allotted time to run k-means (excluding initialisation)
   capture_output:  if True, output string is returned in dict.  

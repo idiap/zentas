@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <string>
-
 #include <zentas/outputwriter.hpp>
 #include <zentas/zentaserror.hpp>
 

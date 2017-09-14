@@ -148,32 +148,49 @@ def from_file_example():
   tangerine =  z.txt_seq(filenames_list, outfilename + "N", costfilename)
 
 
+import matplotlib.pyplot as pl  
 def capture_example():
   """
   extracting statistics from runs, with plots
   """
-
+  
   import matplotlib.pyplot as pl  
-  K = 1e2
-  ndata = 1e4
-  centers = np.sqrt(K)*npr.rand(K, 2)
+  K = int(1e3)
+  ndata = int(1e4)
+  dimension = 3
+  #so that distance to nearest ~ 1
+  centers = K**(1./dimension)*npr.rand(K, dimension)
   indices = npr.randint(K, size = (ndata,))
-  data = centers[indices] + 0.5*npr.randn(ndata,2)
-
+  data = centers[indices] + 0.5*npr.randn(ndata,dimension)
+  
   pl.clf()
   pl.ion()
   
-  for init in ["kmeans++", "kmeans++-10", "afk-mc2-10", "afk-mc2-100", "uniform"]:
-    z = pyzentas.pyzen(K = K, capture_output = True, max_time = 0.2, init = init)
-    tangerine = z.den(data)
-    energies = [float(x.split()[0]) for x in tangerine["output"].split("mE=")[2::]]
-    times = [float(x.split()[0]) for x in tangerine["output"].split("Tt=")[2::]]
-    pl.plot(times, energies,  label = init, linestyle = ':', marker = '.')
+  for max_itok in [x/2. for x in range(10)]:
+    for init in ["kmeans++-5"]: #["kmeans++-10", "uniform"]:# "kmeans++", "afk-mc2-10", "afk-mc2-100", ]:
     
-  pl.xscale('log')
+      print "with ", init, max_itok, "."
+      z = pyzentas.pyzen(K = K, capture_output = True, init = init, max_itok  = max_itok, seed = 1011, level = 3)
+      tangerine = z.den(data, do_vdimap = False, do_refinement = True)
+    
+      #print tangerine["output"]
+      #Tracer()()
+    
+      energies = []
+      times = []
+      for l in tangerine["output"].split("\n"):
+        if "mE=" in l and "Tt=" in l and "[R=" not in l:
+          energies.append(float(l.split("mE=")[1].split()[0]))
+          times.append(float(l.split("Tt=")[1].split()[0]))
+      
+      pl.plot(times, energies,  label = init + "[" + str(max_itok) + "]", linestyle = 'none', marker = '.')
+    
+  #pl.xscale('log')
   pl.xlabel("time [ms]")
   pl.ylabel("mean energy")
-  pl.legend()
+  #pl.legend()
+  
+
   
   
 

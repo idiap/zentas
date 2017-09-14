@@ -40,12 +40,21 @@ paths = {
 
 def make_MNIST(dataset = "original", ndata = 100000, dimension = None):
 
+  for p in paths.values():
+    if not os.path.exists(p):
+      print "making dir (if not exist) ", p
+      os.makedirs(p)
+
   print "in make MNIST ( ", dataset, ", ", ndata, ", ", dimension, " ) "
   if dataset == "original":
     cwd = os.getcwd()
     os.chdir(datapaths.datapaths['infiexec'])
+    
+    
     datafn = os.path.join(paths['original'], 'original-%d-ubyte'%(ndata,))
-    print commands.getstatusoutput('infimnist pat 0 %d > %s'%(ndata, datafn))
+    command = './infimnist pat 0 %d > %s'%(ndata, datafn)
+    print "will execute command `" + command + "`"
+    print commands.getstatusoutput(command)
     os.chdir(cwd)
     
   if dataset == "projected":

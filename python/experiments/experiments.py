@@ -1,6 +1,5 @@
 # Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
 # Written by James Newling <jnewling@idiap.ch>
-# zentas is a k-medoids library written in C++ and Python. This file is part of zentas. zentas is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation. zentas is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with zentas. If not, see <http://www.gnu.org/licenses/>.
 
 """
 Further using pyzentas.
@@ -25,11 +24,12 @@ def mnist_example():
   import mnist
   reload(mnist)
   
-  ndata = int(1e4)
-  X = mnist.read_MNIST(dataset = "original", ndata = ndata)
+  ndata = int(1e3)
+  X = mnist.read_MNIST(dataset = "original", ndata = ndata)/1000.
   dimension = X[0].shape[-1]
-  npr.seed(1011)
+  npr.seed(1000)
   
-  z = pyzentas.pyzen(K = 1e3, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 10000, max_rounds = 4, seed = 1011, patient = True, nthreads = 1)
-  do_vdimap = False
-  tangerine =  z.den(X, do_vdimap)
+  
+  z = pyzentas.pyzen(K = 300, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 0, max_rounds = 5000, seed = 1011, patient = True, nthreads = 1, init = "kmeans++-5", with_tests = False)
+  do_vdimap = True
+  tangerine =  z.den(X, do_vdimap, do_refinement = True)

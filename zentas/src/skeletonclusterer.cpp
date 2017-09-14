@@ -385,27 +385,37 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
   km_is_exhausted = false;
   if (n_bins != 1)
   {
+    std::cout << "X1" << std::endl;
     triangular_kmeanspp_aq2(n_bins);
 
+    std::cout << "X2" << std::endl;
     if (km_is_exhausted)
     {
       mowri << "exhausted in " << initialisation_method << ", will revert to kmeans++-1"
             << zentas::Endl;
       kmoo_prepare();
     }
+    std::cout << "X3" << std::endl;
   }
 
   if (km_is_exhausted == true || n_bins == 1)
   {
+    std::cout << "X4" << std::endl;
     km_is_exhausted = false;
 
     triangular_kmeanspp();
+    std::cout << "X5" << std::endl;
+
     if (km_is_exhausted)
     {
       mowri << "exhausted in kmeans++-1, used uniform sampling to complete initialisation"
             << zentas::Endl;
     }
+    std::cout << "X6" << std::endl;
+
   }
+
+  std::cout << "X7" << std::endl;
 
   /* rearrange so that center_indices_init are in order */
   std::vector<std::array<size_t, 2>> vi(K);
@@ -415,11 +425,15 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
     std::get<1>(vi[k]) = k;
   }
 
+  std::cout << "X8" << std::endl;
+
   auto fg = std::less<size_t>();
   std::sort(vi.begin(), vi.end(), [&fg](std::array<size_t, 2>& lhs, std::array<size_t, 2>& rhs) {
     return fg(std::get<0>(lhs), std::get<0>(rhs));
   });
 
+  std::cout << "X9" << std::endl;
+  
   std::vector<size_t> old_to_new(K);
   for (unsigned k = 0; k < K; ++k)
   {
@@ -427,20 +441,24 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
     old_to_new[std::get<1>(vi[k])] = k;
   }
 
+  std::cout << "X10" << std::endl;
+
   for (unsigned i = 0; i < ndata; ++i)
   {
     kmoo_p2bun.k_1(i) = old_to_new[kmoo_p2bun.k_1(i)];
     kmoo_p2bun.k_2(i) = old_to_new[kmoo_p2bun.k_2(i)];
   }
+  std::cout << "X11" << std::endl;
 }
 
 void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
 {
 
   /* experiments so far show that multithreading does not help here, can hurt. what's weird is
-   * that even if nthreads = 1 in the pll version, it's sig slower than the serial version.  */
+   * that even if nthreads = 1 in the pll version, it's still slower than the serial version.  */
   bool   multithread_kmpp = true;
-  double a_distance;
+  
+  //double a_distance;
 
   /* non_tail_k will be how many k's for which only 1/n_bins of the data is used.
    * it will be (n_bins - 1)/n_bins, rounded down to the nearest multiple of n_bins.
@@ -486,7 +504,9 @@ void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
   }
 
   auto update_nearest_info =
-    [&a_distance, this](size_t bin, size_t k_start, size_t k_end, size_t i0, size_t i1) {
+    //[&a_distance, 
+    [this](size_t bin, size_t k_start, size_t k_end, size_t i0, size_t i1) {
+      double some_distance; 
       for (size_t i = i0; i < i1; ++i)
       {
         for (size_t k = k_start; k < k_end; ++k)
@@ -494,8 +514,8 @@ void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
           if (kmoo_cc[aq2p_p2buns[bin].k_1(i) * K + k] <
               aq2p_p2buns[bin].d_1(i) + aq2p_p2buns[bin].d_2(i))
           {
-            set_center_sample_pp_distance(k, bin, i, a_distance);
-            kmpp_inner(i, k, a_distance, aq2p_p2buns[bin]);
+            set_center_sample_pp_distance(k, bin, i, some_distance);
+            kmpp_inner(i, k, some_distance, aq2p_p2buns[bin]);
           }
         }
       }
@@ -1037,7 +1057,7 @@ void SkeletonClusterer::go()
   }
 
   mowri <<
-    R"((The prevent output to terminal, set capture_output to false)
+    R"((To prevent output to terminal, set capture_output to false)
 (For a description of column statistics, consider function get_output_verbose_string())
 )";
 

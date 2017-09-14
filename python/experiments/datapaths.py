@@ -6,6 +6,13 @@ if socket.gethostname() == "goudurix12":
   reload(goudurix12paths)
   datapaths = goudurix12paths.datapaths
 
+
+if socket.gethostname() == "goudurix11":
+  import goudurix11paths
+  reload(goudurix11paths)
+  datapaths = goudurix11paths.datapaths
+  
+  
 else:
   print "unknown host in datapaths.py, certain data paths may need to be set"
 
