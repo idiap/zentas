@@ -24,12 +24,18 @@ def mnist_example():
   import mnist
   reload(mnist)
   
-  ndata = int(1e3)
+  ndata = int(2e3)
   X = mnist.read_MNIST(dataset = "original", ndata = ndata)/1000.
   dimension = X[0].shape[-1]
   npr.seed(1000)
   
   
-  z = pyzentas.pyzen(K = 300, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 0, max_rounds = 5000, seed = 1011, patient = True, nthreads = 1, init = "kmeans++-5", with_tests = False)
-  do_vdimap = True
+  z = pyzentas.pyzen(K = 200, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 0, max_rounds = 5000, seed = 1011, patient = True, nthreads = 1, init = "uniform", with_tests = False)
+  do_vdimap = False
   tangerine =  z.den(X, do_vdimap, do_refinement = True)
+
+
+def rna_example():
+  """
+  pass
+  """

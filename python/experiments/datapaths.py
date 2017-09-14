@@ -7,11 +7,15 @@ if socket.gethostname() == "goudurix12":
   datapaths = goudurix12paths.datapaths
 
 
-if socket.gethostname() == "goudurix11":
+elif socket.gethostname() == "goudurix11":
   import goudurix11paths
   reload(goudurix11paths)
   datapaths = goudurix11paths.datapaths
-  
+
+elif socket.gethostname() == "idbean":
+  import idbeanpaths
+  reload(idbeanpaths)
+  datapaths = idbeanpaths.datapaths
   
 else:
   print "unknown host in datapaths.py, certain data paths may need to be set"
@@ -26,3 +30,10 @@ else:
   # path to where mnist data can be written
   datapaths["infidpath"] = tobeset
   
+
+  # path to where the files cod-rna  cod-rna.r  cod-rna.t
+  # from website 
+  # https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#cod-rna
+  #are.
+  datapaths["rnaraw"] = tobeset
+  datapaths["rnawrite"] = tobeset
