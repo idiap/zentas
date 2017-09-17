@@ -13,6 +13,7 @@ class zentas_error : public std::runtime_error
 {
   public:
   zentas_error(const std::string& what_arg);
+  //~zentas_error() = default;
 };
 
 void zentas_warning(const std::string& warning);

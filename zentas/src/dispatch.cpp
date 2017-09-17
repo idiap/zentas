@@ -7,6 +7,7 @@
 #include <vector>
 #include <zentas/energyinit.hpp>
 #include <zentas/zentaserror.hpp>
+#include <zentas/dispatch.hpp>
 
 namespace nszen
 {

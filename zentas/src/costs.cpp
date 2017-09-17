@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <zentas/zentaserror.hpp>
+#include <zentas/costs.hpp>
 
 namespace costs
 {

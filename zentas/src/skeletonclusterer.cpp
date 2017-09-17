@@ -119,7 +119,7 @@ SkeletonClusterer::SkeletonClusterer(const SkeletonClustererInitBundle& sb)
     max_itok(sb.max_itok),
     labels(sb.labels),
     nthreads(sb.nthreads),
-    nthreads_fl(static_cast<double>(nthreads)),
+    nthreads_fl(nthreads),
     max_rounds(sb.max_rounds),
     energy(sb.energy),
     with_tests(sb.with_tests),
@@ -230,7 +230,7 @@ size_t SkeletonClusterer::get_start(size_t ti, size_t nthreads_, size_t j_A, siz
 {
   size_t n_js = j_Z - j_A;
   double t_fl = static_cast<double>(ti);
-  size_t j_a  = j_A + (t_fl / static_cast<double>(nthreads_)) * n_js;
+  size_t j_a  = j_A + static_cast<size_t>((t_fl / static_cast<double>(nthreads_)) * n_js);
   return j_a;
 }
 
@@ -238,7 +238,7 @@ size_t SkeletonClusterer::get_end(size_t ti, size_t nthreads_, size_t j_A, size_
 {
   size_t n_js = j_Z - j_A;
   double t_fl = static_cast<double>(ti);
-  size_t j_z  = j_A + ((t_fl + 1.) / static_cast<double>(nthreads_)) * n_js;
+  size_t j_z  = j_A + static_cast<size_t>(((t_fl + 1.) / static_cast<double>(nthreads_)) * n_js);
   return j_z;
 }
 
@@ -366,7 +366,7 @@ void SkeletonClusterer::print_ndatas()
 
 void SkeletonClusterer::default_initialise_with_kmeanspp()
 {
-  unsigned n_bins;
+  size_t n_bins;
   if (initialisation_method == "kmeans++")
   {
     n_bins = 1;
@@ -457,7 +457,7 @@ void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
 
   /* tail_k is how many k's have use all the data (at the end) */
   size_t tail_k = K - non_tail_k;
-  reset_p2buns_dt(n_bins);
+  reset_p2buns_dt(static_cast<unsigned>(n_bins));
   aq2p_original_indices = std::vector<std::vector<size_t>>(n_bins);
   aq2p_p2buns           = std::vector<P2Bundle>(n_bins);
 

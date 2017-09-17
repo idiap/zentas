@@ -97,6 +97,8 @@ struct BaseDataIn
   public:
   /* used downstream ? */
   using AtomicType = TAtomic;
+  
+  virtual ~BaseDataIn() = default;
 
   size_t ndata;
   /* dimension takes on a different meaning,

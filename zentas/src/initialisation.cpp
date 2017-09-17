@@ -37,8 +37,13 @@ size_t extract_INT(std::string initialisation_method, size_t prefix_length)
     }
     ++striter;
   }
+  
+  auto retval = std::stoi(digit_substring);
+  if (retval < 0){
+    throw zentas::zentas_error("negative integer in extract_INT");
+  }
 
-  return std::stoi(digit_substring);
+  return static_cast<size_t>(retval);
 }
 
 void populate_from_indices_init(const size_t* const center_indices_init_in,

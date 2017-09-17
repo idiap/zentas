@@ -1,5 +1,6 @@
 include(EnableCompilerWarnings)
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11  -Wall -Wextra -pedantic " )
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11  -Wall -Wextra -pedantic");
+# -Weverything -Wno-c++98-compat -Wno-float-equal -Wno-conditional-uninitialized -Wno-padded -Wno-weak-vtables -Wno-sign-conversion " )
 
 include_directories("include")
 

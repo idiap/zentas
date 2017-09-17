@@ -153,7 +153,7 @@ class L2Minimiser
 {
   public:
   size_t dimension;
-  L2Minimiser(size_t dimension_) : dimension(dimension_){};
+  L2Minimiser(size_t dimension_) : dimension(dimension_){}
 
   void set_center(const std::string&                           energy,
                   const std::function<const TNumber*(size_t)>& f_sample,
@@ -213,7 +213,7 @@ class L1Minimiser
 {
   public:
   size_t dimension;
-  L1Minimiser(size_t dimension_) : dimension(dimension_){};
+  L1Minimiser(size_t dimension_) : dimension(dimension_){}
 
   void set_center(const std::string&                           energy,
                   const std::function<const TNumber*(size_t)>& f_sample,
@@ -265,7 +265,7 @@ class NoimplMinimiser
 {
   public:
   size_t dimension;
-  NoimplMinimiser(size_t dimension_) : dimension(dimension_){};
+  NoimplMinimiser(size_t dimension_) : dimension(dimension_){}
 
   template <typename TPointerCenter, typename TFunction>
   void set_center(const std::string& energy,

@@ -11,6 +11,7 @@
 namespace txt
 {
 
+
 void append_txt(std::string filename, std::vector<char>& data, std::vector<size_t>& sizes);
 }
 

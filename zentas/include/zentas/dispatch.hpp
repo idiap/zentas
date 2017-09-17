@@ -8,10 +8,15 @@
 #include <zentas/energyinit.hpp>
 #include <zentas/extrasbundle.hpp>
 #include <zentas/voronoil0.hpp>
+#include <zentas/claransl0.hpp>
+#include <zentas/claransl1.hpp>
+#include <zentas/claransl2.hpp>
+#include <zentas/claransl3.hpp>
 
 namespace nszen
 {
 
+                        
 void scrutinize_input_1(const EnergyInitialiser& energy_initialiser,
                         std::string              energy,
                         size_t                   K,
@@ -206,6 +211,8 @@ void zentas_base(const TInitBundle&                   datain_ib,
   }
 #endif
 }
+
+
 }
 
 #endif
