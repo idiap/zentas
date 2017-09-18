@@ -31,9 +31,14 @@ import time
 
 import rna
 reload(rna)
-K = 100
-X = rna.get_rna()[10000:20000, :]
+K = 300
+X = rna.get_rna()[0:40000, :]
 
+
+noise = 0*1e-11*npr.randn(X.shape[0], X.shape[1])
+
+X += noise
+#npr.randn(20000, 8) #
 
 indices_init = np.arange(K, dtype = np.uint64)
 C_init = X[indices_init]
@@ -42,30 +47,36 @@ C_init = X[indices_init]
 #print np.sum(np.min(np.sum((np.expand_dims(X, axis = 1) - np.expand_dims(sklc.cluster_centers_, axis = 0))**2, axis = 2), axis = 1)) / X.shape[0]
 #get_sklearn_mses(X, K, 100000)
 
+
 from sklearn.cluster import KMeans
 t0 = time.time()
-sklc = KMeans(n_clusters = K, init = C_init, max_iter = 100000000, tol = 1e-9, verbose = 0, n_init = 1, algorithm = "full")#, algorithm = "elkan") #k-means++
-sklc.fit(X)
+
+#sklc = KMeans(n_clusters = K, init = C_init, max_iter = 100000000, tol = 1e-9, verbose = 0, n_init = 1)#, algorithm = "full")#, algorithm = "elkan") #k-means++
+#sklc.fit(X)
+#
+
 t1 = time.time()
 
 
 #"random"
 
 
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0., max_time = 1000.0, max_rounds = 50000, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = False, capture_output = True)
+z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0., max_time = .0, max_rounds = 0, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = False, capture_output = True)
 tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 1000000000, rf_alg = "exponion")
+print tangerine["output"].split("\n")[-2::]
 
 t2 = time.time()
 
 sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
 import kmeans
+
 bla = kmeans.get_clustering(X, K, verbose = 1, init = indices_init)
 
 t3 = time.time()
 
-print "skl : ", t1 - t0, "   :   ", -sklc.score(X)/X.shape[0]
-print "zen : ", t2 - t1, "   :   ", pyzentas.get_processed_output(tangerine['output'])["mE"][-1]
-print "eak : ", t3 - t2, "   :   ", "hmm"
+print "skl (time) ", t1 - t0, "   (accuracy)   " #, -sklc.score(X)/X.shape[0]
+print "zen (time) ", t2 - t1, "   (accuracy)   " #, pyzentas.get_processed_output(tangerine['output'])["mE"][-1]
+print "eak (time) ", t3 - t2, "   (accuracy)   " #, "hmm"
 
 
 
