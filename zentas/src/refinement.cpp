@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <tuple>
+#include <cmath>
 #include <zentas/skeletonclusterer.hpp>
 namespace nszen
 {
@@ -24,7 +25,7 @@ void ExponionData::specific_custom_remove_last(size_t k) { v_b[k].pop_back(); }
 void ExponionData::specific_set_n_groups(size_t K, size_t ndata)
 {
   (void)ndata;
-  rf_n_groups = K / 10;
+  rf_n_groups =  K < 11 ? 1 :  K / 10;
 }
 
 void ExponionData::specific_final_initialise_memory() {}
@@ -81,6 +82,8 @@ void YinyangData::specific_set_n_groups(size_t K, size_t ndata)
   // otherwise (1e9 / (ndata*sizeof(double)))
   rf_n_groups = std::min<size_t>(
     K / 9, static_cast<size_t>(max_ngbs * 1e9 / ((sizeof(size_t) + sizeof(double)) * ndata)));
+  
+  rf_n_groups = rf_n_groups < 2 ? 1 : rf_n_groups;
 }
 
 void YinyangData::specific_swap(size_t k1, size_t k2)

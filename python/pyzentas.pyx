@@ -400,6 +400,38 @@ def kmeans(X, K, seed = 1011, maxtime = 1e9, capture_output = True):
   
   maxtime = 123123
   return z.den(X, True, True, algorithm, 1000000, maxtime)
+
+
+def get_processed_output(output):
+  """
+  Input : output string from clustering.
+  Output : dict with columns as entries
+  """  
+  keys = ["R", "mE", "Tp", "Ti", "Tb", "Tc", "Tu", "Tr", "Tt", "lg2nc(c)", "lg2nc", "pc", "nprops"]
+  results = {}
+  for k in keys:
+    results[k] = []
+  
+  lines = output.split("\n")
+  for l in lines:
+    if l[0:2] == "R=" and l.split()[1][0:3] == "mE=" in l:
+      frags = l.split()
+      vals = {}
+      for f in frags:
+        if "=" not in f:
+          pass
+        else:
+          k, v = f.split("=")
+          vals[k] = float(v)
+      for k in keys:
+        if k in vals.keys():
+          results[k].append(vals[k])
+        else:
+          results[k].append(-1)
+  
+  for k in keys:
+    results[k] = np.array(results[k])
+  return results
   
   
 pyzen.__init__.__func__.__doc__ = get_python_init_string()

@@ -59,9 +59,10 @@ def dense_data_example():
   rf_max_time = 10000.;
   tangerine =  z.den(data, do_vdimap, do_refinement, refinement_algorithm, rf_max_rounds, rf_max_time)
 
-  run_eakmeans = False
+  run_eakmeans = True
   if run_eakmeans:
     # yinyang of eakmeans is ~35% faster.
+    sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
     import kmeans
     indices = random.sample(xrange(ndata), K)
     indices = np.array(indices, dtype = np.uint64)
