@@ -43,7 +43,7 @@ void set_costs(std::string filename,
                std::map<char, double>& indel_costs)
 {
 
-  std::ifstream input(filename);
+  std::ifstream input(filename.c_str());
   if (!input.good())
   {
     throw zentas::zentas_error("Error opening '" + filename + "'. ");
@@ -51,7 +51,7 @@ void set_costs(std::string filename,
 
   std::string line, name, content;
 
-  std::vector<std::vector<std::string>> splitlines;
+  std::vector<std::vector<std::string> > splitlines;
   while (std::getline(input, line).good())
   {
     if (line.size() != 0)

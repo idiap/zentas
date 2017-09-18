@@ -67,6 +67,8 @@ class BaseLpDistance
   size_t ncalcs    = 0;
   size_t calccosts = 0;
 
+  virtual ~BaseLpDistance() = default;
+  
   BaseLpDistance(size_t d) : dimension(d) {}
 
   size_t get_ncalcs() { return ncalcs; }
@@ -316,14 +318,14 @@ class TLpDistance : public BaseLpDistance<TNumber>
   {
     ++ncalcs;
     a_distance = 0;
-    double diff;
+    TNumber diff;
     size_t d;
     correct_threshold(threshold);
     for (d = 0; d < dimension; ++d)
     {
       diff = *(a + d) - *(b + d);
       update_distance(a_distance, diff);
-      if (a_distance > threshold)
+      if (a_distance > static_cast<TNumber>(threshold))
       {
         a_distance = std::numeric_limits<double>::max();
         calccosts += (1 + d);
@@ -346,7 +348,7 @@ class TLpDistance : public BaseLpDistance<TNumber>
     size_t b_pos = 0;
     /* if both a and b have unchecked indices remaining */
     bool   indices_remain = (a.size > 0 && b.size > 0);
-    double diff;
+    TNumber diff;
 
     correct_threshold(threshold);
 

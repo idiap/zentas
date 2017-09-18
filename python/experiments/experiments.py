@@ -39,29 +39,30 @@ def rna_example():
   """
   pass
   """
-  pass
+  
 
 import time
 import rna
 reload(rna)
-K = 200
-X = rna.get_rna()[0:10000, :]
+K = 500
+X = rna.get_rna()[0:50000, :]
+
 from sklearn.cluster import KMeans
 t0 = time.time()
 
-print "running skl..."
-sklc = KMeans(n_clusters = K, init = "k-means++", max_iter = 7, tol = 1e-9, algorithm = "full")
-sklc.fit(X)
-print sklc.score(X)
-print "done."
+#print "running skl..."
+#sklc = KMeans(n_clusters = K, init = "random", max_iter = 20, tol = 1e-9, algorithm = "full") #k-means++
+#sklc.fit(X)
+#print sklc.score(X)
+#print "done."
 
 t1 = time.time()
-print "sklearn took : " , t1 - t0
+#print "sklearn took : " , t1 - t0
 
 
 print "running zentas..."
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 0, max_rounds = 5000, seed = 1011, patient = True, nthreads = 3, init = "kmeans++-5", with_tests = False, capture_output = True)
-tangerine =  z.den(X, do_vdimap = False, do_refinement = True)
+z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_itok = 2, max_time = 1000, max_rounds = 1000, seed = 1011, patient = True, nthreads = 1, init = "kmeans++-5", with_tests = False, capture_output = False) #kmeans++-5
+tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 100000, rf_alg = "exponion")
 print "done."
 
 t2 = time.time()

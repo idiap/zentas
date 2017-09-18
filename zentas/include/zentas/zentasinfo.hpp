@@ -5,8 +5,16 @@
 #define ZENTASINFO_HPP
 
 #include <sstream>
+#include <map>
 namespace nszen
 {
+
+
+std::map<std::string, std::string> init_rf_dict();
+const std::map<std::string, std::string> & get_rf_dict();
+
+std::map<std::string, std::string> init_seq_dict();
+const std::map<std::string, std::string> & get_seq_dict();
 
 std::string get_equals_line(size_t);
 std::string get_char_line(size_t n, char c);

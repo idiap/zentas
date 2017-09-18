@@ -180,7 +180,7 @@ class VCenterData
   {
     for (size_t d = 0; d < dimension; ++d)
     {
-      data[i * dimension + d] = *(datapoint + d) * alpha;
+      data[i * dimension + d] = *(datapoint + d) * static_cast<TAtomic>(alpha);
     }
   }
 

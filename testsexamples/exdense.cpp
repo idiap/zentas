@@ -15,19 +15,19 @@ int cluster_dense()
 {
 
   // generating random data
-  size_t              ndata     = 1000000;
+  size_t              ndata     = 100000;
   size_t              dimension = 5;
   std::vector<TFloat> data(ndata * dimension);
   srand(time(NULL));
   for (size_t i = 0; i < data.size(); ++i)
   {
-    data[i] = (static_cast<float>(rand() % 1000000)) / 1000000.;
+    data[i] = (static_cast<TFloat>(rand() % 1000000)) / TFloat(1000000);
   }
 
   data[dimension * ndata / 2] = 1000000.;
 
   // set initialising medoid indices to be {0,...,K-1}
-  size_t              K = 2000;
+  size_t              K = 200;
   std::vector<size_t> indices_init(K);
   for (size_t i = 0; i < K; ++i)
   {

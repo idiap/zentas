@@ -78,8 +78,8 @@ void populate_uniformly(size_t* const                          center_indices_in
                         std::uniform_int_distribution<size_t>& dis,
                         std::default_random_engine&            gen)
 {
-  bool   accepted;
-  size_t proposed_i;
+  bool   accepted {false};
+  size_t proposed_i {0};
   for (size_t k = 0; k < K; ++k)
   {
     accepted = false;
