@@ -4,7 +4,15 @@
 ####################################################
 
 cmake_minimum_required(VERSION 3.0)
+
+#preferred compiler. TODO : remove this 
+# (see https://cmake.org/Wiki/CMake_FAQ#How_do_I_use_a_different_compiler.3F).
+SET (CMAKE_CXX_COMPILER "clang++")
+
+
 project(zentas)
+
+
 
 set(${PROJECT_NAME}_VERSION 0.1)
 set(${PROJECT_NAME}_VERSION_MAJOR 0)
@@ -18,14 +26,12 @@ set( CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options ar
 
 #Where to find FindCython.cmake
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
+
+
+
 find_package (Threads REQUIRED)
 
-#preferred compiler. TODO : make optional.
-SET (CMAKE_CXX_COMPILER "clang++")
-
 add_definitions(-DPATH_DATADIR="${CMAKE_CURRENT_SOURCE_DIR}/data/")
-
-
 add_subdirectory(zentas)
 add_subdirectory(testsexamples)
 
