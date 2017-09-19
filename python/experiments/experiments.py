@@ -1,11 +1,4 @@
-# Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
-# Written by James Newling <jnewling@idiap.ch>
-
 import matplotlib.pyplot as pl
-"""
-Further using pyzentas.
-"""
-
 import sys
 import random
 import numpy as np
@@ -14,73 +7,102 @@ import numpy.random as npr
 #where is pyzentas.so ? Make sure this is correct.
 sys.path.append("../../build/python")
 import pyzentas
-
 from IPython.core.debugger import Tracer 
-
 import time
+import rna
+reload(rna)
+
+
+
+
 
 #def get_sklearn_mses(X, K, max_iter):
-  #print "time taken : ", time.time() - t0
-  
+  #print "time taken : ", time.time() - t0  
   #Tracer()()
-
 
 ##def a_random_example():
 #X = npr.randn(10000, 3)
 #K = 500
 
-import rna
-reload(rna)
-K = 300
-X = rna.get_rna()[0:40000, :]
+
+#X = 0*rna.get_rna()[0:40000, 2::]
 
 
-noise = 0*1e-11*npr.randn(X.shape[0], X.shape[1])
+#noise = 1e-1*npr.randn(X.shape[0], X.shape[1])
+#X += noise
 
-X += noise
+
+#npr.seed(1000)
+#X = npr.randn(40000, 8)
+
 #npr.randn(20000, 8) #
 
-indices_init = np.arange(K, dtype = np.uint64)
-C_init = X[indices_init]
 
-#my_score = np.sum((np.expand_dims(X, axis = 1) - np.expand_dims(sklc.cluster_centers_, axis = 0))**2, axis = 1).shape
-#print np.sum(np.min(np.sum((np.expand_dims(X, axis = 1) - np.expand_dims(sklc.cluster_centers_, axis = 0))**2, axis = 2), axis = 1)) / X.shape[0]
-#get_sklearn_mses(X, K, 100000)
+def go(X, K):
+  
+
+  indices_init = np.arange(K, dtype = np.uint64)
+  C_init = X[indices_init]
+
+  
+  withskl = False
+  witheak = True
+  
+  if withskl == True:
+    from sklearn.cluster import KMeans
+    sklc = KMeans(n_clusters = K, init = C_init, max_iter = 100000000, tol = 1e-20, verbose = 0, n_init = 1) #, algorithm = "elkan")#, )#, algorithm = "elkan") #k-means++
+    tsk0 = time.time()
+    sklc.fit(X)
+    tsk1 = time.time()
+    print np.sum(np.min(np.sum((np.expand_dims(X, axis = 1) - np.expand_dims(sklc.cluster_centers_, axis = 0))**2, axis = 2), axis = 1)) / X.shape[0]
+  
+
+  if witheak:
+    sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
+    import kmeans
+    teak0 = time.time()
+    bla = kmeans.get_clustering(X, K, verbose = 1, init = indices_init, n_threads = 1)
+    teak1 = time.time()
+
+  
+  
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = .0, max_rounds = 0, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = False, capture_output = True)
+  tzen0 = time.time()
+  tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 1000000000)#8, rf_alg = "yinyang")
+  tzen1 = time.time()
+  print tangerine["output"].split("\n")[-2::]
+  
+  if withskl:
+    print "skl (time) ", tsk1 - tsk0, "     (accuracy)   " #, -sklc.score(X)/X.shape[0]
+  
+  if witheak:
+    print "eak (time) ", teak1 - teak0, "   (accuracy)   " #, "hmm"
+
+  print "zen (time) ", tzen1 - tzen0, "   (accuracy)   " #, pyzentas.get_processed_output(tangerine['output'])["mE"][-1]
+  
 
 
-from sklearn.cluster import KMeans
-t0 = time.time()
+K = 500
+X = npr.randn(50000, 8)
+go(X, K)
 
-#sklc = KMeans(n_clusters = K, init = C_init, max_iter = 100000000, tol = 1e-9, verbose = 0, n_init = 1)#, algorithm = "full")#, algorithm = "elkan") #k-means++
-#sklc.fit(X)
-#
-
-t1 = time.time()
-
-
-#"random"
-
-
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0., max_time = .0, max_rounds = 0, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = False, capture_output = True)
-tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 1000000000, rf_alg = "exponion")
-print tangerine["output"].split("\n")[-2::]
-
-t2 = time.time()
-
-sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
-import kmeans
-
-bla = kmeans.get_clustering(X, K, verbose = 1, init = indices_init)
-
-t3 = time.time()
-
-print "skl (time) ", t1 - t0, "   (accuracy)   " #, -sklc.score(X)/X.shape[0]
-print "zen (time) ", t2 - t1, "   (accuracy)   " #, pyzentas.get_processed_output(tangerine['output'])["mE"][-1]
-print "eak (time) ", t3 - t2, "   (accuracy)   " #, "hmm"
-
-
-
-
+def sklearn_elkan():
+  """
+  scikit learn inconsisitency
+  """
+  import numpy.random as npr
+  from sklearn.cluster import KMeans
+  seed = 51220
+  npr.seed(seed)
+  N = 1200
+  K = 100
+  X = npr.randn(N, 2)**7
+  indices_init = np.arange(K, dtype = np.uint64)
+  C_init = X[indices_init]
+  for alg in ["elkan", "full"]:
+    sklc = KMeans(n_clusters = K, init = C_init, max_iter = int(1e6), tol = 1e-20, verbose = 0, n_init = 1, algorithm = alg)
+    sklc.fit(X)
+    print "final E with algorithm ", alg, "\t : \t", np.sum(np.min(np.sum((np.expand_dims(X, axis = 1) - np.expand_dims(sklc.cluster_centers_, axis = 0))**2, axis = 2), axis = 1)) / X.shape[0]
 
 def mnist_example():
   """
@@ -152,8 +174,6 @@ def the_rna_example():
   pl.legend()
   
   #print "zentas took : " , t2 - t1
-  
-  
-  
-  
-  
+
+
+
