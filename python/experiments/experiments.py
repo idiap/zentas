@@ -66,9 +66,10 @@ def go(X, K):
 
   
   
-  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = .0, max_rounds = 0, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = False, capture_output = True)
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = .0, max_rounds = 0, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = False, capture_output = False)
   tzen0 = time.time()
-  tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 1000000000)#8, rf_alg = "yinyang")
+  print X.shape
+  tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 10000000)#8, rf_alg = "yinyang")
   tzen1 = time.time()
   print tangerine["output"].split("\n")[-2::]
   
@@ -83,6 +84,7 @@ def go(X, K):
 
 
 K = 500
+npr.seed(1000)
 X = npr.randn(50000, 8)
 go(X, K)
 

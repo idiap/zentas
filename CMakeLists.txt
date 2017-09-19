@@ -5,13 +5,17 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-#preferred compiler. TODO : remove this 
+
+#preferred compiler. TODO, make this optional
 # (see https://cmake.org/Wiki/CMake_FAQ#How_do_I_use_a_different_compiler.3F).
 SET (CMAKE_CXX_COMPILER "clang++")
 
-
 project(zentas)
 
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 
 set(${PROJECT_NAME}_VERSION 0.1)

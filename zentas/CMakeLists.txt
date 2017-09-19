@@ -1,9 +1,5 @@
-#preferred compiler. TODO : make optional.
-
-
-include(EnableCompilerWarnings)
+#include(EnableCompilerWarnings)
 add_definitions(-std=c++11)
-
 
 include_directories("include")
 file(GLOB_RECURSE source_files src/*cpp)
