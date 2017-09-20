@@ -8,7 +8,9 @@ cmake_minimum_required(VERSION 3.0)
 
 #preferred compiler. TODO, make this optional
 # (see https://cmake.org/Wiki/CMake_FAQ#How_do_I_use_a_different_compiler.3F).
-SET (CMAKE_CXX_COMPILER "clang++")
+
+#SET (CMAKE_CXX_COMPILER "clang++")
+#SET (CMAKE_CXX_COMPILER "g++")
 
 project(zentas)
 

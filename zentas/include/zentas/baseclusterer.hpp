@@ -424,8 +424,10 @@ class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>
   virtual void set_center_sample_distance(
     size_t k, size_t k1, size_t j1, double threshold, double& distance) override final
   {
+    
     metric.set_distance(
-      centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
+    centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
+            
   }
 
   virtual void set_rf_center_sample_distance(

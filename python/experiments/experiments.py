@@ -45,7 +45,7 @@ def go(X, K):
   C_init = X[indices_init]
 
   
-  withskl = False
+  withskl = True
   witheak = True
   
   if withskl == True:
@@ -61,15 +61,15 @@ def go(X, K):
     sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
     import kmeans
     teak0 = time.time()
-    bla = kmeans.get_clustering(X, K, verbose = 1, init = indices_init, n_threads = 1)
+    bla = kmeans.get_clustering(X, K, verbose = 1, init = indices_init, n_threads = 1)#, algorithm = "syin-ns")
     teak1 = time.time()
 
   
   
-  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = .0, max_rounds = 0, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = False, capture_output = False)
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = .0, max_rounds = 0, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = True, capture_output = True)
   tzen0 = time.time()
   print X.shape
-  tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 10000000)#8, rf_alg = "yinyang")
+  tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 10000000, rf_alg = "exponion")
   tzen1 = time.time()
   print tangerine["output"].split("\n")[-2::]
   
@@ -83,9 +83,12 @@ def go(X, K):
   
 
 
-K = 500
+K = 50
 npr.seed(1000)
-X = npr.randn(50000, 8)
+#X = npr.randn(50000, 8)
+X = rna.get_rna()[0:5000, 2::]
+X += 0.01*npr.randn(X.shape[0], X.shape[1])
+
 go(X, K)
 
 def sklearn_elkan():

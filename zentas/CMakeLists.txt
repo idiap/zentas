@@ -1,4 +1,4 @@
-#include(EnableCompilerWarnings)
+include(EnableCompilerWarnings)
 add_definitions(-std=c++11)
 
 include_directories("include")

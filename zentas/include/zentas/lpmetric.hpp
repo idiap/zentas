@@ -316,6 +316,7 @@ class TLpDistance : public BaseLpDistance<TNumber>
                     double                threshold,
                     double&               a_distance) override final
   {
+    
     ++ncalcs;
     a_distance = 0;
     TNumber diff;
@@ -333,7 +334,12 @@ class TLpDistance : public BaseLpDistance<TNumber>
       }
     }
     calccosts += dimension;
+    
+    
+    
+    //checked, not very slow.
     correct_distance(a_distance);
+    
   }
 
   void set_distance(const SparseVectorSample<TNumber>& a,
@@ -613,7 +619,10 @@ class LpMetric
      * about 2% when dimension = 2. 2%
      * slowdown is negligible, I'm going
      * for this clean code.  */
-    uptr_lpdistance->set_distance(a, b, threshold, distance);
+     
+
+      uptr_lpdistance->set_distance(a, b, threshold, distance);
+    
   }
 
   size_t get_ncalcs() const { return uptr_lpdistance->ncalcs; }
