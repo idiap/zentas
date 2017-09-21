@@ -326,18 +326,23 @@ class TLpDistance : public BaseLpDistance<TNumber>
     {
       diff = *(a + d) - *(b + d);
       update_distance(a_distance, diff);
+      
+      // we don't bother with this check for dense vectors.
+      /*
+       * 
       if (a_distance > static_cast<TNumber>(threshold))
       {
-        a_distance = std::numeric_limits<double>::max();
+        correct_distance(a_distance);
         calccosts += (1 + d);
         return;
       }
+      * 
+      */
+      
     }
     calccosts += dimension;
     
-    
-    
-    //checked, not very slow.
+    //checked, not too slow.
     correct_distance(a_distance);
     
   }

@@ -471,8 +471,6 @@ class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>
   {
     if (get_ndata(k) == 0){
         // do nothing.
-        
-        std::cout << "\n\nempty cluster!\n\n" << std::endl;
     }
     
     if (metric.get_p() != '2')

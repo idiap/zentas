@@ -45,62 +45,98 @@ def go(X, K):
   C_init = X[indices_init]
 
   
-  withskl = True
+  withskl = False
   witheak = False
-  
+  withzen = True
+
+  results = {}
   if withskl == True:
+    results["skl"] = {}
     from sklearn.cluster import KMeans
-    sklc = KMeans(n_clusters = K, init = "k-means++", max_iter = 100000000, tol = 1e-20, verbose = 0, n_init = 1) #, algorithm = "elkan")#, )#, algorithm = "elkan") #k-means++
+    sklc = KMeans(n_clusters = K, init = "k-means++", max_iter = 100000000, tol = 1e-20, verbose = 0, n_init = 1)
     tsk0 = time.time()
     sklc.fit(X)
     tsk1 = time.time()
     sklacc = np.sum(np.min(np.sum((np.expand_dims(X, axis = 1) - np.expand_dims(sklc.cluster_centers_, axis = 0))**2, axis = 2), axis = 1)) / X.shape[0]
+    results["skl"]["t"] = tsk1 - tsk0
+    results["skl"]["mse"] = sklacc
+
   
 
   if witheak:
+    results["eak"] = {}
     sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
     import kmeans
     teak0 = time.time()
-    bla = kmeans.get_clustering(X, K, verbose = 1, init = "kmeans++", n_threads = 1)#, algorithm = "syin-ns")
+    eak = kmeans.get_clustering(X, K, verbose = 1, init = "kmeans++", n_threads = 4)
     teak1 = time.time()
-
-  
-  
-  #indices_init
-  #"kmeans++-5"
-  
-  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 8.0, max_time = 100.0, max_rounds = 10000, seed = npr.randint(1000), patient = True, nthreads = 1, init = indices_init, with_tests = True, capture_output = False, rooted = False)
-  tzen0 = time.time()
-  print X.shape
-  tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 10000000)#, rf_alg = "exponion")
-  tzen1 = time.time()
-  print tangerine["output"].split("\n")[-2::]
-  
-  if withskl:
-    print "skl (time) ", tsk1 - tsk0, "     (accuracy)   ", sklacc
-  
-  if witheak:
-    print "eak (time) ", teak1 - teak0, "   (accuracy)   ", bla['mse']
-
-  print "zen (time) ", tzen1 - tzen0, "   (accuracy)   ", pyzentas.get_processed_output(tangerine['output'])["mE"][-1]
+    results["eak"]["t"] = teak1 - teak0
+    results["eak"]['mse'] = eak["mse"]
   
 
+  if withzen:
+    results["zen"] = {}
+    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 15.0, max_time = 10.0, max_rounds = 10000, seed = npr.randint(1000), patient = True, nthreads = 4, init = "kmeans++-5", with_tests = False, capture_output = False, rooted = False)
+    tzen0 = time.time()
+    tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 10000000)
+    tzen1 = time.time()
+    results["zen"]["t"] = tzen0 - tzen1
+    results["zen"]["out"] = pyzentas.get_processed_output(tangerine['output'])
+    results["zen"]['mse'] = results["zen"]["out"]["mE"][-1]
+    
 
-K = 100
+  return results
+  #if withskl:
+    
+    #print "skl (time) ", tsk1 - tsk0, "     (accuracy)   ", 
+  
+  #if witheak:
+    #print "eak (time) ", teak1 - teak0, "   (accuracy)   ", bla['mse']
+
+  ##for x in tangerine['output'].split("\n")[-10::]:
+    ##print x
+  
+  #print "zen (time) ", tzen1 - tzen0, "   (accuracy)   ", zenout["mE"][-1]
+  
+
+
+K = 2000
 seed = 107 #npr.randint(1000)
 npr.seed(seed)
-X = npr.rand(101, 2)
-#X = rna.get_rna()[0:80000, 2::]
+#X = npr.randn(K*16, 3)
 
-#X = npr.randn(100000, 8)
+X = rna.get_rna() #[0:K*16, 2::]
+X += 0.001*npr.randn(X.shape[0], X.shape[1])
 
-#X += 0.0001*npr.randn(X.shape[0], X.shape[1])
 
-go(X, K)
+#X = npr.rand(K*320, 2)**1
+
+
+for i in range(1):
+  npr.seed()
+  results = go(X, K)
+  
+  pl.ion()
+  
+  #label = "scikit-learn" if i == 0 else None
+  #pl.plot(results["skl"]["t"], results["skl"]["mse"], marker = "o", color = 'k', markersize = 15, label = label)
+  #label = "eakmeans" if i == 0 else None
+  #pl.plot(results["eak"]["t"], results["eak"]["mse"], marker = "x", color = 'k', markersize = 15, label = label)
+
+  
+  pl.plot(results["zen"]["out"]["Tt"]/1000., results["zen"]["out"]["mE"], color = 'k', marker = "+", markersize = 2, linestyle = "none")
+  label = "zentas" if i == 0 else None
+  pl.plot(results["zen"]["out"]["Tt"][-1]/1000., results["zen"]["out"]["mE"][-1], color = 'k', marker = "+", markersize = 15, linestyle = "none", label = label)
+  
+  #print results["skl"]["mse"], results["eak"]["mse"], results["zen"]["out"]["mE"][-1]
+  
+  pl.show()
+
+pl.legend()
 
 def sklearn_elkan():
   """
-  scikit learn inconsisitency
+  scikit learn inconsisitency due to numerical rounding. 
   """
   import numpy.random as npr
   from sklearn.cluster import KMeans

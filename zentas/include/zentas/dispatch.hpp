@@ -154,24 +154,20 @@ void zentas_base(const TInitBundle&                   datain_ib,
 {
   
   
-  std::cout  << " \n K = " << K 
-             << " \n n = " << datain_ib.ndata
-             << " \n initialisation_method = " << initialisation_method
-             << " \n algorithm = " << algorithm
-             << " \n level = " << level 
-             << " \n max_proposals = " << max_proposals 
-             << " \n capture_output = " << capture_output 
-             << " \n patient = " << patient 
-             << " \n energy = " << energy 
-             << " \n do_balanve_labels = " << do_balance_labels 
-             << "\n seed = " << seed;
+             //<< " \n K = " << K 
+             //<< " \n n = " << datain_ib.ndata
+             //<< " \n initialisation_method = " << initialisation_method
+             //<< " \n algorithm = " << algorithm
+             //<< " \n level = " << level 
+             //<< " \n max_proposals = " << max_proposals 
+             //<< " \n capture_output = " << capture_output 
+             //<< " \n patient = " << patient 
+             //<< " \n energy = " << energy 
+             //<< " \n do_balanve_labels = " << do_balance_labels 
+             //<< "\n seed = " << seed;
              
-             if (indices_init != nullptr){
-               std::cout << " \n indices : ";
-               for (int i = 0; i < std::min<int>(K, 5); ++i){
-                std::cout << indices_init[i] << "   " << std::flush;
-              }
-            }
+             
+            
 
 
 

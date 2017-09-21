@@ -26,19 +26,6 @@ def tests():
   run some tests to confirm the algorithms are working correctly. 
   """
   
-  #K = 40
- #n = 400 
- #initialisation_method = kmeans++-5 
- #algorithm = clarans 
- #level = 3 
- #max_proposals = 10000000 
- #capture_output = 0 
- #patient = 0 
- #energy = cubic 
- #do_balanve_labels = 1
-
-
-
   seed = 107 #npr.randint(1000)
   npr.seed(seed)
   data = 10*npr.rand(25, 2)
@@ -49,8 +36,8 @@ def tests():
 
   tangerine =  z.den(data, False, False)
 
-  #z = pyzentas.pyzen(init = np.arange(K), K = K, algorithm = "voronoi", level = 0,  metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
-  #tangerine =  z.den(data, True)
+  z = pyzentas.pyzen(init = np.arange(K), K = K, algorithm = "voronoi", level = 0,  metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
+  tangerine =  z.den(data, True)
 
 
 def dense_data_example():
@@ -63,18 +50,18 @@ def dense_data_example():
   random.seed(1011)
   K = int(1e3)
   ndata = int(7e4)
-  dimension = 3
+  dimension = 5
   data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float64)
   seed = 1011
-  z = pyzentas.pyzen(init = "kmeans++-5", K = K, metric = 'l1', energy = 'identity', exponent_coeff = 0,  max_rounds = 10000, max_time = 10000, max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
+  z = pyzentas.pyzen(init = "kmeans++-5", K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 20, max_time = 1., max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
   do_vdimap = False
   do_refinement = True
-  refinement_algorithm = "exponion"
+  refinement_algorithm = "yinyang"
   rf_max_rounds = 3000;
   rf_max_time = 10000.;
   tangerine =  z.den(data, do_vdimap, do_refinement, refinement_algorithm, rf_max_rounds, rf_max_time)
 
-  run_eakmeans = True
+  run_eakmeans = False
   if run_eakmeans:
     # yinyang of eakmeans is ~35% faster.
     sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
@@ -210,7 +197,7 @@ def capture_example():
   
   
 
-def afk_mc2_failure_mode():
+def afk_mc2_subopt_mode():
   """
   We present an example where afk-mc^2 requires extremely
   long chain lengths to match k-means++. There are K centers,

@@ -989,12 +989,6 @@ void SkeletonClusterer::core_kmedoids_loops()
       x.resize(0);
     }
 
-    std::cout << '\n';
-    for (int k = 0; k < K ; ++k){
-      std::cout << center_IDs[k] << " " << std::flush;
-    }
-    std::cout << std::endl;
-
 
     /* ****************** *
     * UPDATE SAMPLE INFO *
