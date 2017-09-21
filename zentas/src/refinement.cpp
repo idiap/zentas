@@ -1034,27 +1034,28 @@ std::vector<size_t> SkeletonClusterer::get_subclustered_centers_labels(size_t su
   auto sub_bigbang = std::chrono::high_resolution_clock::now();
 
   const size_t* sub_indices_init          = nullptr;
-  std::string   sub_initialisation_method = "kmeans++-5";
-  double        sub_max_time =
-    SkeletonClusterer::time_total / (1000 * 1000 * 25.);  // spent 1/25th of time so far.
+  
+  std::string   sub_initialisation_method = "uniform"; //"kmeans++-5";
+  
+  double        sub_max_time = std::max(0.05, SkeletonClusterer::time_total / (1000 * 1000 * 25.));  // spent 1/12th of time so far.
   double              sub_min_mE        = 0;
   double              sub_max_itok      = 1e8;
   size_t              sub_max_rounds    = 10000000;
-  size_t              sub_max_proposals = 10000000;
-  bool                sub_patient       = true;
+  size_t              sub_max_proposals = 1000; //10000000;
+  bool                sub_patient       = false;
   size_t              sub_nthreads      = 1;
   size_t              sub_seed          = 1011;
-  std::string         sub_energy        = "cubic";
+  std::string         sub_energy        = "cubic";//cubic";
   bool                sub_with_tests    = SkeletonClusterer::with_tests;
   std::vector<size_t> sub_v_indices_final(sub_K);
   std::vector<size_t> sub_v_labels(K);
 
   std::string sub_algorithm("clarans");
   size_t      sub_level          = 3;
-  bool        sub_capture_output = true;
+  bool        sub_capture_output = false;  // should be true
   std::string sub_output_text;
 
-  bool sub_do_balance_labels = true;
+  bool sub_do_balance_labels = true;// // should be true, but then change tests
 
   perform_subclustering(sub_K,
                         sub_indices_init,

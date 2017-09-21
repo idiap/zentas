@@ -25,17 +25,32 @@ def tests():
   """
   run some tests to confirm the algorithms are working correctly. 
   """
-  ndata = int(1e3)
-  K = 5
-  dimension = 2
-  npr.seed(1011)
-  data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
   
-  z = pyzentas.pyzen(K = K, metric = 'l2', algorithm = "voronoi", level = 0, energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
-  tangerine =  z.den(data, True)
+  #K = 40
+ #n = 400 
+ #initialisation_method = kmeans++-5 
+ #algorithm = clarans 
+ #level = 3 
+ #max_proposals = 10000000 
+ #capture_output = 0 
+ #patient = 0 
+ #energy = cubic 
+ #do_balanve_labels = 1
 
-  z = pyzentas.pyzen(init = np.arange(K), K = K, algorithm = "voronoi", level = 0,  metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
-  tangerine =  z.den(data, True)
+
+
+  seed = 107 #npr.randint(1000)
+  npr.seed(seed)
+  data = 10*npr.rand(25, 2)
+  K = 7
+  
+  z = pyzentas.pyzen(K = K, metric = 'l2', algorithm = "clarans", level = 3, energy = 'quadratic', exponent_coeff = 0,  max_time = 2, max_rounds = 30, seed = 1011, nthreads = 1, with_tests = True, patient = False, init = "uniform", do_balance_labels = False, rooted = False)
+
+
+  tangerine =  z.den(data, False, False)
+
+  #z = pyzentas.pyzen(init = np.arange(K), K = K, algorithm = "voronoi", level = 0,  metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
+  #tangerine =  z.den(data, True)
 
 
 def dense_data_example():
