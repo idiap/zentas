@@ -67,6 +67,8 @@ class BaseLpDistance
   size_t ncalcs    = 0;
   size_t calccosts = 0;
 
+  virtual ~BaseLpDistance() = default;
+  
   BaseLpDistance(size_t d) : dimension(d) {}
 
   size_t get_ncalcs() { return ncalcs; }
@@ -314,24 +316,31 @@ class TLpDistance : public BaseLpDistance<TNumber>
                     double                threshold,
                     double&               a_distance) override final
   {
+    
     ++ncalcs;
     a_distance = 0;
-    double diff;
+    TNumber diff;
     size_t d;
     correct_threshold(threshold);
     for (d = 0; d < dimension; ++d)
     {
       diff = *(a + d) - *(b + d);
       update_distance(a_distance, diff);
-      if (a_distance > threshold)
+      
+      // This check helps when the data is pca-ed.
+      if (a_distance > static_cast<TNumber>(threshold))
       {
-        a_distance = std::numeric_limits<double>::max();
+        correct_distance(a_distance);
         calccosts += (1 + d);
         return;
       }
+      
     }
     calccosts += dimension;
+    
+    //checked, not too slow.
     correct_distance(a_distance);
+    
   }
 
   void set_distance(const SparseVectorSample<TNumber>& a,
@@ -346,7 +355,7 @@ class TLpDistance : public BaseLpDistance<TNumber>
     size_t b_pos = 0;
     /* if both a and b have unchecked indices remaining */
     bool   indices_remain = (a.size > 0 && b.size > 0);
-    double diff;
+    TNumber diff;
 
     correct_threshold(threshold);
 
@@ -611,7 +620,10 @@ class LpMetric
      * about 2% when dimension = 2. 2%
      * slowdown is negligible, I'm going
      * for this clean code.  */
-    uptr_lpdistance->set_distance(a, b, threshold, distance);
+     
+
+      uptr_lpdistance->set_distance(a, b, threshold, distance);
+    
   }
 
   size_t get_ncalcs() const { return uptr_lpdistance->ncalcs; }

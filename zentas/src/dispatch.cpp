@@ -41,9 +41,12 @@ void scrutinize_input_1(const EnergyInitialiser& energy_initialiser,
     throw zentas::zentas_error("exponent_coeff > 0 is only allowed with exp energy");
   }
 
-  if (K <= 1)
+  // TODO : is K = 1 really ok ??
+  if (K < 1)
   {
-    throw zentas::zentas_error("K > 1 is a strict requirement");
+    std::stringstream errm;
+    errm << "K >= 1 is a strict requirement. The received K (" << K << ") is not allowed.";
+    throw zentas::zentas_error(errm.str());
   }
 
   if (K >= ndata)

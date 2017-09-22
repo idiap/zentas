@@ -884,7 +884,7 @@ void SkeletonClusterer::output_halt_kmedoids_reason()
   if (time_total >= (max_itok + 1) * (time_to_initialise_centers + time_initialising))
   {
     mowri << "  [" << n_reasons + 1
-          << "] exceeded ratio max_itok (itialize : k-medoids <= " << max_itok << ")"
+          << "] exceeded ratio max_itok (initialize : k-medoids <= " << max_itok << ")"
           << zentas::Flush;
     ++n_reasons;
   }
@@ -961,6 +961,7 @@ void SkeletonClusterer::core_kmedoids_loops()
 
   while (halt_kmedoids() == false)
   {
+    
 
     /* ************** *
     * UPDATE CENTERS *
@@ -987,6 +988,7 @@ void SkeletonClusterer::core_kmedoids_loops()
     {
       x.resize(0);
     }
+
 
     /* ****************** *
     * UPDATE SAMPLE INFO *
