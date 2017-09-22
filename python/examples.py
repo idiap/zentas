@@ -26,16 +26,15 @@ def tests():
   run some tests to confirm the algorithms are working correctly. 
   """
   
-  seed = 107 #npr.randint(1000)
+  #Test 1
+  seed = 107
   npr.seed(seed)
   data = 10*npr.rand(25, 2)
   K = 7
-  
   z = pyzentas.pyzen(K = K, metric = 'l2', algorithm = "clarans", level = 3, energy = 'quadratic', exponent_coeff = 0,  max_time = 2, max_rounds = 30, seed = 1011, nthreads = 1, with_tests = True, patient = False, init = "uniform", do_balance_labels = False, rooted = False)
-
-
   tangerine =  z.den(data, False, False)
 
+  #Test 2
   z = pyzentas.pyzen(init = np.arange(K), K = K, algorithm = "voronoi", level = 0,  metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
   tangerine =  z.den(data, True)
 
@@ -63,7 +62,6 @@ def dense_data_example():
 
   run_eakmeans = False
   if run_eakmeans:
-    # yinyang of eakmeans is ~35% faster.
     sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
     import kmeans
     indices = random.sample(xrange(ndata), K)
@@ -174,19 +172,9 @@ def capture_example():
     
       print "with ", init, max_itok, "."
       z = pyzentas.pyzen(K = K, capture_output = True, init = init, max_itok  = max_itok, seed = 1011, level = 3)
-      tangerine = z.den(data, do_vdimap = False, do_refinement = True)
-    
-      #print tangerine["output"]
-      #Tracer()()
-    
-      energies = []
-      times = []
-      for l in tangerine["output"].split("\n"):
-        if "mE=" in l and "Tt=" in l and "[R=" not in l:
-          energies.append(float(l.split("mE=")[1].split()[0]))
-          times.append(float(l.split("Tt=")[1].split()[0]))
-      
-      pl.plot(times, energies,  label = init + "[" + str(max_itok) + "]", linestyle = 'none', marker = '.')
+      tangerine = z.den(data, do_vdimap = False, do_refinement = True)        
+      oo = pyzentas.get_processed_output(tangerine['output'])
+      pl.plot(oo['tT'], oo['mE'],  label = init + "[" + str(max_itok) + "]", linestyle = 'none', marker = '.')
     
   #pl.xscale('log')
   pl.xlabel("time [ms]")

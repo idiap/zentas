@@ -13,41 +13,12 @@ import rna
 reload(rna)
 
 
-
-
-
-#def get_sklearn_mses(X, K, max_iter):
-  #print "time taken : ", time.time() - t0  
-  #Tracer()()
-
-##def a_random_example():
-#X = npr.randn(10000, 3)
-#K = 500
-
-
-#X = 0*rna.get_rna()[0:40000, 2::]
-
-
-#noise = 1e-1*npr.randn(X.shape[0], X.shape[1])
-#X += noise
-
-
-#npr.seed(1000)
-#X = npr.randn(40000, 8)
-
-#npr.randn(20000, 8) #
-
-
-def go(X, K):
+def go(X, K, withskl, witheak, withzen):
   
-
   indices_init = np.arange(K, dtype = np.uint64)
   C_init = X[indices_init]
 
   
-  withskl = False
-  witheak = False
-  withzen = True
 
   results = {}
   if withskl == True:
@@ -76,9 +47,13 @@ def go(X, K):
 
   if withzen:
     results["zen"] = {}
-    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 15.0, max_time = 10.0, max_rounds = 10000, seed = npr.randint(1000), patient = True, nthreads = 4, init = "kmeans++-5", with_tests = False, capture_output = False, rooted = False)
+    
+    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 10.0, max_time = 5.0, max_proposals = K**2, seed = npr.randint(1000), patient = True, nthreads = 4, init = "kmeans++-4", with_tests = False, capture_output = True, rooted = False)
+        
     tzen0 = time.time()
-    tangerine =  z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 10000000)
+    tangerine =  z.den(X, do_vdimap = True, do_refinement = True, rf_max_rounds = 10000000)
+
+    
     tzen1 = time.time()
     results["zen"]["t"] = tzen0 - tzen1
     results["zen"]["out"] = pyzentas.get_processed_output(tangerine['output'])
@@ -86,53 +61,61 @@ def go(X, K):
     
 
   return results
-  #if withskl:
+
+
+def experiment1():
+
+  withskl = True
+  witheak = False
+  withzen = True
+  K = 200
+  ndata = 20*K
+  seed = 107
+  nruns = 10
+  npr.seed(seed)
+
+  dataset = "random" # or "rna" or "mnist".
+
+  if dataset == "mnist":
+    import mnist
+    reload(mnist)
+    X = mnist.read_MNIST(dataset = "original", ndata = ndata)/1000.
+
+  
+  elif dataset == "rna":
+    X = rna.get_rna()[0:ndata, 2::]
+    X += 0.001*npr.randn(X.shape[0], X.shape[1])
+    npr.seed()
+
+  elif dataset == "random":
+    X = npr.randn(ndata, 2)
     
-    #print "skl (time) ", tsk1 - tsk0, "     (accuracy)   ", 
+  else:
+    raise RuntimeError("unrecognised dataset string")
+
+  for i in range(nruns):
+    npr.seed()
+    results = go(X, K, withskl, witheak, withzen)
+    
+    
+    if withskl:
+      label = "scikit-learn" if i == 0 else None
+      pl.plot(results["skl"]["t"], results["skl"]["mse"], marker = "o", color = 'k', markersize = 15, label = label)
   
-  #if witheak:
-    #print "eak (time) ", teak1 - teak0, "   (accuracy)   ", bla['mse']
-
-  ##for x in tangerine['output'].split("\n")[-10::]:
-    ##print x
+    if witheak:
+      label = "eakmeans" if i == 0 else None
+      pl.plot(results["eak"]["t"], results["eak"]["mse"], marker = "x", color = 'k', markersize = 15, label = label)
   
-  #print "zen (time) ", tzen1 - tzen0, "   (accuracy)   ", zenout["mE"][-1]
-  
+    
+    if withzen:
+      pl.plot(results["zen"]["out"]["Tt"]/1000., results["zen"]["out"]["mE"], color = 'k', marker = "+", markersize = 2, linestyle = "none")
+      label = "zentas" if i == 0 else None
+      pl.plot(results["zen"]["out"]["Tt"][-1]/1000., results["zen"]["out"]["mE"][-1], color = 'k', marker = "+", markersize = 15, linestyle = "none", label = label)
 
-
-K = 2000
-seed = 107 #npr.randint(1000)
-npr.seed(seed)
-#X = npr.randn(K*16, 3)
-
-X = rna.get_rna() #[0:K*16, 2::]
-X += 0.001*npr.randn(X.shape[0], X.shape[1])
-
-
-#X = npr.rand(K*320, 2)**1
-
-
-for i in range(1):
-  npr.seed()
-  results = go(X, K)
-  
   pl.ion()
-  
-  #label = "scikit-learn" if i == 0 else None
-  #pl.plot(results["skl"]["t"], results["skl"]["mse"], marker = "o", color = 'k', markersize = 15, label = label)
-  #label = "eakmeans" if i == 0 else None
-  #pl.plot(results["eak"]["t"], results["eak"]["mse"], marker = "x", color = 'k', markersize = 15, label = label)
-
-  
-  pl.plot(results["zen"]["out"]["Tt"]/1000., results["zen"]["out"]["mE"], color = 'k', marker = "+", markersize = 2, linestyle = "none")
-  label = "zentas" if i == 0 else None
-  pl.plot(results["zen"]["out"]["Tt"][-1]/1000., results["zen"]["out"]["mE"][-1], color = 'k', marker = "+", markersize = 15, linestyle = "none", label = label)
-  
-  #print results["skl"]["mse"], results["eak"]["mse"], results["zen"]["out"]["mE"][-1]
-  
+  pl.figure(1)
+  pl.legend()
   pl.show()
-
-pl.legend()
 
 def sklearn_elkan():
   """
@@ -156,72 +139,16 @@ def mnist_example():
   """
   Showing how do_vdimap can help. 
   """
+  
   import mnist
   reload(mnist)
   
-  ndata = int(2e3)
+  ndata = int(1e3)
   X = mnist.read_MNIST(dataset = "original", ndata = ndata)/1000.
   dimension = X[0].shape[-1]
   npr.seed(1000)
   
   
-  z = pyzentas.pyzen(K = 200, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_time = 0, max_rounds = 5000, seed = 1011, patient = True, nthreads = 1, init = "uniform", with_tests = False)
-  do_vdimap = False
+  z = pyzentas.pyzen(K = 100, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_itok = 10000, max_rounds = 20, seed = 1011, nthreads = 1, init = "kmeans++-5", with_tests = False, patient = False)
+  do_vdimap = True
   tangerine =  z.den(X, do_vdimap, do_refinement = True)
-
-
-def the_rna_example():
-  """
-  pass
-  """
-  
-
-  import time
-  import rna
-  reload(rna)
-  K = 300
-  X = rna.get_rna()[0:6000, :]
-
-  with_skl = True
-  
-  if with_skl:
-
-    t0 = time.time()
-    print "running skl..."
-    sklc = KMeans(n_clusters = K, init = "k-means++", max_iter = 20, tol = 1e-9, algorithm = "full") #k-means++
-    sklc.fit(X)
-    print sklc.score(X)
-    print "done."    
-    t1 = time.time()
-    print "sklearn took : " , t1 - t0
-  
-  
-  #resultsprint "running zentas..."
-  results = {}
-  for init in ["kmeans++-5"]:      #, "uniform"]:
-    results[init] = {}
-    for max_itok in [0, 0.3, 0.6, 0.9, 1.2]:
-      print init, max_itok
-      z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_itok = max_itok, max_time = 1000, max_rounds = 1000, seed = 1011, patient = True, nthreads = 1, init = init, with_tests = False, capture_output = True) #kmeans++-5
-      
-      tangerine = z.den(X, do_vdimap = False, do_refinement = True, rf_max_rounds = 10000, rf_alg = "exponion")
-      
-      results[init][max_itok] = pyzentas.get_processed_output(tangerine['output'])
-  
-    #print "done."
-  
-  #t2 = time.time()
-  
-  pl.figure(3)
-  pl.clf()
-  pl.ion()
-  
-  for k in results.keys():
-    for k2 in results[k].keys():
-      pl.plot(results[k][k2]["Tt"], results[k][k2]["mE"], label = "%s %s"%(k, k2), linestyle = "none", marker = ".")
-  pl.legend()
-  
-  #print "zentas took : " , t2 - t1
-
-
-

@@ -470,10 +470,10 @@ class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>
   virtual void set_rf_center_data(size_t k) override final
   {
     if (get_ndata(k) == 0){
-        // do nothing.
+      // do nothing.
     }
     
-    if (metric.get_p() != '2')
+    else if (metric.get_p() != '2')
     {
       std::function<Sample(size_t)> f_sample(
         [this, k](size_t j) { return cluster_datas[k].at_for_metric(j); });

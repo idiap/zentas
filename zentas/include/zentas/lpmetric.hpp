@@ -327,17 +327,13 @@ class TLpDistance : public BaseLpDistance<TNumber>
       diff = *(a + d) - *(b + d);
       update_distance(a_distance, diff);
       
-      // we don't bother with this check for dense vectors.
-      /*
-       * 
+      // This check helps when the data is pca-ed.
       if (a_distance > static_cast<TNumber>(threshold))
       {
         correct_distance(a_distance);
         calccosts += (1 + d);
         return;
       }
-      * 
-      */
       
     }
     calccosts += dimension;
