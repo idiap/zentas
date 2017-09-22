@@ -1,18 +1,14 @@
 # ZENTAS
 
-A C++ and (optional) Python tool for partitional clustering around centers.
-
-## WHAT
-
-Highly optimised and versatile implementations of K-Medoids and K-Means. More information at [arXiv 1609.04723](https://arxiv.org/abs/1609.04723). 
+A C++ and (optional) Python tool for partitional clustering around centers. Optimised and versatile implementations of K-Medoids and K-Means for various data types. More information at [arXiv 1609.04723](https://arxiv.org/abs/1609.04723). 
 
 
 
 ### K-Medoids a.k.a. K-Centers
 
-Given *N* elements *x(1)...x(N)*, select *K* elements indexed by *c(1)...c(K)*, so as to minimise  *sum(i=1...N) min(k=1...K) E(distance (x(i), x(c(k))))* where *distance* is a valid distance and *E* is a non-decreasing function with *E(0) = 0*.
+Given *N* elements *x(1)...x(N)*, select *K* elements indexed by *c(1)...c(K)*, to minimise  *sum(i=1...N) min(k=1...K) E(distance (x(i), x(c(k))))* where *distance* is a valid distance and *E* is a non-decreasing function with *E(0) = 0*.
 
-Metric *distance* options are  
+*distance* options are  
   * for sparse and dense vectors : l-0, l-1, l-2, l-infinity
   * for sequence data : Levenshtein and Normalised Levenshtein.
   
@@ -29,24 +25,26 @@ Energy *E* options are
 ## PREREQUISITES
 
 * CMake
-* clang C++ compiler 
 * for the Python library: Cython and Python
 
 
 ## CONFIGURE WITH CMAKE
 
-If you do NOT what the Python library, first comment out the line `add_subdirectory(python)` in CMakeLists.txt:
 
-```
-#add_subdirectory(python)
-```
-
-Now create a build directory:
+Create a build directory:
 ```
 mkdir build; cd build;
 ```
 
-Next configure cmake:
+If you do NOT want the Python library, 
+
+```
+cmake -DBUILD_PYTHON_LIB=NO ..
+```
+
+If you do want the Python library, 
+
+
 ```
 cmake ..
 ```
@@ -56,10 +54,10 @@ cmake ..
 The library can be built, from the `build` directory 
 
 ```
-make -j4
+make -j5
 ```
 
-The shared library should now be in ./build/zentas (libzentas.so in Linux) and the Python shared library in ./build/python (pyzentas.so in Linux). These can be moved/copied elsewhere manually. 
+The shared library should now be in ./build/zentas (libzentas.so in Linux) and the Python shared library in ./build/python (pyzentas.so in Linux). These can be moved/copied elsewhere manually, there is currently no install option for zentas.
 
 
 ## USING
