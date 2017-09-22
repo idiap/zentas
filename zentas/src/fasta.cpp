@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <zentas/zentaserror.hpp>
+#include <zentas/fasta.hpp>
 
 namespace txt
 {

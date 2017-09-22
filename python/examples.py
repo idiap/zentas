@@ -25,15 +25,16 @@ def tests():
   """
   run some tests to confirm the algorithms are working correctly. 
   """
-  ndata = int(1e3)
-  K = 5
-  dimension = 2
-  npr.seed(1011)
-  data = np.array(npr.randn(ndata, dimension), dtype = np.float32)  
   
-  z = pyzentas.pyzen(K = K, metric = 'l2', algorithm = "voronoi", level = 0, energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
-  tangerine =  z.den(data, True)
+  #Test 1
+  seed = 107
+  npr.seed(seed)
+  data = 10*npr.rand(25, 2)
+  K = 7
+  z = pyzentas.pyzen(K = K, metric = 'l2', algorithm = "clarans", level = 3, energy = 'quadratic', exponent_coeff = 0,  max_time = 2, max_rounds = 30, seed = 1011, nthreads = 1, with_tests = True, patient = False, init = "uniform", do_balance_labels = False, rooted = False)
+  tangerine =  z.den(data, False, False)
 
+  #Test 2
   z = pyzentas.pyzen(init = np.arange(K), K = K, algorithm = "voronoi", level = 0,  metric = 'l2', energy = 'identity', exponent_coeff = 0,  max_time = 1, max_rounds = 40, seed = 1011, nthreads = 1, with_tests = True, patient = False)
   tangerine =  z.den(data, True)
 
@@ -48,20 +49,20 @@ def dense_data_example():
   random.seed(1011)
   K = int(1e3)
   ndata = int(7e4)
-  dimension = 3
+  dimension = 5
   data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float64)
   seed = 1011
-  z = pyzentas.pyzen(init = "kmeans++-5", K = K, metric = 'l1', energy = 'identity', exponent_coeff = 0,  max_rounds = 10000, max_time = 10000, max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
+  z = pyzentas.pyzen(init = "kmeans++-5", K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 20, max_time = 1., max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
   do_vdimap = False
   do_refinement = True
-  refinement_algorithm = "exponion"
+  refinement_algorithm = "yinyang"
   rf_max_rounds = 3000;
   rf_max_time = 10000.;
   tangerine =  z.den(data, do_vdimap, do_refinement, refinement_algorithm, rf_max_rounds, rf_max_time)
 
   run_eakmeans = False
   if run_eakmeans:
-    # yinyang of eakmeans is ~35% faster.
+    sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
     import kmeans
     indices = random.sample(xrange(ndata), K)
     indices = np.array(indices, dtype = np.uint64)
@@ -171,19 +172,9 @@ def capture_example():
     
       print "with ", init, max_itok, "."
       z = pyzentas.pyzen(K = K, capture_output = True, init = init, max_itok  = max_itok, seed = 1011, level = 3)
-      tangerine = z.den(data, do_vdimap = False, do_refinement = True)
-    
-      #print tangerine["output"]
-      #Tracer()()
-    
-      energies = []
-      times = []
-      for l in tangerine["output"].split("\n"):
-        if "mE=" in l and "Tt=" in l and "[R=" not in l:
-          energies.append(float(l.split("mE=")[1].split()[0]))
-          times.append(float(l.split("Tt=")[1].split()[0]))
-      
-      pl.plot(times, energies,  label = init + "[" + str(max_itok) + "]", linestyle = 'none', marker = '.')
+      tangerine = z.den(data, do_vdimap = False, do_refinement = True)        
+      oo = pyzentas.get_processed_output(tangerine['output'])
+      pl.plot(oo['tT'], oo['mE'],  label = init + "[" + str(max_itok) + "]", linestyle = 'none', marker = '.')
     
   #pl.xscale('log')
   pl.xlabel("time [ms]")
@@ -194,7 +185,7 @@ def capture_example():
   
   
 
-def afk_mc2_failure_mode():
+def afk_mc2_subopt_mode():
   """
   We present an example where afk-mc^2 requires extremely
   long chain lengths to match k-means++. There are K centers,

@@ -22,13 +22,13 @@ namespace outputwriting
 class Flusher
 {
   public:
-  void increment(){};
+  void increment(){}
 };
 
 class Endline
 {
   public:
-  void increment(){};
+  void increment(){}
 };
 
 class OutputWriter

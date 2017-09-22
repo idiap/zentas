@@ -224,7 +224,8 @@ void set_levenshtein_distance(const TSample&    v_vertical,
                               double*           A_acti,
                               int               nrows,
                               int               ncols,
-                              size_t&           n_cells_visited_local,
+                              //size_t&           n_cells_visited_local,
+                              int&              n_cells_visited_local,
                               double&           distance)
 {
 
@@ -346,10 +347,10 @@ class LevenshteinMetric_X
 
       v_n_cells_visited(nthreads_, 0),
       v_n_cells_visitable(nthreads_, 0),
-      max_size(datain.get_max_size()),
+      max_size(static_cast<int>(datain.get_max_size())),
 
       /* below : making 10*size + 10 makes no difference to performance (speed) */
-      memory_size(4 * datain.get_max_size() + 10),
+      memory_size(4 * static_cast<int>(datain.get_max_size()) + 10),
       nthreads(nthreads_),
       v_mutex0(nthreads_)
 
@@ -455,7 +456,8 @@ class LevenshteinMetric_X
 
     int    nrows                 = static_cast<int>(v_vertical.size);
     int    ncols                 = static_cast<int>(v_horizontal.size);
-    size_t n_cells_visited_local = 0;
+    //size_t 
+    int n_cells_visited_local = 0;
 
     // get a mutex and keep it
     size_t mutex_i = dis(gen) % nthreads;
@@ -527,8 +529,8 @@ class LevenshteinMetric_X
     }
 
     ++v_ncalcs[mutex_i];
-    v_n_cells_visitable[mutex_i] += nrows * ncols;
-    v_n_cells_visited[mutex_i] += n_cells_visited_local;
+    v_n_cells_visitable[mutex_i] += static_cast<size_t>(nrows * ncols);
+    v_n_cells_visited[mutex_i] += static_cast<size_t>(n_cells_visited_local);
 
     distance = static_cast<double>(static_cast<float>(distance));
   }

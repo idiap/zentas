@@ -119,7 +119,7 @@ SkeletonClusterer::SkeletonClusterer(const SkeletonClustererInitBundle& sb)
     max_itok(sb.max_itok),
     labels(sb.labels),
     nthreads(sb.nthreads),
-    nthreads_fl(static_cast<double>(nthreads)),
+    nthreads_fl(nthreads),
     max_rounds(sb.max_rounds),
     energy(sb.energy),
     with_tests(sb.with_tests),
@@ -230,7 +230,7 @@ size_t SkeletonClusterer::get_start(size_t ti, size_t nthreads_, size_t j_A, siz
 {
   size_t n_js = j_Z - j_A;
   double t_fl = static_cast<double>(ti);
-  size_t j_a  = j_A + (t_fl / static_cast<double>(nthreads_)) * n_js;
+  size_t j_a  = j_A + static_cast<size_t>((t_fl / static_cast<double>(nthreads_)) * n_js);
   return j_a;
 }
 
@@ -238,7 +238,7 @@ size_t SkeletonClusterer::get_end(size_t ti, size_t nthreads_, size_t j_A, size_
 {
   size_t n_js = j_Z - j_A;
   double t_fl = static_cast<double>(ti);
-  size_t j_z  = j_A + ((t_fl + 1.) / static_cast<double>(nthreads_)) * n_js;
+  size_t j_z  = j_A + static_cast<size_t>(((t_fl + 1.) / static_cast<double>(nthreads_)) * n_js);
   return j_z;
 }
 
@@ -366,7 +366,7 @@ void SkeletonClusterer::print_ndatas()
 
 void SkeletonClusterer::default_initialise_with_kmeanspp()
 {
-  unsigned n_bins;
+  size_t n_bins;
   if (initialisation_method == "kmeans++")
   {
     n_bins = 1;
@@ -385,37 +385,27 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
   km_is_exhausted = false;
   if (n_bins != 1)
   {
-    std::cout << "X1" << std::endl;
     triangular_kmeanspp_aq2(n_bins);
-
-    std::cout << "X2" << std::endl;
     if (km_is_exhausted)
     {
       mowri << "exhausted in " << initialisation_method << ", will revert to kmeans++-1"
             << zentas::Endl;
       kmoo_prepare();
     }
-    std::cout << "X3" << std::endl;
   }
 
   if (km_is_exhausted == true || n_bins == 1)
   {
-    std::cout << "X4" << std::endl;
     km_is_exhausted = false;
 
     triangular_kmeanspp();
-    std::cout << "X5" << std::endl;
 
     if (km_is_exhausted)
     {
       mowri << "exhausted in kmeans++-1, used uniform sampling to complete initialisation"
             << zentas::Endl;
     }
-    std::cout << "X6" << std::endl;
-
   }
-
-  std::cout << "X7" << std::endl;
 
   /* rearrange so that center_indices_init are in order */
   std::vector<std::array<size_t, 2>> vi(K);
@@ -425,14 +415,10 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
     std::get<1>(vi[k]) = k;
   }
 
-  std::cout << "X8" << std::endl;
-
   auto fg = std::less<size_t>();
   std::sort(vi.begin(), vi.end(), [&fg](std::array<size_t, 2>& lhs, std::array<size_t, 2>& rhs) {
     return fg(std::get<0>(lhs), std::get<0>(rhs));
   });
-
-  std::cout << "X9" << std::endl;
   
   std::vector<size_t> old_to_new(K);
   for (unsigned k = 0; k < K; ++k)
@@ -441,14 +427,11 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
     old_to_new[std::get<1>(vi[k])] = k;
   }
 
-  std::cout << "X10" << std::endl;
-
   for (unsigned i = 0; i < ndata; ++i)
   {
     kmoo_p2bun.k_1(i) = old_to_new[kmoo_p2bun.k_1(i)];
     kmoo_p2bun.k_2(i) = old_to_new[kmoo_p2bun.k_2(i)];
   }
-  std::cout << "X11" << std::endl;
 }
 
 void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
@@ -474,7 +457,7 @@ void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
 
   /* tail_k is how many k's have use all the data (at the end) */
   size_t tail_k = K - non_tail_k;
-  reset_p2buns_dt(n_bins);
+  reset_p2buns_dt(static_cast<unsigned>(n_bins));
   aq2p_original_indices = std::vector<std::vector<size_t>>(n_bins);
   aq2p_p2buns           = std::vector<P2Bundle>(n_bins);
 
@@ -901,7 +884,7 @@ void SkeletonClusterer::output_halt_kmedoids_reason()
   if (time_total >= (max_itok + 1) * (time_to_initialise_centers + time_initialising))
   {
     mowri << "  [" << n_reasons + 1
-          << "] exceeded ratio max_itok (itialize : k-medoids <= " << max_itok << ")"
+          << "] exceeded ratio max_itok (initialize : k-medoids <= " << max_itok << ")"
           << zentas::Flush;
     ++n_reasons;
   }
@@ -978,6 +961,7 @@ void SkeletonClusterer::core_kmedoids_loops()
 
   while (halt_kmedoids() == false)
   {
+    
 
     /* ************** *
     * UPDATE CENTERS *
@@ -1004,6 +988,7 @@ void SkeletonClusterer::core_kmedoids_loops()
     {
       x.resize(0);
     }
+
 
     /* ****************** *
     * UPDATE SAMPLE INFO *

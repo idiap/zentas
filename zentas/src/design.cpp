@@ -12,6 +12,7 @@ class Base
   /* function specific to metric or data */
   virtual void f() = 0;
   Base(int x_) : x(x_) {}
+  virtual ~Base() = default;
 };
 
 /* optimised level 1*/
@@ -20,6 +21,7 @@ class OPT1 : public Base
   public:
   int x;
   OPT1(int x_) : Base(1), x(x_) {}
+  virtual ~OPT1() = default;
 };
 
 /* optimised level 2*/
@@ -29,6 +31,7 @@ class OPT2 : public Base
   double y;
   double z;
   OPT2(double y_, double z_) : Base(2), y(y_), z(z_) {}
+  virtual  ~OPT2() = default;
 };
 
 /* metric or data class */
@@ -55,9 +58,9 @@ class X : public TOPT
   }
 };
 
-void test()
-{
-  X<MET1, OPT1> p(13);
-  X<MET1, OPT2> q(13, 11.1);
-  q.f();
-}
+//void test()
+//{
+  //X<MET1, OPT1> p(13);
+  //X<MET1, OPT2> q(13, 11.1);
+  //q.f();
+//}

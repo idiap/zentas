@@ -40,7 +40,7 @@ int main()
   {
     for (unsigned d = 0; d < dimension; ++d)
     {
-      v_data[i * dimension + d] = 0.001 * get_mp1();
+      v_data[i * dimension + d] = 0.001f * static_cast<float>(get_mp1());
     }
 
     for (unsigned e = 0; e < n_true_eigenvalues; ++e)

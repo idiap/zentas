@@ -38,9 +38,10 @@ std::string VoronoiL0::get_round_summary()
 
 void VoronoiL0::update_sample_info()
 {
-  double adistance;
-  double min_distance;
-  size_t min_k;
+  double adistance {0};
+  double min_distance {0};
+  size_t min_k {0};
+  
   for (size_t k = 0; k < K; ++k)
   {
     for (size_t j = 0; j < get_ndata(k); ++j)

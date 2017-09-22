@@ -23,7 +23,7 @@ void make_one_nperp(T* const evs, size_t dim, size_t e)
 {
 
   /* normalise */
-  double l2_norm = 0;
+  T l2_norm = 0;
   for (size_t dp = 0; dp < dim; ++dp)
   {
     l2_norm += evs[e * dim + dp] * evs[e * dim + dp];
@@ -38,12 +38,12 @@ void make_one_nperp(T* const evs, size_t dim, size_t e)
   /* make perpendicular to preceding vectors */
   for (size_t ep = 0; ep < e; ++ep)
   {
-    double inner_eigens = 0;
+    T inner_eigens = 0;
     for (size_t dp = 0; dp < dim; ++dp)
     {
       inner_eigens += evs[e * dim + dp] * evs[ep * dim + dp];
     }
-    double norm2_ = 0;
+    T norm2_ = 0;
     for (size_t dp = 0; dp < dim; ++dp)
     {
       evs[e * dim + dp] -= inner_eigens * evs[ep * dim + dp];
@@ -166,7 +166,7 @@ std::vector<size_t> get_indices_decreasing(size_t dimension, const T* const vari
     for (size_t dp = 0; dp < dimension; ++dp)
     {
       /* if the variance in the dimension is not zero, plop it on the back. */
-      if (std::get<0>(v_i[dp]) > 1e-16 * std::get<0>(v_i[0]))
+      if (std::get<0>(v_i[dp]) > T(1e-16) * std::get<0>(v_i[0]))
       {
         indices_decreasing.push_back(std::get<1>(v_i[dp]));
       }
@@ -186,7 +186,7 @@ void set_unimat(size_t                                 neigs,
   {
     for (size_t dp = 0; dp < dim; ++dp)
     {
-      double rv         = (1 / 1000.) * (dis(gen) % 10000 - 5000);
+      T rv         = T(1e-3) * T(dis(gen) % 10000 - 5000);
       evs[e * dim + dp] = rv;
     }
   }
@@ -272,7 +272,7 @@ void power_method(T* const       eigenvectors,
           for (size_t dp = 0; dp < dim; ++dp)
           {
             sigma_v[dp] +=
-              (1. / n_samples_for_covariance) * inner_product * cov_samples[si * dim + dp];
+              T(T(1) / n_samples_for_covariance) * inner_product * cov_samples[si * dim + dp];
           }
         }
       }
@@ -416,7 +416,7 @@ void vdimap(
 
   /* we have the eigenvectors, now set first neigs dimensions of v_mapped, and remove from the
    * remaining dims */
-  double inner_product;
+  T inner_product;
 
   std::vector<T> final_variance(dim_m, 0);
   std::vector<T> final_mean(dim_m, 0);
@@ -504,18 +504,18 @@ void vdimap(
     size_t i = dis(gen) % ndata;
     size_t j = dis(gen) % ndata;
 
-    double d1 = 0;
+    T d1 = 0;
     for (size_t d = 0; d < dimension; ++d)
     {
-      double diff = ptr_datain[i * dimension + d] - ptr_datain[j * dimension + d];
+      T diff = ptr_datain[i * dimension + d] - ptr_datain[j * dimension + d];
       d1 += diff * diff;
     }
     d1 = std::sqrt(d1);
 
-    double d2 = 0;
+    T d2 = 0;
     for (size_t d = 0; d < dim_m; ++d)
     {
-      double diff = v_mapped[i * dim_m + d] - v_mapped[j * dim_m + d];
+      T diff = v_mapped[i * dim_m + d] - v_mapped[j * dim_m + d];
       d2 += diff * diff;
     }
     d2 = std::sqrt(d2);
@@ -523,9 +523,11 @@ void vdimap(
     {
       throw zentas::zentas_error("inf or nan detected in vdimap");
     }
-
-    double score = std::abs(d1 - d2) / std::abs(d1 + d2 + 1e-7);
-    double toll  = 1e-5;
+    
+    // on getting the floating point of literals correct:
+    // https://stackoverflow.com/questions/22380778/what-is-the-best-way-to-express-a-templated-numeric-literal
+    T score = std::abs(d1 - d2) / std::abs(d1 + d2 + T(1e-7));
+    T toll = T(1e-5);
     if (score > toll)
     {
       std::stringstream ss;

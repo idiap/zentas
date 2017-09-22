@@ -37,8 +37,13 @@ size_t extract_INT(std::string initialisation_method, size_t prefix_length)
     }
     ++striter;
   }
+  
+  auto retval = std::stoi(digit_substring);
+  if (retval < 0){
+    throw zentas::zentas_error("negative integer in extract_INT");
+  }
 
-  return std::stoi(digit_substring);
+  return static_cast<size_t>(retval);
 }
 
 void populate_from_indices_init(const size_t* const center_indices_init_in,
@@ -73,8 +78,8 @@ void populate_uniformly(size_t* const                          center_indices_in
                         std::uniform_int_distribution<size_t>& dis,
                         std::default_random_engine&            gen)
 {
-  bool   accepted;
-  size_t proposed_i;
+  bool   accepted {false};
+  size_t proposed_i {0};
   for (size_t k = 0; k < K; ++k)
   {
     accepted = false;

@@ -74,7 +74,7 @@ double BaseClarans::get_delta_hat_l3(
   }
   else
   {
-    L = std::floor(1. - std::log2(target_min_mean_per_cluster / n_per_cluster));
+    L = static_cast<size_t>(std::floor(1. - std::log2(target_min_mean_per_cluster / n_per_cluster)));
   }
 
   /* some workers  */
@@ -84,7 +84,7 @@ double BaseClarans::get_delta_hat_l3(
   std::vector<std::pair<size_t, size_t>> start_end;
   double adist;
   double n_samples_total_fl;
-  double delta_hat;
+  double delta_hat = 0.;
   size_t n_full_knowledge;
   // double cluster_Z;
   size_t n_nk1;
@@ -297,7 +297,7 @@ double BaseClarans::get_delta_E_hoeffding_l3(
   /* the number of samples used will be n_full_knowledge*2^( {1-L, 2-L, ..L-L} ) */
   double n_per_cluster        = static_cast<double>(ndata) / static_cast<double>(K);
   double target_n_per_cluster = 200.0;
-  size_t L                    = std::ceil(std::log2(n_per_cluster / target_n_per_cluster));
+  size_t L                    = static_cast<size_t>(std::ceil(std::log2(n_per_cluster / target_n_per_cluster)));
 
   /* if Delta < 0 :  P(proposal accepted) > p_null_accept_lb ==> P(proposal rejected in round) <
    * p_null_round_reject_ub. */
@@ -306,17 +306,17 @@ double BaseClarans::get_delta_E_hoeffding_l3(
   double p_null_round_reject_ub = 1 - p_null_round_accept_lb;
 
   /* some workers  */
-  double dist_k_j2;
-  size_t random_index;
+  double dist_k_j2 {0};
+  size_t random_index {0};
   std::vector<std::pair<size_t, size_t>> start_end;
-  double cluster_nM;
-  double cluster_pM;
-  double adist;
-  double n_samples_total_fl;
-  double delta_hat;
-  size_t n_full_knowledge;
-  double cluster_Z;
-  size_t n_nk1;
+  double cluster_nM {0};
+  double cluster_pM {0};
+  double adist {0};
+  double n_samples_total_fl {0};
+  double delta_hat {0};
+  size_t n_full_knowledge {0};
+  double cluster_Z {0};
+  size_t n_nk1 {0};
 
   /* These vectors keep vital statistics for non-eliminated (ndet_x) clusters.
    * Perhaps they should be packaged together for memory reasons. */
@@ -569,9 +569,9 @@ bool BaseClarans::update_centers_greedy()
   bool accept = false;
 
   // the proposal is : make the j_2'th of cluster p_2 the center of cluster k_1
-  size_t k1;
-  size_t k2;
-  size_t j2;
+  size_t k1 {0};
+  size_t k2 {0};
+  size_t j2 {0};
 
   n_proposals = 0;
 
@@ -601,9 +601,9 @@ bool BaseClarans::update_centers_patient()
   std::vector<std::thread> threads;
 
   // global variables
-  size_t best_k1;
-  size_t best_k2;
-  size_t best_j2;
+  size_t best_k1 {0};
+  size_t best_k2 {0}; 
+  size_t best_j2 {0};
   double best_delta_E = std::numeric_limits<double>::max();
 
   size_t time_limit = 0;
@@ -630,8 +630,8 @@ bool BaseClarans::update_centers_patient()
         size_t                                                      time_in_update_centers = 0;
 
         t1 = std::chrono::high_resolution_clock::now();
-        time_in_update_centers =
-          std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+        time_in_update_centers = static_cast<size_t>(
+          std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count());
 
         while (
           (n_proposals_local == 0) || (time_in_update_centers < time_limit) ||
@@ -659,8 +659,8 @@ bool BaseClarans::update_centers_patient()
           ++n_proposals_local;
 
           t1 = std::chrono::high_resolution_clock::now();
-          time_in_update_centers =
-            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+          time_in_update_centers = static_cast<size_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count());
 
           std::lock_guard<std::mutex> lock(mutex_uc3);
           ++n_proposals;

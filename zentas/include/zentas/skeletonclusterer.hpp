@@ -56,6 +56,7 @@ class RefinementData
   /* refinement (k-means etc.) functions defined in refinement.cpp */
 
   public:
+  virtual ~RefinementData() = default;
   using XNInfos = std::vector<std::vector<XNearestInfo>>;
 
   // ALL
@@ -218,6 +219,7 @@ class SkeletonClusterer
 {
 
   public:
+  virtual ~SkeletonClusterer()  = default;
   SkeletonClusterer(const SkeletonClustererInitBundle& sb);
 
   /* TODO certain variables should be private. */
@@ -397,9 +399,9 @@ class SkeletonClusterer
   virtual void update_sample_info() = 0;
   virtual void custom_append(size_t, size_t, size_t) {}
   virtual void custom_replace_with_last(size_t, size_t) {}
-  virtual void custom_replace_with(size_t, size_t, size_t, size_t){};
-  virtual void custom_remove_last(size_t){};
-  virtual void increment_custom_cluster_statistics(size_t, size_t){};
+  virtual void custom_replace_with(size_t, size_t, size_t, size_t){}
+  virtual void custom_remove_last(size_t){}
+  virtual void increment_custom_cluster_statistics(size_t, size_t){}
   virtual void set_normalised_custom_cluster_statistics(size_t k) = 0;
   virtual void set_to_zero_custom_cluster_statistics(size_t k)    = 0;
   virtual std::string get_round_summary()                         = 0;
@@ -547,19 +549,19 @@ class SkeletonClusterer
   {
     (void)k;
     throw zentas::zentas_error("zero_refinement_sum not possible");
-  };
+  }
   virtual void add_to_refinement_sum(size_t k, size_t j)
   {
     (void)k;
     (void)j;
     throw zentas::zentas_error("add_to_refinement_sum not possible");
-  };
+  }
   virtual void subtract_from_refinement_sum(size_t k, size_t j)
   {
     (void)k;
     (void)j;
     throw zentas::zentas_error("subtract_from_refinement_sum not possible");
-  };
+  }
   virtual void append_zero_to_rf_center_data()
   {
     throw zentas::zentas_error("virtual function append_zero_to_rf_center_data not possible");
@@ -628,13 +630,13 @@ class SkeletonClusterer
     (void)k_new, (void)k;
     (void)j;
     throw zentas::zentas_error("rf_cumulative_correction not possible");
-  };
+  }
   virtual void rf_increment_sum(size_t k, size_t j)
   {
     (void)k;
     (void)j;
     throw zentas::zentas_error("rf_increment_sum not possible");
-  };
+  }
 
   virtual void
   perform_subclustering(size_t,

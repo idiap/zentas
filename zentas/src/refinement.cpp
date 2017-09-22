@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <tuple>
+#include <cmath>
 #include <zentas/skeletonclusterer.hpp>
 namespace nszen
 {
@@ -24,7 +25,7 @@ void ExponionData::specific_custom_remove_last(size_t k) { v_b[k].pop_back(); }
 void ExponionData::specific_set_n_groups(size_t K, size_t ndata)
 {
   (void)ndata;
-  rf_n_groups = K / 10;
+  rf_n_groups =  K < 11 ? 1 :  K / 10;
 }
 
 void ExponionData::specific_final_initialise_memory() {}
@@ -81,6 +82,8 @@ void YinyangData::specific_set_n_groups(size_t K, size_t ndata)
   // otherwise (1e9 / (ndata*sizeof(double)))
   rf_n_groups = std::min<size_t>(
     K / 9, static_cast<size_t>(max_ngbs * 1e9 / ((sizeof(size_t) + sizeof(double)) * ndata)));
+  
+  rf_n_groups = rf_n_groups < 2 ? 1 : rf_n_groups;
 }
 
 void YinyangData::specific_swap(size_t k1, size_t k2)
@@ -1031,17 +1034,18 @@ std::vector<size_t> SkeletonClusterer::get_subclustered_centers_labels(size_t su
   auto sub_bigbang = std::chrono::high_resolution_clock::now();
 
   const size_t* sub_indices_init          = nullptr;
-  std::string   sub_initialisation_method = "kmeans++-5";
-  double        sub_max_time =
-    SkeletonClusterer::time_total / (1000 * 1000 * 25.);  // spent 1/25th of time so far.
+  
+  std::string   sub_initialisation_method = "kmeans++-3";
+  
+  double        sub_max_time = std::max(0.05, SkeletonClusterer::time_total / (1000 * 1000 * 12.));  // spent 1/12th of time so far.
   double              sub_min_mE        = 0;
-  double              sub_max_itok      = 1e8;
-  size_t              sub_max_rounds    = 10000000;
-  size_t              sub_max_proposals = 10000000;
-  bool                sub_patient       = true;
+  double              sub_max_itok      = 1e12;
+  size_t              sub_max_rounds    = 100000;
+  size_t              sub_max_proposals = 1000; //10000000;
+  bool                sub_patient       = false;
   size_t              sub_nthreads      = 1;
   size_t              sub_seed          = 1011;
-  std::string         sub_energy        = "cubic";
+  std::string         sub_energy        = "cubic";//cubic";
   bool                sub_with_tests    = SkeletonClusterer::with_tests;
   std::vector<size_t> sub_v_indices_final(sub_K);
   std::vector<size_t> sub_v_labels(K);
