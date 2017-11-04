@@ -1,3 +1,10 @@
+"""
+experiments comparing: 
+ -   scikit-learn, 
+ -   eakmeans and 
+ -   zentas.  
+"""
+
 import matplotlib.pyplot as pl
 import sys
 import random
@@ -14,16 +21,19 @@ reload(rna)
 
 
 def go(X, K, withskl, witheak, withzen):
-  
+  """
+  X : data
+  K : number of clusters
+  withskl, witheak, withzen : bools indicating whether to run with em.
+  """
   indices_init = np.arange(K, dtype = np.uint64)
   C_init = X[indices_init]
-
-  
 
   results = {}
   if withskl == True:
     results["skl"] = {}
     from sklearn.cluster import KMeans
+    # run until convergence, initialise with scikit-learn's special version of k-means++ (see zentas wiki entry for discussion). 
     sklc = KMeans(n_clusters = K, init = "k-means++", max_iter = 100000000, tol = 1e-20, verbose = 0, n_init = 1)
     tsk0 = time.time()
     sklc.fit(X)
@@ -32,7 +42,6 @@ def go(X, K, withskl, witheak, withzen):
     results["skl"]["t"] = tsk1 - tsk0
     results["skl"]["mse"] = sklacc
 
-  
 
   if witheak:
     results["eak"] = {}
@@ -47,34 +56,32 @@ def go(X, K, withskl, witheak, withzen):
 
   if withzen:
     results["zen"] = {}
-    
+    # run with zentas. pipeline here is (1) kmeans++ (2) clarans (3) lloyd.
     z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 10.0, max_time = 5.0, max_proposals = K**2, seed = npr.randint(1000), patient = True, nthreads = 4, init = "kmeans++-4", with_tests = False, capture_output = True, rooted = False)
-        
     tzen0 = time.time()
     tangerine =  z.den(X, do_vdimap = True, do_refinement = True, rf_max_rounds = 10000000)
-
-    
     tzen1 = time.time()
     results["zen"]["t"] = tzen0 - tzen1
     results["zen"]["out"] = pyzentas.get_processed_output(tangerine['output'])
     results["zen"]['mse'] = results["zen"]["out"]["mE"][-1]
     
-
   return results
 
 
 def experiment1():
 
+
+  #set the experiment settings here : 
   withskl = True
   witheak = False
   withzen = True
   K = 200
-  ndata = 20*K
+  ndata = 30*K
   seed = 107
   nruns = 10
   npr.seed(seed)
 
-  dataset = "random" # or "rna" or "mnist".
+  dataset = "rna" #"random" # or "rna" or "mnist".
 
   if dataset == "mnist":
     import mnist
@@ -119,7 +126,7 @@ def experiment1():
 
 def sklearn_elkan():
   """
-  scikit learn inconsisitency due to numerical rounding. 
+  a scikit-learn inconsisitency due to numerical rounding
   """
   import numpy.random as npr
   from sklearn.cluster import KMeans
