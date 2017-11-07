@@ -17,6 +17,12 @@
 namespace nszen
 {
 
+
+void confirm_can_refine(std::string algorithm){
+  if (algorithm == "voronoi"){
+    throw zentas::zentas_error("Cannot currently perform refinement after Voronoi initialization");
+  }
+}
 /* dense vectors */
 
 // 10% -> 80% faster if unrooted (!) :)
@@ -77,6 +83,13 @@ void vzentas(size_t              ndata,
   /* TODO here : ptr_datain: shuffle if requested. Another flag :) */
 
   LpMetricInitializer metric_initializer;
+  
+
+  if (do_refinement){
+    confirm_can_refine(algorithm);
+  }
+
+  
   metric_initializer.reset(metric, do_refinement, rf_alg, rf_max_rounds, rf_max_time);
 
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
@@ -247,7 +260,13 @@ void sparse_vector_zentas(size_t              ndata,
   auto bigbang = std::chrono::high_resolution_clock::now();
 
   LpMetricInitializer metric_initializer;
+  
+  if (do_refinement){
+    confirm_can_refine(algorithm);
+  }
+  
   metric_initializer.reset(metric, do_refinement, rf_alg, rf_max_rounds, rf_max_time);
+
 
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
 
