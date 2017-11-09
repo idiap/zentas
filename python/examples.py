@@ -62,7 +62,7 @@ def dense_data_example():
 
   run_eakmeans = False
   if run_eakmeans:
-    sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
+    sys.path.append(datapaths.datapaths["eaklibdir"])
     import kmeans
     indices = random.sample(xrange(ndata), K)
     indices = np.array(indices, dtype = np.uint64)

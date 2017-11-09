@@ -17,13 +17,60 @@
 namespace nszen
 {
 
-
-void confirm_can_refine(std::string algorithm){
-  if (algorithm == "voronoi"){
-    throw zentas::zentas_error("Cannot currently perform refinement after Voronoi initialization");
+void confirm_can_refine(std::string algorithm)
+{
+  if (algorithm == "voronoi")
+  {
+    // throw zentas::zentas_error("Cannot currently perform refinement after Voronoi
+    // initialization");
   }
 }
 /* dense vectors */
+
+template <typename T>
+void set_vcenters(size_t              ndata,
+                  size_t              dimension,
+                  const T* const      ptr_datain,
+                  size_t              K,
+                  const size_t* const labels,
+                  T*                  centers)
+{
+
+  std::vector<size_t> counts(K, 0);
+
+  // set centers to zero
+  for (size_t k = 0; k < K; ++k)
+  {
+    for (size_t d = 0; d < dimension; ++d)
+    {
+      centers[k * dimension + d] = 0;
+    }
+  }
+
+  // going through the data, add samples.
+  for (size_t i = 0; i < ndata; ++i)
+  {
+    counts[labels[i]] += 1;
+    for (size_t d = 0; d < dimension; ++d)
+    {
+      centers[labels[i] * dimension + d] += ptr_datain[i * dimension + d];
+    }
+  }
+
+  // normalise.
+  for (size_t k = 0; k < K; ++k)
+  {
+    for (size_t d = 0; d < dimension; ++d)
+    {
+      centers[k * dimension + d] /= counts[k];
+    }
+  }
+}
+
+template void
+set_vcenters(size_t, size_t, const float* const, size_t, const size_t* const, float*);
+template void
+set_vcenters(size_t, size_t, const double* const, size_t, const size_t* const, double*);
 
 // 10% -> 80% faster if unrooted (!) :)
 template <typename T>
@@ -83,13 +130,12 @@ void vzentas(size_t              ndata,
   /* TODO here : ptr_datain: shuffle if requested. Another flag :) */
 
   LpMetricInitializer metric_initializer;
-  
 
-  if (do_refinement){
+  if (do_refinement)
+  {
     confirm_can_refine(algorithm);
   }
 
-  
   metric_initializer.reset(metric, do_refinement, rf_alg, rf_max_rounds, rf_max_time);
 
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
@@ -260,13 +306,13 @@ void sparse_vector_zentas(size_t              ndata,
   auto bigbang = std::chrono::high_resolution_clock::now();
 
   LpMetricInitializer metric_initializer;
-  
-  if (do_refinement){
+
+  if (do_refinement)
+  {
     confirm_can_refine(algorithm);
   }
-  
-  metric_initializer.reset(metric, do_refinement, rf_alg, rf_max_rounds, rf_max_time);
 
+  metric_initializer.reset(metric, do_refinement, rf_alg, rf_max_rounds, rf_max_time);
 
   EnergyInitialiser energy_initialiser(critical_radius, exponent_coeff);
 

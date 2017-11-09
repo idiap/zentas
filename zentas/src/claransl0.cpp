@@ -18,7 +18,6 @@ void ClaransL0::put_sample_custom_in_cluster(size_t              i,
   put_nearest_2_infos_margin_in_cluster(i, k_nearest, distances);
 }
 
-
 void ClaransL0::custom_append(size_t k_new, size_t k, size_t j)
 {
   nearest_2_infos_margin_append(k_new, k, j);

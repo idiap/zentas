@@ -12,8 +12,6 @@
 namespace nszen
 {
 
-
-
 std::map<std::string, std::string> init_rf_dict()
 {
   return {
@@ -28,12 +26,11 @@ std::map<std::string, std::string> init_rf_dict()
     {"rf_max_time", "the maximum amount of time in seconds of refinenment before halting."},
   };
 }
-const std::map<std::string, std::string> & get_rf_dict(){
+const std::map<std::string, std::string>& get_rf_dict()
+{
   static const std::map<std::string, std::string> rf_dict = init_rf_dict();
   return rf_dict;
 }
-
-
 
 std::map<std::string, std::string> init_seq_dict()
 {
@@ -49,12 +46,11 @@ std::map<std::string, std::string> init_seq_dict()
      "array of size (number of bases)*(number of bases)"},
   };
 }
-const std::map<std::string, std::string> & get_seq_dict(){
+const std::map<std::string, std::string>& get_seq_dict()
+{
   static const std::map<std::string, std::string> seq_dict = init_seq_dict();
   return seq_dict;
 }
-
-
 
 std::map<std::string, std::string> init_spa_dict()
 {
@@ -70,7 +66,8 @@ std::map<std::string, std::string> init_spa_dict()
   }
   return spa_dict;
 }
-const std::map<std::string, std::string> & get_spa_dict(){
+const std::map<std::string, std::string>& get_spa_dict()
+{
   static const std::map<std::string, std::string> spa_dict = init_spa_dict();
   return spa_dict;
 }
@@ -94,21 +91,16 @@ std::map<std::string, std::string> init_den_dict()
   return den_dict;
 }
 
-const std::map<std::string, std::string> & get_den_dict()
+const std::map<std::string, std::string>& get_den_dict()
 {
   const static std::map<std::string, std::string> den_dict = init_den_dict();
   return den_dict;
 }
 
 // TODO : make const static variable of function (so that not constructed unless needed).
-//auto spa_dict = get_spa_dict();
+// auto spa_dict = get_spa_dict();
 
-
-
-  
-  
-
-//auto den_dict = get_den_dict();
+// auto den_dict = get_den_dict();
 
 std::map<std::string, std::string> init_txt_seq_dict()
 {
@@ -146,17 +138,14 @@ S cost_indel_S
    cost_swam_XY is the cost of swapping X and Y,  
    cost_indel_S is the cost of indel A, etc.
 )"}};
-
-  
 }
-const std::map<std::string, std::string> & get_txt_seq_dict(){
-  const static std::map<std::string, std::string> txt_seq_dict = init_txt_seq_dict();  
+const std::map<std::string, std::string>& get_txt_seq_dict()
+{
+  const static std::map<std::string, std::string> txt_seq_dict = init_txt_seq_dict();
   return txt_seq_dict;
 }
-  
 
 // TODO : make const static variable of function (so that not constructed unless needed).
-
 
 std::map<std::string, std::string> init_output_keys()
 {
@@ -198,14 +187,13 @@ std::map<std::string, std::string> init_output_keys()
     {"nprops", "(for clarans) the number of rejected proposals before one is accepted."}};
 }
 
-const std::map<std::string, std::string> & get_output_keys(){
+const std::map<std::string, std::string>& get_output_keys()
+{
   static const std::map<std::string, std::string> output_keys = init_output_keys();
   return output_keys;
 }
 
 // TODO : make const static variable of function (so that not constructed unless needed).
-
-
 
 std::string get_us() { return "Newling and Fleuret, 2017 (arXiv 1609.04723)"; }
 
@@ -222,8 +210,6 @@ std::string get_basic_info()
      << get_us() << ".";
   return ss.str();
 }
-
-
 
 std::map<std::string, std::tuple<std::string, std::string>> init_parameter_info_map()
 {
@@ -370,10 +356,10 @@ std::map<std::string, std::tuple<std::string, std::string>> init_parameter_info_
   return pim;
 }
 
-
-const std::map<std::string, std::tuple<std::string, std::string>> & get_parameter_info_map(){
+const std::map<std::string, std::tuple<std::string, std::string>>& get_parameter_info_map()
+{
   static const std::map<std::string, std::tuple<std::string, std::string>> parameter_info_map =
-  init_parameter_info_map();
+    init_parameter_info_map();
   return parameter_info_map;
 }
 
@@ -388,7 +374,8 @@ std::vector<std::string> init_python_constructor_parms()
   return X;
 }
 
-const std::vector<std::string> & get_python_constructor_parms() {
+const std::vector<std::string>& get_python_constructor_parms()
+{
   static const std::vector<std::string> python_constructor_parms = init_python_constructor_parms();
   return python_constructor_parms;
 }
@@ -552,7 +539,8 @@ std::string get_cluster_func_string(std::vector<std::string> dict_keys,
 
 std::string get_python_txt_seq_string()
 {
-  return get_cluster_func_string({"filenames_list", "outfilename", "costfilename"}, get_txt_seq_dict());
+  return get_cluster_func_string({"filenames_list", "outfilename", "costfilename"},
+                                 get_txt_seq_dict());
 }
 
 std::string get_python_seq_string()
@@ -562,20 +550,14 @@ std::string get_python_seq_string()
 
 std::string get_python_spa_string()
 {
-  return get_cluster_func_string({"sizes",
-                                  "indices",
-                                  "values",
-                                  "do_refinement",
-                                  "rf_alg",
-                                  "rf_max_rounds",
-                                  "rf_max_time"},
-                                 get_spa_dict());
+  return get_cluster_func_string(
+    {"sizes", "indices", "values", "do_refinement", "rf_alg", "rf_max_rounds", "rf_max_time"},
+    get_spa_dict());
 }
 
 std::string get_python_den_string()
 {
   return get_cluster_func_string(
-    {"X", "do_vdimap", "do_refinement", "rf_alg", "rf_max_rounds", "rf_max_time"},
-    get_den_dict());
+    {"X", "do_vdimap", "do_refinement", "rf_alg", "rf_max_rounds", "rf_max_time"}, get_den_dict());
 }
 }

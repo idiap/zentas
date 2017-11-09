@@ -1,10 +1,10 @@
 // Copyright (c) 2016 Idiap Research Institute, http://www.idiap.ch/
 // Written by James Newling <jnewling@idiap.ch>
 
-#include <zentas/stringutilbase.hpp>
-#include <zentas/zentaserror.hpp>
 #include <iostream>
 #include <sstream>
+#include <zentas/stringutilbase.hpp>
+#include <zentas/zentaserror.hpp>
 
 namespace zentas
 {

@@ -186,7 +186,7 @@ void set_unimat(size_t                                 neigs,
   {
     for (size_t dp = 0; dp < dim; ++dp)
     {
-      T rv         = T(1e-3) * T(dis(gen) % 10000 - 5000);
+      T rv              = T(1e-3) * T(dis(gen) % 10000 - 5000);
       evs[e * dim + dp] = rv;
     }
   }
@@ -523,11 +523,11 @@ void vdimap(
     {
       throw zentas::zentas_error("inf or nan detected in vdimap");
     }
-    
+
     // on getting the floating point of literals correct:
     // https://stackoverflow.com/questions/22380778/what-is-the-best-way-to-express-a-templated-numeric-literal
     T score = std::abs(d1 - d2) / std::abs(d1 + d2 + T(1e-7));
-    T toll = T(1e-5);
+    T toll  = T(1e-5);
     if (score > toll)
     {
       std::stringstream ss;

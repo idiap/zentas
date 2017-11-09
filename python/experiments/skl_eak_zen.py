@@ -45,7 +45,7 @@ def go(X, K, withskl, witheak, withzen):
 
   if witheak:
     results["eak"] = {}
-    sys.path.append("/home/james/clustering/idiap/eakmeans/lib")
+    sys.path.append(datapaths.datapath["eaklibdir"])
     import kmeans
     teak0 = time.time()
     eak = kmeans.get_clustering(X, K, verbose = 1, init = "kmeans++", n_threads = 4)

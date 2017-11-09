@@ -30,10 +30,18 @@ else:
   # path to where mnist data can be written
   datapaths["infidpath"] = tobeset
   
-
   # path to where the files cod-rna  cod-rna.r  cod-rna.t
   # from website 
   # https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#cod-rna
-  #are.
   datapaths["rnaraw"] = tobeset
   datapaths["rnawrite"] = tobeset
+  
+  #path to where to save a figure
+  datapaths["nipsflow"] = tobeset
+
+  #path to eakmeans install dir
+  datapaths["eaklibdir"] = tobeset
+  
+  #path to where to save a figure
+  datapaths["kscalingfigpath"] = tobeset
+

@@ -57,7 +57,7 @@ class RefinementData
 
   public:
   virtual ~RefinementData() = default;
-  using XNInfos = std::vector<std::vector<XNearestInfo>>;
+  using XNInfos             = std::vector<std::vector<XNearestInfo>>;
 
   // ALL
   size_t                           K;
@@ -219,7 +219,7 @@ class SkeletonClusterer
 {
 
   public:
-  virtual ~SkeletonClusterer()  = default;
+  virtual ~SkeletonClusterer() = default;
   SkeletonClusterer(const SkeletonClustererInitBundle& sb);
 
   /* TODO certain variables should be private. */
@@ -380,7 +380,7 @@ class SkeletonClusterer
   void run_kmedoids();
 
   void core_kmedoids_loops();
-  void populate_labels();
+  //  void populate_labels();
   void balance_the_labels();
   void go();
 
@@ -399,9 +399,9 @@ class SkeletonClusterer
   virtual void update_sample_info() = 0;
   virtual void custom_append(size_t, size_t, size_t) {}
   virtual void custom_replace_with_last(size_t, size_t) {}
-  virtual void custom_replace_with(size_t, size_t, size_t, size_t){}
-  virtual void custom_remove_last(size_t){}
-  virtual void increment_custom_cluster_statistics(size_t, size_t){}
+  virtual void custom_replace_with(size_t, size_t, size_t, size_t) {}
+  virtual void custom_remove_last(size_t) {}
+  virtual void increment_custom_cluster_statistics(size_t, size_t) {}
   virtual void set_normalised_custom_cluster_statistics(size_t k) = 0;
   virtual void set_to_zero_custom_cluster_statistics(size_t k)    = 0;
   virtual std::string get_round_summary()                         = 0;
@@ -528,7 +528,7 @@ class SkeletonClusterer
   void rf_update_sample_info_yinyang_v1();
   void rf_update_sample_info_yinyang_v2();
   void rf_swap(size_t k1, size_t k2);
-  virtual void custom_initialise_refinement() {}
+  virtual void custom_initialise_refinement() = 0;  // {}
   virtual void custom_rf_clear_initmem() {}
   std::string  rf_get_round_summary();
   void         rf_redistribute();

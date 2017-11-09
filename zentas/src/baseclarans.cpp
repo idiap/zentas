@@ -74,12 +74,13 @@ double BaseClarans::get_delta_hat_l3(
   }
   else
   {
-    L = static_cast<size_t>(std::floor(1. - std::log2(target_min_mean_per_cluster / n_per_cluster)));
+    L =
+      static_cast<size_t>(std::floor(1. - std::log2(target_min_mean_per_cluster / n_per_cluster)));
   }
 
   /* some workers  */
   double dist_k_j2;
-  
+
   size_t random_index;
   std::vector<std::pair<size_t, size_t>> start_end;
   double adist;
@@ -197,11 +198,11 @@ double BaseClarans::get_delta_hat_l3(
       if (ndet_n_active_old[ki] < ndet_ndatas[ki])
       {
         /* unpack for convenience  */
-        size_t k         = ndet_k[ki];
-        //double 
-        dist_k_j2 = ndet_dists_k_j2[ki];
-        size_t s_index   = ndet_starting_inds[ki];
-        size_t f_index   = ndet_final_inds[ki];
+        size_t k = ndet_k[ki];
+        // double
+        dist_k_j2      = ndet_dists_k_j2[ki];
+        size_t s_index = ndet_starting_inds[ki];
+        size_t f_index = ndet_final_inds[ki];
 
         /* determine which samples to compute */
         start_end.clear();
@@ -297,7 +298,7 @@ double BaseClarans::get_delta_E_hoeffding_l3(
   /* the number of samples used will be n_full_knowledge*2^( {1-L, 2-L, ..L-L} ) */
   double n_per_cluster        = static_cast<double>(ndata) / static_cast<double>(K);
   double target_n_per_cluster = 200.0;
-  size_t L                    = static_cast<size_t>(std::ceil(std::log2(n_per_cluster / target_n_per_cluster)));
+  size_t L = static_cast<size_t>(std::ceil(std::log2(n_per_cluster / target_n_per_cluster)));
 
   /* if Delta < 0 :  P(proposal accepted) > p_null_accept_lb ==> P(proposal rejected in round) <
    * p_null_round_reject_ub. */
@@ -306,17 +307,17 @@ double BaseClarans::get_delta_E_hoeffding_l3(
   double p_null_round_reject_ub = 1 - p_null_round_accept_lb;
 
   /* some workers  */
-  double dist_k_j2 {0};
-  size_t random_index {0};
+  double dist_k_j2{0};
+  size_t random_index{0};
   std::vector<std::pair<size_t, size_t>> start_end;
-  double cluster_nM {0};
-  double cluster_pM {0};
-  double adist {0};
-  double n_samples_total_fl {0};
-  double delta_hat {0};
-  size_t n_full_knowledge {0};
-  double cluster_Z {0};
-  size_t n_nk1 {0};
+  double cluster_nM{0};
+  double cluster_pM{0};
+  double adist{0};
+  double n_samples_total_fl{0};
+  double delta_hat{0};
+  size_t n_full_knowledge{0};
+  double cluster_Z{0};
+  size_t n_nk1{0};
 
   /* These vectors keep vital statistics for non-eliminated (ndet_x) clusters.
    * Perhaps they should be packaged together for memory reasons. */
@@ -443,11 +444,11 @@ double BaseClarans::get_delta_E_hoeffding_l3(
       if (ndet_n_active_old[ki] < ndet_ndatas[ki])
       {
         /* unpack for convenience  */
-        size_t k         = ndet_k[ki];
-        //double 
-        dist_k_j2 = ndet_dists_k_j2[ki];
-        size_t s_index   = ndet_starting_inds[ki];
-        size_t f_index   = ndet_final_inds[ki];
+        size_t k = ndet_k[ki];
+        // double
+        dist_k_j2      = ndet_dists_k_j2[ki];
+        size_t s_index = ndet_starting_inds[ki];
+        size_t f_index = ndet_final_inds[ki];
 
         /* determine which samples to compute */
         start_end.clear();
@@ -569,9 +570,9 @@ bool BaseClarans::update_centers_greedy()
   bool accept = false;
 
   // the proposal is : make the j_2'th of cluster p_2 the center of cluster k_1
-  size_t k1 {0};
-  size_t k2 {0};
-  size_t j2 {0};
+  size_t k1{0};
+  size_t k2{0};
+  size_t j2{0};
 
   n_proposals = 0;
 
@@ -601,9 +602,9 @@ bool BaseClarans::update_centers_patient()
   std::vector<std::thread> threads;
 
   // global variables
-  size_t best_k1 {0};
-  size_t best_k2 {0}; 
-  size_t best_j2 {0};
+  size_t best_k1{0};
+  size_t best_k2{0};
+  size_t best_j2{0};
   double best_delta_E = std::numeric_limits<double>::max();
 
   size_t time_limit = 0;
@@ -629,7 +630,7 @@ bool BaseClarans::update_centers_patient()
         std::chrono::time_point<std::chrono::high_resolution_clock> t1;
         size_t                                                      time_in_update_centers = 0;
 
-        t1 = std::chrono::high_resolution_clock::now();
+        t1                     = std::chrono::high_resolution_clock::now();
         time_in_update_centers = static_cast<size_t>(
           std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count());
 
@@ -658,7 +659,7 @@ bool BaseClarans::update_centers_patient()
 
           ++n_proposals_local;
 
-          t1 = std::chrono::high_resolution_clock::now();
+          t1                     = std::chrono::high_resolution_clock::now();
           time_in_update_centers = static_cast<size_t>(
             std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count());
 
@@ -1889,5 +1890,21 @@ void BaseClarans::set_center_center_info_l1(std::vector<XNearestInfo>& center_ne
 
     reset_1_nearest_excluding(center_nearest_center[k], k, distances);
   }
+}
+
+// TODO : cc in level 2,3 should be freed.
+void BaseClarans::base_clarans_custom_initialise_refinement()
+{
+  prd->initialise_from_n1n2(nearest_1_infos, nearest_2_infos);
+}
+
+void BaseClarans::custom_initialise_refinement() { base_clarans_custom_initialise_refinement(); }
+
+void BaseClarans::custom_rf_clear_initmem()
+{
+  energy_margins.resize(0);
+  nearest_2_infos.resize(0);
+  cluster_statistics.resize(0);
+  // TODO level 3 clear cc
 }
 }

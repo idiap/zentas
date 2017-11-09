@@ -263,11 +263,7 @@ class VData
 
   // how to make sure that the returned pointer is not used after this object is deleted?
   // ConstLengthInitBundle self_as_tdatain;
-  ConstLengthInitBundle<AtomicType> get_as_datain_ib() {
- 
-     return {ndata, dimension, data.data()}; 
-     
-  }
+  ConstLengthInitBundle<AtomicType> get_as_datain_ib() { return {ndata, dimension, data.data()}; }
 
   private:
   size_t                  ndata;

@@ -16,6 +16,14 @@
 namespace nszen
 {
 
+template <typename T>
+void set_vcenters(size_t              ndata,
+                  size_t              dimensions,
+                  const T* const      ptr_datain,
+                  size_t              K,
+                  const size_t* const labels,
+                  T*                  centers);
+
 // dense vectors
 template <typename T>
 void vzentas(size_t              ndata,

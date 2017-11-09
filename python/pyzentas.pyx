@@ -17,9 +17,17 @@ ctypedef fused floating33:
   cython.float
   cython.double
 
+
+ctypedef fused floating88:
+  cython.float
+  cython.double
+
+
 ctypedef fused floating87:
   cython.float
   cython.double
+
+
 
 cdef extern from "zentas/zentasinfo.hpp" namespace "nszen":
   
@@ -36,6 +44,9 @@ cdef extern from "zentas/zentas.hpp" namespace "nszen":
   # dense vectors 
   void vzentas[T](size_t ndata, size_t dimension, const T * const ptr_datain, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_vdimap, bool do_refinement, string rf_alg,size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +;
 
+  # set the centers for dense data from labels etc.
+  void set_vcenters[T](size_t ndata, size_t dimensions, const T * const ptr_datain, size_t K, const size_t * const labels, T * centers) except+;
+  
   # sparse vectors 
   void sparse_vector_zentas[T](size_t ndata, const size_t * const sizes, const T * const ptr_datain, const size_t * const ptr_indices_s, size_t K, const size_t * const indices_init, string initialisation_method, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, size_t * const indices_final, size_t * const labels, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, bool do_refinement, string rf_alg, size_t rf_max_rounds, double rf_max_time, bool do_balance_labels) except +;
 
@@ -44,6 +55,8 @@ cdef extern from "zentas/zentas.hpp" namespace "nszen":
 
   # sequences from text file
   void textfilezentas(vector[string] filenames, string outfilename, string costfilename, size_t K, string algorithm, size_t level, size_t max_proposals, bool capture_output, string & text, size_t seed, double max_time, double min_mE, double max_itok, string metric, size_t nthreads, size_t max_rounds, bool patient, string energy, bool with_tests, bool rooted, double critical_radius, double exponent_coeff, string initialisation_method, bool do_balance_labels) except +;
+  
+
 
 
 def dangerwrap(f):
@@ -76,8 +89,30 @@ def dangerwrap(f):
     f_process.terminate()
     f_process.join()
     raise KeyboardInterrupt("Caught KeyboardInterrupt in dangerwrap")
-  
+
   return q.get()
+
+
+def base_get_vcenters(size_t ndata, size_t dimension, floating88 [:] X, size_t K, const size_t [:] labels):
+
+  cdef floating88 [:] C = np.empty((dimension*K,))
+  cdef void (*cw_set_vcenters) (size_t, size_t, const floating88 * const, size_t, const size_t * const, floating88 * ) except +
+
+  if floating88 is double:
+    cw_set_vcenters=&set_vcenters[double]
+    
+  elif floating88 is float:
+    cw_set_vcenters=&set_vcenters[float]
+    
+  cw_set_vcenters(ndata, dimension, &X[0], K, &labels[0], &C[0])
+  return {"C" : np.array(C) }
+  
+
+
+def get_vcenters(X, K, labels):
+  C =  dangerwrap(lambda : base_get_vcenters(X.shape[0], X.shape[1], X.ravel(), K, labels.ravel()))["C"]  
+  return C.reshape(K, -1)
+
 
 
 cdef class RetBundle:
@@ -228,6 +263,8 @@ class pyzen(object):
 
     return rb.get_dict()
 
+    
+
   def den(self, 
     X, 
     do_vdimap, 
@@ -248,10 +285,13 @@ class pyzen(object):
     
     self.pms['ndata'], self.pms['dimension'] = X.shape    
     
+    dict0 = dangerwrap(lambda : self.base_vzentas(X.ravel(), do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, self.pms['indices_init'], self.pms))
     
     
-    return dangerwrap(lambda : self.base_vzentas(X.ravel(), do_vdimap, do_refinement, rf_alg, rf_max_rounds, rf_max_time, self.pms['indices_init'], self.pms))
-
+    
+    
+    return dict0
+    
   ####################################################
   ################## sparse vectors ##################
   ####################################################

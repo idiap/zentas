@@ -69,25 +69,11 @@ class BaseClarans : public SkeletonClusterer
 
   public:
   // TODO : move to cpp file. also, cc in level 2,3 should be freed.
-  void base_clarans_custom_initialise_refinement()
-  {
+  void base_clarans_custom_initialise_refinement();
 
-    prd->initialise_from_n1n2(nearest_1_infos, nearest_2_infos);
-  }
+  virtual void custom_initialise_refinement() override final;
 
-  virtual void custom_initialise_refinement() override final
-  {
-    base_clarans_custom_initialise_refinement();
-  }
-
-  virtual void custom_rf_clear_initmem() override final
-  {
-    energy_margins.resize(0);
-    nearest_2_infos.resize(0);
-    cluster_statistics.resize(0);
-
-    // TODO level 3 clear cc
-  }
+  virtual void custom_rf_clear_initmem() override final;
 
   BaseClarans(const SkeletonClustererInitBundle& sb, const ExtrasBundle& eb)
     : SkeletonClusterer(sb),

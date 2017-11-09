@@ -7,8 +7,8 @@
 #include <regex>
 #include <string>
 #include <vector>
-#include <zentas/zentaserror.hpp>
 #include <zentas/fasta.hpp>
+#include <zentas/zentaserror.hpp>
 
 namespace txt
 {

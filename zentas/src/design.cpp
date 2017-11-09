@@ -31,7 +31,7 @@ class OPT2 : public Base
   double y;
   double z;
   OPT2(double y_, double z_) : Base(2), y(y_), z(z_) {}
-  virtual  ~OPT2() = default;
+  virtual ~OPT2() = default;
 };
 
 /* metric or data class */
@@ -58,9 +58,9 @@ class X : public TOPT
   }
 };
 
-//void test()
+// void test()
 //{
-  //X<MET1, OPT1> p(13);
-  //X<MET1, OPT2> q(13, 11.1);
-  //q.f();
+// X<MET1, OPT1> p(13);
+// X<MET1, OPT2> q(13, 11.1);
+// q.f();
 //}

@@ -61,4 +61,5 @@ if plotresults:
   pl.xlabel("$K$")
   pl.ylabel("(mse with clarans) / (mse without)")
   pl.subplots_adjust(bottom = 0.2, top = 0.9)
-  pl.savefig("/home/james/newling/kmedsinit/kscaling.pdf")
+  pl.savefig(datapaths.datapaths["kscalingfigpath"])
+

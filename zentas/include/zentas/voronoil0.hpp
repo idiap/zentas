@@ -15,6 +15,7 @@ class VoronoiL0 : public SkeletonClusterer
 
   public:
   virtual std::string get_kmedoids_method_string() override final { return "Voronoi-0"; }
+  virtual void        custom_initialise_refinement();
 
   VoronoiL0(const SkeletonClustererInitBundle& sb, const ExtrasBundle& eb);
 

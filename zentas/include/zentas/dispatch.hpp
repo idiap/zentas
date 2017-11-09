@@ -5,18 +5,17 @@
 #define ZEN_DISPATCH_HPP
 
 #include <zentas/baseclusterer.hpp>
-#include <zentas/energyinit.hpp>
-#include <zentas/extrasbundle.hpp>
-#include <zentas/voronoil0.hpp>
 #include <zentas/claransl0.hpp>
 #include <zentas/claransl1.hpp>
 #include <zentas/claransl2.hpp>
 #include <zentas/claransl3.hpp>
+#include <zentas/energyinit.hpp>
+#include <zentas/extrasbundle.hpp>
+#include <zentas/voronoil0.hpp>
 
 namespace nszen
 {
 
-                        
 void scrutinize_input_1(const EnergyInitialiser& energy_initialiser,
                         std::string              energy,
                         size_t                   K,
@@ -152,24 +151,6 @@ void zentas_base(const TInitBundle&                   datain_ib,
                  const std::chrono::time_point<std::chrono::high_resolution_clock>& bigbang,
                  bool do_balance_labels)
 {
-  
-  
-             //<< " \n K = " << K 
-             //<< " \n n = " << datain_ib.ndata
-             //<< " \n initialisation_method = " << initialisation_method
-             //<< " \n algorithm = " << algorithm
-             //<< " \n level = " << level 
-             //<< " \n max_proposals = " << max_proposals 
-             //<< " \n capture_output = " << capture_output 
-             //<< " \n patient = " << patient 
-             //<< " \n energy = " << energy 
-             //<< " \n do_balanve_labels = " << do_balance_labels 
-             //<< "\n seed = " << seed;
-             
-             
-            
-
-
 
 /* used during experiments to see if openblas worth the effort. Decided not.
 //openblas_set_num_threads(1);
@@ -229,8 +210,6 @@ void zentas_base(const TInitBundle&                   datain_ib,
   }
 #endif
 }
-
-
 }
 
 #endif

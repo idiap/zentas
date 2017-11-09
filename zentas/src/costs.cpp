@@ -6,8 +6,8 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <zentas/zentaserror.hpp>
 #include <zentas/costs.hpp>
+#include <zentas/zentaserror.hpp>
 
 namespace costs
 {
@@ -51,7 +51,7 @@ void set_costs(std::string filename,
 
   std::string line, name, content;
 
-  std::vector<std::vector<std::string> > splitlines;
+  std::vector<std::vector<std::string>> splitlines;
   while (std::getline(input, line).good())
   {
     if (line.size() != 0)

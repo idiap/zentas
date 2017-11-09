@@ -365,9 +365,7 @@ class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>
     {
       throw zentas::zentas_error("weird, K is not centers_tdatain.get_ndata()...");
     }
-    
 
-    
     zentas_base<TData, LpMetric<typename TData::DataIn>>(datain_ib,
                                                          sub_K,
                                                          sub_indices_init,
@@ -426,10 +424,9 @@ class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>
   virtual void set_center_sample_distance(
     size_t k, size_t k1, size_t j1, double threshold, double& distance) override final
   {
-    
+
     metric.set_distance(
-    centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
-            
+      centers_data.at_for_metric(k), cluster_datas[k1].at_for_metric(j1), threshold, distance);
   }
 
   virtual void set_rf_center_sample_distance(
@@ -469,10 +466,11 @@ class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>
 
   virtual void set_rf_center_data(size_t k) override final
   {
-    if (get_ndata(k) == 0){
+    if (get_ndata(k) == 0)
+    {
       // do nothing.
     }
-    
+
     else if (metric.get_p() != '2')
     {
       std::function<Sample(size_t)> f_sample(
@@ -482,7 +480,7 @@ class Clusterer<LpMetric<typename TData::DataIn>, TData, TOpt>
 
     else
     {
-      
+
       rf_center_data.set_as_scaled(k, rf_sum_data.at_for_metric(k), 1. / get_ndata(k));
       // just scale something.
     }

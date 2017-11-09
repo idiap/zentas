@@ -180,9 +180,7 @@ class MultiSwitch
   const size_t  dict_size;
 
   public:
-  MultiSwitch(const double* const vals, size_t ds) : values(vals), dict_size(ds)
-  {
-  }
+  MultiSwitch(const double* const vals, size_t ds) : values(vals), dict_size(ds) {}
 
   double operator()(size_t i, size_t j) const { return values[i * dict_size + j]; }
 };
@@ -224,9 +222,9 @@ void set_levenshtein_distance(const TSample&    v_vertical,
                               double*           A_acti,
                               int               nrows,
                               int               ncols,
-                              //size_t&           n_cells_visited_local,
-                              int&              n_cells_visited_local,
-                              double&           distance)
+                              // size_t&           n_cells_visited_local,
+                              int&    n_cells_visited_local,
+                              double& distance)
 {
 
   (void)dict_size;
@@ -454,9 +452,9 @@ class LevenshteinMetric_X
                   static_cast<double>(v_vertical.size + v_horizontal.size) / (2. - threshold);
     }
 
-    int    nrows                 = static_cast<int>(v_vertical.size);
-    int    ncols                 = static_cast<int>(v_horizontal.size);
-    //size_t 
+    int nrows = static_cast<int>(v_vertical.size);
+    int ncols = static_cast<int>(v_horizontal.size);
+    // size_t
     int n_cells_visited_local = 0;
 
     // get a mutex and keep it

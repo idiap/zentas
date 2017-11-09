@@ -51,8 +51,9 @@ void XNearestInfo::reset(XNearestInfo& nearest_x_infos)
   e_x = nearest_x_infos.e_x;
 }
 
-XNearestInfo::XNearestInfo(size_t a_x_, double d_x_, double e_x_) : a_x(a_x_), d_x(d_x_), e_x(e_x_) 
-{}
+XNearestInfo::XNearestInfo(size_t a_x_, double d_x_, double e_x_) : a_x(a_x_), d_x(d_x_), e_x(e_x_)
+{
+}
 
 std::string XNearestInfo::get_string()
 {
@@ -419,7 +420,7 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
   std::sort(vi.begin(), vi.end(), [&fg](std::array<size_t, 2>& lhs, std::array<size_t, 2>& rhs) {
     return fg(std::get<0>(lhs), std::get<0>(rhs));
   });
-  
+
   std::vector<size_t> old_to_new(K);
   for (unsigned k = 0; k < K; ++k)
   {
@@ -439,9 +440,9 @@ void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
 
   /* experiments so far show that multithreading does not help here, can hurt. what's weird is
    * that even if nthreads = 1 in the pll version, it's still slower than the serial version.  */
-  bool   multithread_kmpp = true;
-  
-  //double a_distance;
+  bool multithread_kmpp = true;
+
+  // double a_distance;
 
   /* non_tail_k will be how many k's for which only 1/n_bins of the data is used.
    * it will be (n_bins - 1)/n_bins, rounded down to the nearest multiple of n_bins.
@@ -487,9 +488,9 @@ void SkeletonClusterer::triangular_kmeanspp_aq2(size_t n_bins)
   }
 
   auto update_nearest_info =
-    //[&a_distance, 
+    //[&a_distance,
     [this](size_t bin, size_t k_start, size_t k_end, size_t i0, size_t i1) {
-      double some_distance; 
+      double some_distance;
       for (size_t i = i0; i < i1; ++i)
       {
         for (size_t k = k_start; k < k_end; ++k)
@@ -961,7 +962,6 @@ void SkeletonClusterer::core_kmedoids_loops()
 
   while (halt_kmedoids() == false)
   {
-    
 
     /* ************** *
     * UPDATE CENTERS *
@@ -988,7 +988,6 @@ void SkeletonClusterer::core_kmedoids_loops()
     {
       x.resize(0);
     }
-
 
     /* ****************** *
     * UPDATE SAMPLE INFO *
@@ -1021,17 +1020,6 @@ void SkeletonClusterer::core_kmedoids_loops()
   }
 }
 
-void SkeletonClusterer::populate_labels()
-{
-  for (size_t k = 0; k < K; ++k)
-  {
-    labels[center_IDs[k]] = k;
-    for (size_t j = 0; j < get_ndata(k); ++j)
-    {
-      labels[sample_IDs[k][j]] = k;
-    }
-  }
-}
 
 void SkeletonClusterer::go()
 {
@@ -1048,7 +1036,6 @@ void SkeletonClusterer::go()
 
   std::string init1foo = "Will now initialize with method: " + initialisation_method + ".";
   mowri << '\n' << init1foo << '\n';
-  // mowri << get_char_line(init1foo.size(), '-');
   initialise_all();
 
   std::string kmefact =
@@ -1076,8 +1063,29 @@ void SkeletonClusterer::go()
     mowri << get_equals_line(rf_get_round_summary().size());
     auto final_line = rf_get_round_summary();
     mowri << final_line << '\n';
+
+    // populate labels
+    for (size_t k = 0; k < K; ++k)
+    {
+      for (size_t j = 0; j < get_ndata(k); ++j)
+      {
+        labels[sample_IDs[k][j]] = k;
+      }
+    }
   }
-  populate_labels();
+
+  // populate labels
+  else
+  {
+    for (size_t k = 0; k < K; ++k)
+    {
+      labels[center_IDs[k]] = k;
+      for (size_t j = 0; j < get_ndata(k); ++j)
+      {
+        labels[sample_IDs[k][j]] = k;
+      }
+    }
+  }
 
   if (do_balance_labels == true && do_refinement == true)
   {
@@ -1400,18 +1408,19 @@ void SkeletonClusterer::info_tests()
         strerrm << "error detected : d_first_nearest != d_first_nearest\n";
         strerrm << "k=" << k << "\n";
         strerrm << "j=" << j << "\n";
-        strerrm << "the " << j << "'th sample in cluster " << k << " is " << string_for_sample(k, j)
-             << "\n";
+        strerrm << "the " << j << "'th sample in cluster " << k << " is "
+                << string_for_sample(k, j) << "\n";
         strerrm << "cluster size is " << nearest_1_infos[k].size() << "\n";
         strerrm << std::setprecision(20);
         strerrm << "get_a1(k,j)=" << get_a1(k, j) << "\n";
         strerrm << "just computed first nearest center index: " << k_first_nearest << "\n";
         strerrm << "the " << k_first_nearest
-             << "'th center is: " << string_for_center(k_first_nearest) << "\n";
+                << "'th center is: " << string_for_center(k_first_nearest) << "\n";
         strerrm << "just computed distance to this center is: " << d_first_nearest << "\n";
-        strerrm << "the recorded first nearest center index: " << nearest_1_infos[k][j].a_x << "\n";
+        strerrm << "the recorded first nearest center index: " << nearest_1_infos[k][j].a_x
+                << "\n";
         strerrm << "the " << nearest_1_infos[k][j].a_x << "'th center is "
-             << string_for_center(nearest_1_infos[k][j].a_x) << "\n";
+                << string_for_center(nearest_1_infos[k][j].a_x) << "\n";
         strerrm << "the recorded distance to this center is " << nearest_1_infos[k][j].d_x << "\n";
         throw zentas::zentas_error(strerrm.str());
       }

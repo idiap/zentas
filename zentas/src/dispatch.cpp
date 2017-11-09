@@ -5,9 +5,9 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <zentas/dispatch.hpp>
 #include <zentas/energyinit.hpp>
 #include <zentas/zentaserror.hpp>
-#include <zentas/dispatch.hpp>
 
 namespace nszen
 {
