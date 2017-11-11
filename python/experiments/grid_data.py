@@ -3,6 +3,7 @@ import sys
 import random
 import numpy as np
 import numpy.random as npr
+import datapaths
 
 #where is pyzentas.so ? Make sure this is correct.
 sys.path.append("../../build/python")
@@ -60,54 +61,55 @@ def get_on_grid(C, dims_before, dims_after):
     Ct[:, x] += dims_after[x][0]
   
   return Ct
+
+if False:    
+  results = {}
   
-results = {}
-
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "uniform", with_tests = False, capture_output = True, rooted = False, algorithm = "clarans", level = 0)
-results["uniform"] = {}
-for llo in [True, False]:
-  results["uniform"][llo] = go(z,llo)
-
-results["voronoi"] = {}
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 10, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "uniform", with_tests = False, capture_output = True, rooted = False, algorithm = "voronoi", level = 0)
-for llo in [True, False]:
-  results["voronoi"][llo] = go(z, llo)
-
-results["km_clarans"] = {}
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 30, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "kmeans++-4", with_tests = False, capture_output = True, rooted = False)
-for llo in [True, False]:
-  results["km_clarans"][llo] = go(z, llo)
-
-results["kmeans++"] = {}
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "kmeans++-1", with_tests = False, capture_output = True, rooted = False)
-for llo in [True, False]:
-  results["kmeans++"][llo] = go(z, llo)
-
-
-results["uni_clarans"] = {}
-z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 30, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "uniform", with_tests = False, capture_output = True, rooted = False)
-for llo in [True, False]:
-  results["uni_clarans"][llo] = go(z, llo)
-
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "uniform", with_tests = False, capture_output = True, rooted = False, algorithm = "clarans", level = 0)
+  results["uniform"] = {}
+  for llo in [True, False]:
+    results["uniform"][llo] = go(z,llo)
+  
+  results["voronoi"] = {}
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 10, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "uniform", with_tests = False, capture_output = True, rooted = False, algorithm = "voronoi", level = 0)
+  for llo in [True, False]:
+    results["voronoi"][llo] = go(z, llo)
+  
+  results["km_clarans"] = {}
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 30, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "kmeans++-4", with_tests = False, capture_output = True, rooted = False)
+  for llo in [True, False]:
+    results["km_clarans"][llo] = go(z, llo)
+  
+  results["kmeans++"] = {}
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "kmeans++-1", with_tests = False, capture_output = True, rooted = False)
+  for llo in [True, False]:
+    results["kmeans++"][llo] = go(z, llo)
+  
+  
+  results["uni_clarans"] = {}
+  z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 30, max_time = 100000, max_proposals = K**2, seed = 1011, patient = True, nthreads = 4, init = "uniform", with_tests = False, capture_output = True, rooted = False)
+  for llo in [True, False]:
+    results["uni_clarans"][llo] = go(z, llo)
+  
 width = 0.8
 height = 0.6
 eps = 0.2
 text_x_eps = 0.02
 
-pl.figure(0, figsize = (9, 11))
+pl.figure(0, figsize = (9, 9))
 pl.clf()
 
 col_kmeans_points = "red"
 col_init_points = "green"
 col_points = "k"
 
-X_on_grid = get_on_grid(X, [[0, n_per_row], [0, n_per_row]], [[1.5,2.5 + width], [3,4 + height]])
-pl.plot(X_on_grid[:,0], X_on_grid[:,1], linestyle = "none", marker = '.', color = col_points, markersize = 1)
+X_on_grid = get_on_grid(X, [[0, n_per_row], [0, n_per_row]], [[2,2 + width], [3,3 + height]])
+pl.plot(X_on_grid[:,0], X_on_grid[:,1], linestyle = "none", marker = '.', color = col_points, markersize = 1.5)
 
 def jam(COOD, col, alg, kmeans):
   C_on_grid = get_on_grid(results[alg][kmeans]["C"], [[0, n_per_row], [0, n_per_row]], [[COOD[0], COOD[0]+ width], [COOD[1],COOD[1] + height]])
-  pl.plot(C_on_grid[:,0], C_on_grid[:,1], linestyle = "none", marker = '.', color = col, markersize = 2)
-  pl.text(COOD[0] -0.01, COOD[1] - 0.1, "%.3f"%(results[alg][kmeans]["E"]))
+  pl.plot(C_on_grid[:,0], C_on_grid[:,1], linestyle = "none", marker = '.', color = col, markersize = 1.5)
+  pl.text(COOD[0] -0.01, COOD[1] - 0.12, "%.3f"%(results[alg][kmeans]["E"]))
 
 UNI00 = [1.5, 2]
 jam(UNI00, col_init_points, "uniform", False)
@@ -137,44 +139,71 @@ jam(KMPPLL00, col_kmeans_points, "kmeans++", True)
 
 #################### connecting lines ###########################
 
-#UNIFORM AT RANDOM
-pl.plot([UNI00[0] + width/3., UNI00[0] + width/3.], [UNI00[1] + height, 3 - sigma/2], color = 'k')
-pl.text(x = text_x_eps + UNI00[0] + width/3., y = 3 - (1 - height)/2, s = "uniform", verticalalignment = "top")
-
 #KMEANS++
-pl.plot([KMPP00[0] + width/3., KMPP00[0] + width/3.], [KMPP00[1] + height, 3 - sigma/2], color = 'k')
-pl.text(x = text_x_eps + KMPP00[0] + width/3., y = 3 - (1 - height)/2, s = "$K$-means++", verticalalignment = "top")
+init_line_kwargs = {"color" : "#8b0000", 'linewidth':2, 'linestyle' : '-'}
+
+
+#UNIFORM AT RANDOM
+#pl.plot([UNI00[0] + 3*width/4., UNI00[0] + 3*width/4.], [UNI00[1] + height + 0.8*sigma, 3 - 0.8*sigma], **init_line_kwargs)
+
+def jamarrow(x, y, dx, dy, **kwargs):
+  pl.arrow(x, y, dx, dy, head_width = 0.04, head_length = 0.02, **kwargs)#, **init_line_kwargs)
+
+  #, width = 0.008
+
+def jamarrow2(X, Y, **kwargs):
+  pl.plot([X[-3], X[-2]], [Y[-3], Y[-2]], **kwargs) 
+  jamarrow(X[-2], Y[-2], X[-1] - X[-2], Y[-1] - Y[-2], **kwargs)
+  
+  
+delta_c = 2*(height + 0.)/n_per_row
+
+jamarrow(UNI00[0] + 3*width/4., 3. - delta_c, 0, -(1 - height) + 2*delta_c, **init_line_kwargs)
+pl.text(x = -1.8*text_x_eps + UNI00[0] + 3*width/4., y = 3 - (1 - height)/2, s = "uniform", verticalalignment = "top", horizontalalignment = "right")
+
+jamarrow(KMPP00[0] + width/4., 3. - delta_c, 0, -(1 - height) + 2*delta_c, **init_line_kwargs)
+pl.text(x = text_x_eps + KMPP00[0] + width/4., y = 3 - (1 - height)/2, s = "$K$-means++", verticalalignment = "top")
 
 
 #MEDLLOYD
-pl.plot([UNI00[0], VOR00[0] + width/2.], [UNI00[1] + height/2., UNI00[1] + height/2.], color = 'k')
-pl.plot([VOR00[0] + width/2., VOR00[0] + width/2.], [UNI00[1] + height/2., VOR00[1] + height], color = 'k')
+refinement_line_kwargs = {"color" : "#8b0000", 'linewidth':2, 'linestyle' : '-'}
+jamarrow2(
+[UNI00[0] - delta_c, VOR00[0] + width/2., VOR00[0] + width/2.], 
+[UNI00[1] + height/2., UNI00[1] + height/2., VOR00[1] + height + delta_c],
+**refinement_line_kwargs)
 pl.text(x = text_x_eps + VOR00[0] + width/2., y = 1 + height + (1 - height)/2, s = "MEDLLOYD", verticalalignment = "top")
 
 
 #CLARANS
-pl.plot([UNI00[0] + 2.*width/3, UNI00[0] + 2.*width/3], [UNI00[1], VOR00[1] + height], color = 'k')
-pl.text(x = text_x_eps + UNI00[0] + 2.*width/3, y = 1 + height + (1 - height)/2, s = "CLARANS", verticalalignment = "top")
+jamarrow(UNI00[0] + 4.*width/5, UNI00[1] - delta_c, 0, -(1 - height) + 2*delta_c, **refinement_line_kwargs)
+pl.text(x = text_x_eps + UNI00[0] + 4.*width/5, y = 1 + height + (1 - height)/2, s = "CLARANS", verticalalignment = "top")
 
-pl.plot([KMPP00[0] + 2.*width/3, KMPP00[0] + 2.*width/3], [UNI00[1], VOR00[1] + height], color = 'k')
+jamarrow(KMPP00[0] + 2.*width/3, UNI00[1] - delta_c, 0, -(1 - height) + 2*delta_c, **refinement_line_kwargs)
 pl.text(x = text_x_eps + KMPP00[0] + 2.*width/3, y = 1 + height + (1 - height)/2, s = "CLARANS", verticalalignment = "top")
 
 #LLOYDS
-pl.plot([UNILL00[0] + 2.*width/3, UNILL00[0] + 2.*width/3], [2 + 2.*height/3, 0 + height], color = 'k')
-pl.plot([UNILL00[0] + 2.*width/3, UNI00[0]], [2 + 2.*height/3, 2 + 2.*height/3], color = 'k')
+lloyds_line_kwargs = {"color" : "#8b0000", 'linewidth':2}
+jamarrow2([UNI00[0] - delta_c, UNILL00[0] + 2.*width/3, UNILL00[0] + 2.*width/3], [2 + 2.*height/3, 2 + 2.*height/3, height + delta_c], **lloyds_line_kwargs)
+
 pl.text(x = text_x_eps + UNILL00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
-pl.plot([VOR00[0] + 2.*width/3, VOR00[0] + 2.*width/3], [1, 0 + height], color = 'k')
+jamarrow(VOR00[0] + 2.*width/3, 1  - delta_c, 0, -(1 - height) + 2*delta_c, **lloyds_line_kwargs)
 pl.text(x = text_x_eps + VOR00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
-pl.plot([UNICLA00[0] + 2.*width/3, UNICLA00[0] + 2.*width/3], [1, 0 + height], color = 'k')
+jamarrow(UNICLA00[0] + 2.*width/3, 1  - delta_c, 0, -(1 - height) + 2*delta_c, **lloyds_line_kwargs)
 pl.text(x = text_x_eps + UNICLA00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
-pl.plot([UNIKM00[0] + 2.*width/3, UNIKM00[0] + 2.*width/3], [1, 0 + height], color = 'k')
+jamarrow(UNIKM00[0] + 2.*width/3, 1  - delta_c, 0, -(1 - height) + 2*delta_c, **lloyds_line_kwargs)
 pl.text(x = text_x_eps + UNIKM00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
-pl.plot([KMPPLL00[0] + 1.*width/5, KMPP00[0] + width], [2 + 2.*height/3, 2 + 2.*height/3], color = 'k')
-pl.plot([KMPPLL00[0] + 1.*width/5, KMPPLL00[0] + 1.*width/5], [2 + 2.*height/3, 0 + height], color = 'k')
+jamarrow2(
+[KMPP00[0] + width + delta_c, KMPPLL00[0] + 1.*width/5, KMPPLL00[0] + 1.*width/5], 
+[2 + 2.*height/3, 2 + 2.*height/3, 0 + height  + delta_c],
+**lloyds_line_kwargs)
+
+
+#pl.plot([KMPPLL00[0] + 1.*width/5, KMPP00[0] + width], [2 + 2.*height/3, 2 + 2.*height/3], **lloyds_line_kwargs)
+#pl.plot([KMPPLL00[0] + 1.*width/5, KMPPLL00[0] + 1.*width/5], [2 + 2.*height/3, 0 + height], **lloyds_line_kwargs)
 pl.text(x = text_x_eps + KMPPLL00[0] + 1.*width/5, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
 ax = pl.gca()
@@ -182,6 +211,7 @@ ax.axis('off')
 
 
 import commands
-fn = pl.savefig(datapaths.datapaths["nipsflow"])
-commands.getstatusoutput("pdfcrop %s %s"%(fn, fn))
+fn = datapaths.datapaths["nipsflow"] 
+pl.savefig(fn)
+print commands.getstatusoutput("pdfcrop %s %s"%(fn, fn))
 
