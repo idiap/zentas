@@ -12,7 +12,7 @@ def get_rna():
   (put it in datapaths["rnaraw"])
   
   """
-  print datapaths.datapaths.keys()
+
   writepath = os.path.join(datapaths.datapaths["rnawrite"], "rna.npy")
   if os.path.exists(writepath):
     print "loading npy file"

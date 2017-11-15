@@ -11,19 +11,34 @@ import pyzentas
 from IPython.core.debugger import Tracer 
 import time
 
+import matplotlib
 import matplotlib.pyplot as pl
 
+
+
+# Font solution, based on stack-overflow page
+# https://stackoverflow.com/questions/17687213/how-to-obtain-the-same-font-style-size-etc-in-matplotlib-output-as-in-latex
+#Direct input 
+matplotlib.rcParams['text.latex.preamble']= r"\usepackage{cmbright} \renewcommand{\familydefault}{fos} \renewcommand{\seriesdefault}{l} \renewcommand{\bfdefault}{sb}"
+
+#Options
+params = {'text.usetex' : True,
+          'font.size' : 11,
+          'font.family' : "sans-serif",
+          'text.latex.unicode': True,
+}
+matplotlib.rcParams.update(params) 
 
 # make data. 
 
 npr.seed(1014)
-K = 17**2
+K = 12**2
 n_per_row = int(np.sqrt(K))
-ndata = K*28
+ndata = K*25
 X = np.zeros((ndata, 2))
 X[:,0] = np.repeat(np.arange(n_per_row), ndata/n_per_row)
 X[:,1] = np.tile(np.arange(n_per_row), ndata/n_per_row)  
-sigma = 0.1
+sigma = 0.13
 X += sigma*npr.randn(ndata, 2)
 
 
@@ -94,9 +109,9 @@ if False:
 width = 0.8
 height = 0.6
 eps = 0.2
-text_x_eps = 0.02
+text_x_eps = 0.06
 
-pl.figure(0, figsize = (9, 9))
+pl.figure(0, figsize = (7.5,7.5))
 pl.clf()
 
 col_kmeans_points = "red"
@@ -104,12 +119,12 @@ col_init_points = "green"
 col_points = "k"
 
 X_on_grid = get_on_grid(X, [[0, n_per_row], [0, n_per_row]], [[2,2 + width], [3,3 + height]])
-pl.plot(X_on_grid[:,0], X_on_grid[:,1], linestyle = "none", marker = '.', color = col_points, markersize = 1.5)
+pl.plot(X_on_grid[:,0], X_on_grid[:,1], linestyle = "none", marker = '.', color = col_points, markersize = 1.3, alpha = 0.8)
 
 def jam(COOD, col, alg, kmeans):
   C_on_grid = get_on_grid(results[alg][kmeans]["C"], [[0, n_per_row], [0, n_per_row]], [[COOD[0], COOD[0]+ width], [COOD[1],COOD[1] + height]])
-  pl.plot(C_on_grid[:,0], C_on_grid[:,1], linestyle = "none", marker = '.', color = col, markersize = 1.5)
-  pl.text(COOD[0] -0.01, COOD[1] - 0.12, "%.3f"%(results[alg][kmeans]["E"]))
+  pl.plot(C_on_grid[:,0], C_on_grid[:,1], linestyle = "none", marker = '.', color = col, markersize = 1.4, alpha = 0.7)
+  pl.text(COOD[0] -0.01, COOD[1] - 0.12, "$E=%.3f$"%(results[alg][kmeans]["E"]))
 
 UNI00 = [1.5, 2]
 jam(UNI00, col_init_points, "uniform", False)
@@ -140,7 +155,7 @@ jam(KMPPLL00, col_kmeans_points, "kmeans++", True)
 #################### connecting lines ###########################
 
 #KMEANS++
-init_line_kwargs = {"color" : "#8b0000", 'linewidth':2, 'linestyle' : '-'}
+init_line_kwargs = {"color" : "#8b0000", 'linewidth':1.1, 'linestyle' : '-'}
 
 
 #UNIFORM AT RANDOM
@@ -156,44 +171,44 @@ def jamarrow2(X, Y, **kwargs):
   jamarrow(X[-2], Y[-2], X[-1] - X[-2], Y[-1] - Y[-2], **kwargs)
   
   
-delta_c = 2*(height + 0.)/n_per_row
+delta_c = 1*(height + 0.)/n_per_row
 
-jamarrow(UNI00[0] + 3*width/4., 3. - delta_c, 0, -(1 - height) + 2*delta_c, **init_line_kwargs)
-pl.text(x = -1.8*text_x_eps + UNI00[0] + 3*width/4., y = 3 - (1 - height)/2, s = "uniform", verticalalignment = "top", horizontalalignment = "right")
+jamarrow(UNI00[0] + 3*width/4., 3. - 1*delta_c, 0, -(1 - height) + 2*delta_c, **init_line_kwargs)
+pl.text(x = -1.5*text_x_eps + UNI00[0] + 3*width/4., y = 3 - (1 - height)/2, s = "uniform", verticalalignment = "top", horizontalalignment = "right")
 
-jamarrow(KMPP00[0] + width/4., 3. - delta_c, 0, -(1 - height) + 2*delta_c, **init_line_kwargs)
+jamarrow(KMPP00[0] + width/4., 3. - 1*delta_c, 0, -(1 - height) + 2*delta_c, **init_line_kwargs)
 pl.text(x = text_x_eps + KMPP00[0] + width/4., y = 3 - (1 - height)/2, s = "$K$-means++", verticalalignment = "top")
 
 
 #MEDLLOYD
-refinement_line_kwargs = {"color" : "#8b0000", 'linewidth':2, 'linestyle' : '-'}
+refinement_line_kwargs = {"color" : "#8b0000", 'linewidth':1.1, 'linestyle' : '-'}
 jamarrow2(
-[UNI00[0] - delta_c, VOR00[0] + width/2., VOR00[0] + width/2.], 
+[UNI00[0] - 3*delta_c, VOR00[0] + width/3., VOR00[0] + width/3.], 
 [UNI00[1] + height/2., UNI00[1] + height/2., VOR00[1] + height + delta_c],
 **refinement_line_kwargs)
-pl.text(x = text_x_eps + VOR00[0] + width/2., y = 1 + height + (1 - height)/2, s = "MEDLLOYD", verticalalignment = "top")
+pl.text(x = text_x_eps + VOR00[0] + width/3., y = 1 + height + (1 - height)/2, s = "MEDLLOYD", verticalalignment = "top")
 
 
 #CLARANS
-jamarrow(UNI00[0] + 4.*width/5, UNI00[1] - delta_c, 0, -(1 - height) + 2*delta_c, **refinement_line_kwargs)
+jamarrow(UNI00[0] + 4.*width/5, UNI00[1] - 3*delta_c, 0, -(1 - height) + 4*delta_c, **refinement_line_kwargs)
 pl.text(x = text_x_eps + UNI00[0] + 4.*width/5, y = 1 + height + (1 - height)/2, s = "CLARANS", verticalalignment = "top")
 
-jamarrow(KMPP00[0] + 2.*width/3, UNI00[1] - delta_c, 0, -(1 - height) + 2*delta_c, **refinement_line_kwargs)
+jamarrow(KMPP00[0] + 2.*width/3, UNI00[1] - 3*delta_c, 0, -(1 - height) + 4*delta_c, **refinement_line_kwargs)
 pl.text(x = text_x_eps + KMPP00[0] + 2.*width/3, y = 1 + height + (1 - height)/2, s = "CLARANS", verticalalignment = "top")
 
 #LLOYDS
-lloyds_line_kwargs = {"color" : "#8b0000", 'linewidth':2}
-jamarrow2([UNI00[0] - delta_c, UNILL00[0] + 2.*width/3, UNILL00[0] + 2.*width/3], [2 + 2.*height/3, 2 + 2.*height/3, height + delta_c], **lloyds_line_kwargs)
+lloyds_line_kwargs = {"color" : "#8b0000", 'linewidth':1.1}
+jamarrow2([UNI00[0] - 3*delta_c, UNILL00[0] + 2.*width/3, UNILL00[0] + 2.*width/3], [2 + 2.*height/3, 2 + 2.*height/3, height + delta_c], **lloyds_line_kwargs)
 
 pl.text(x = text_x_eps + UNILL00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
-jamarrow(VOR00[0] + 2.*width/3, 1  - delta_c, 0, -(1 - height) + 2*delta_c, **lloyds_line_kwargs)
+jamarrow(VOR00[0] + 2.*width/3, 1  - 3*delta_c, 0, -(1 - height) + 4*delta_c, **lloyds_line_kwargs)
 pl.text(x = text_x_eps + VOR00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
-jamarrow(UNICLA00[0] + 2.*width/3, 1  - delta_c, 0, -(1 - height) + 2*delta_c, **lloyds_line_kwargs)
+jamarrow(UNICLA00[0] + 2.*width/3, 1  - 3*delta_c, 0, -(1 - height) + 4*delta_c, **lloyds_line_kwargs)
 pl.text(x = text_x_eps + UNICLA00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
-jamarrow(UNIKM00[0] + 2.*width/3, 1  - delta_c, 0, -(1 - height) + 2*delta_c, **lloyds_line_kwargs)
+jamarrow(UNIKM00[0] + 2.*width/3, 1  - 3*delta_c, 0, -(1 - height) + 4*delta_c, **lloyds_line_kwargs)
 pl.text(x = text_x_eps + UNIKM00[0] + 2.*width/3, y = height + (1 - height)/2, s = "$K$-means", verticalalignment = "top")
 
 jamarrow2(
