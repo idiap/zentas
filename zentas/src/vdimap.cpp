@@ -28,7 +28,7 @@ void make_one_nperp(T* const evs, size_t dim, size_t e)
   {
     l2_norm += evs[e * dim + dp] * evs[e * dim + dp];
   }
-  l2_norm = std::sqrt(l2_norm);
+  l2_norm = std::sqrt(std::max<T>(0,l2_norm));
 
   for (size_t dp = 0; dp < dim; ++dp)
   {
@@ -49,7 +49,7 @@ void make_one_nperp(T* const evs, size_t dim, size_t e)
       evs[e * dim + dp] -= inner_eigens * evs[ep * dim + dp];
       norm2_ += evs[e * dim + dp] * evs[e * dim + dp];
     }
-    norm2_ = std::sqrt(norm2_);
+    norm2_ = std::sqrt(std::max<T>(norm2_,0));
     for (size_t dp = 0; dp < dim; ++dp)
     {
       evs[e * dim + dp] /= norm2_;
@@ -296,7 +296,7 @@ void power_method(T* const       eigenvectors,
       {
         eigenvector_norms[e] += sigma_v[dp] * sigma_v[dp];
       }
-      eigenvector_norms[e] = std::sqrt(eigenvector_norms[e]);
+      eigenvector_norms[e] = std::sqrt(std::max<T>(0,eigenvector_norms[e]));
 
       for (size_t dp = 0; dp < dim; ++dp)
       {
@@ -510,7 +510,7 @@ void vdimap(
       T diff = ptr_datain[i * dimension + d] - ptr_datain[j * dimension + d];
       d1 += diff * diff;
     }
-    d1 = std::sqrt(d1);
+    d1 = std::sqrt(std::max<T>(0,d1));
 
     T d2 = 0;
     for (size_t d = 0; d < dim_m; ++d)
@@ -518,10 +518,12 @@ void vdimap(
       T diff = v_mapped[i * dim_m + d] - v_mapped[j * dim_m + d];
       d2 += diff * diff;
     }
-    d2 = std::sqrt(d2);
-    if (std::isnan(d2) || d1 == std::isinf(d2))
+    d2 = std::sqrt(std::max<T>(0, d2));
+    if (std::isnan(d2) || std::isinf(d2))
     {
-      throw zentas::zentas_error("inf or nan detected in vdimap");
+      std::stringstream errm;
+      errm << "inf or nan detected in vdimap : " << d2;
+      throw zentas::zentas_error(errm.str());
     }
 
     // on getting the floating point of literals correct:
