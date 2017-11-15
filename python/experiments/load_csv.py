@@ -1,3 +1,6 @@
+# Copyright (c) 2017 Idiap Research Institute, http://www.idiap.ch/
+# Written by James Newling <jnewling@idiap.ch>
+
 import os
 import numpy as np
 import sys
