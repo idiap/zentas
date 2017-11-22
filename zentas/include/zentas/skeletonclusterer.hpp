@@ -224,8 +224,10 @@ class SkeletonClusterer
 
   /* TODO certain variables should be private. */
   protected:
-  std::vector<std::vector<size_t>>                            aq2p_original_indices;
-  std::vector<P2Bundle>                                       aq2p_p2buns;
+  std::vector<std::vector<size_t>> aq2p_original_indices;
+  std::vector<P2Bundle>            aq2p_p2buns;
+  size_t                           n_kmeans_greedy_samples{1};
+
   zentas::outputwriting::OutputWriter                         mowri;
   const size_t                                                K;
   std::chrono::time_point<std::chrono::high_resolution_clock> bigbang;
