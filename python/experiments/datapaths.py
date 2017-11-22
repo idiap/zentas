@@ -40,10 +40,13 @@ else:
   datapaths["infidpath"] = tobeset
   
   #path to where to save a figure
-  datapaths["nipsflow"] = tobeset
+  datapaths["nipsflow_poster"] = tobeset
+  datapaths["nipsflow_slide1"] = tobeset
+  datapaths["nipsflow_slide2"] = tobeset
   datapaths["nips_plot1"] = tobeset
   datapaths["nips_plot2"] = tobeset
   datapaths["nips_plot3"] = tobeset
+  datapaths["nips_plot3_greedy"] = tobeset
 
   #path to eakmeans install dir
   datapaths["eaklibdir"] = tobeset
