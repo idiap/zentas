@@ -1,6 +1,6 @@
 # ZENTAS
 
-A C++ and (optional) Python tool for partitional clustering around centers. Optimised and versatile implementations of K-Medoids and K-Means for various data types. More information at [arXiv 1609.04723](https://arxiv.org/abs/1609.04723). 
+A C++ and (optional) Python tool for partitional clustering. Optimised implementations of K-Medoids and K-Means, for various data types. More information is in our paper at [arXiv 1609.04723](https://arxiv.org/abs/1609.04723). 
 
 
 
@@ -11,8 +11,7 @@ Given *N* elements *x(1)...x(N)*, select *K* elements indexed by *c(1)...c(K)*, 
 *distance* options are  
   * for sparse and dense vectors : l-0, l-1, l-2, l-infinity
   * for sequence data : Levenshtein and Normalised Levenshtein.
-  
-  
+    
 Energy *E* options are  
   * identity, quadratic, cubic, square-potential, exponential, and logarithmic.
 
