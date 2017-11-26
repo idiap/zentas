@@ -157,7 +157,7 @@ std::map<std::string, std::string> init_output_keys()
      "(including any data transformation/pre-proprocessing) "},
     {"Ti",
      "time taken for initialising the center indices, i.e. to run one of {kmeans++-INT, "
-     "afk-mc2-INT, uniform, etc}."},
+     "kmeans++~INT, afk-mc2-INT, uniform, etc}."},
     {"Tb",
      "time placing samples in clusters, initialising necessary cluster statistics. This is "
      "the time after Ti, but before the main loop."},
@@ -318,13 +318,23 @@ std::map<std::string, std::tuple<std::string, std::string>> init_parameter_info_
   pim["seed"] =
     std::make_tuple("Positive integer, seeds all randomness in all algorithms. ", "1011");
 
-  pim["init"] = std::make_tuple(
-    "One of `uniform', `afk-mc2-INT', `kmeans++-INT', or an array/list of K initialising indices. "
-    "afk-mc2-INT is the AFK-MC^2 algorithm of Bachem et al (2016) with mixing chain length INT. "
-    "kmeans++-INT is batched kmeans++ using a type of sub-sampling to improve memory access, "
-    "where INT is the batch count, INT=1 is exact k-means++. `uniform' samples uniformly from the "
-    "samples.",
-    "'kmeans++-20'");
+  std::stringstream initss;
+
+  initss
+    << "One of `uniform', `afk-mc2-INT', `kmeans++-INT', `kmeans++~INT' "
+    << "or an array/list of K initialising indices. "
+    << "afk-mc2-INT is the AFK-MC^2 algorithm of Bachem et al (2016) "
+    << "with mixing chain length INT. "
+    << "kmeans++-INT is a batched kmeans++ using a kind of sub-sampling to improve "
+    << "memory access, where INT is the batch count, INT=1 is exact k-means++. When INT>1, "
+    << "there are still NK distances evaluated as per kmeans++-1, but there is a constraint that "
+    << "k < (K.INT)/(INT+1) => ((INT.k)/K)*(N/INT) <= i < (1+(INT.k)/K)*(N/INT). "
+    << "kmeans++~INT is the variant of kmeans++ referred to in the "
+    << "conclusion of the original k-means++ paper, where INT is the number of candidates to "
+    << "consider at each k-step (the candidate reducing the energy the most is added). "
+    << "Finally, `uniform' samples uniformly from the samples.";
+
+  pim["init"] = std::make_tuple(initss.str(), "'kmeans++-20'");
 
   pim["initialistion_method"] = std::make_tuple(
     "(C++ specific) `uniform', `afk-mc2-INT', `kmeans++-INT' or `from_indices_init'",

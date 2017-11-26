@@ -18,7 +18,7 @@ from IPython.core.debugger import Tracer
 
 
 def easy_kmeans_example():
-  output = pyzentas.kmeans(X = npr.randn(100000, 3), K = 1000, maxtime = 10, capture_output = False)
+  output = pyzentas.kmeans(X = npr.randn(10000, 3), K = 100, maxtime = 10, capture_output = False)
   return output 
   
 def tests():
@@ -47,12 +47,12 @@ def dense_data_example():
   import random 
   npr.seed(1011)
   random.seed(1011)
-  K = int(1e3)
-  ndata = int(7e4)
+  K = int(1e2)
+  ndata = int(7e3)
   dimension = 5
   data = np.array(1 + npr.randn(ndata, dimension), dtype = np.float64)
   seed = 1011
-  z = pyzentas.pyzen(init = "kmeans++-5", K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 20, max_time = 1., max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
+  z = pyzentas.pyzen(init = "kmeans++~1", K = K, metric = 'l2', energy = 'quadratic', exponent_coeff = 0,  max_rounds = 20, max_time = 1., max_itok = 3.0, seed = seed, nthreads = 1, patient = False, with_tests = False, algorithm = "clarans", level = 3)
   do_vdimap = False
   do_refinement = True
   refinement_algorithm = "yinyang"

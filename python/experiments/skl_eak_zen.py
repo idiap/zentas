@@ -72,8 +72,7 @@ def go(X, K, withskl, witheak, withzen):
 
 
 def experiment1():
-
-
+  
   #set the experiment settings here : 
   withskl = True
   witheak = False

@@ -367,13 +367,15 @@ void SkeletonClusterer::print_ndatas()
 
 void SkeletonClusterer::default_initialise_with_kmeanspp()
 {
-  size_t n_bins;
+  size_t n_bins           = 1;
+  n_kmeans_greedy_samples = 1;
+
   if (initialisation_method == "kmeans++")
   {
     n_bins = 1;
   }
 
-  else
+  else if (initialisation_method.substr(0, 9) == "kmeans++-")
   {
     std::string prefix = "kmeans++-";
     n_bins             = init::extract_INT(initialisation_method, prefix.size());
@@ -382,6 +384,24 @@ void SkeletonClusterer::default_initialise_with_kmeanspp()
       throw zentas::zentas_error("n_bins passed to kmeans++ should be positive.");
     }
   }
+
+  else if (initialisation_method.substr(0, 9) == "kmeans++~")
+  {
+    std::string prefix      = "kmeans++~";
+    n_kmeans_greedy_samples = init::extract_INT(initialisation_method, prefix.size());
+    if (n_kmeans_greedy_samples == 0)
+    {
+      throw zentas::zentas_error("n_kmeans_greedy_samples passed to kmeans++ should be positive.");
+    }
+  }
+
+  else
+  {
+    std::stringstream ss;
+    ss << "Unrecognised initialisiation method (kmeans++ ?)" << initialisation_method;
+    throw zentas::zentas_error(ss.str());
+  }
+
   kmoo_prepare();
   km_is_exhausted = false;
   if (n_bins != 1)
@@ -688,7 +708,8 @@ void SkeletonClusterer::triangular_kmeanspp_after_initial(size_t aq2p_bin,
    * calculations are performed differently. */
   std::function<void(size_t, size_t)> set_distance_kk;
   std::function<void(size_t, size_t)> set_distance_ik;
-  std::function<void(size_t)> update_c_ind_c_dt;
+  std::function<void(size_t)>   update_c_ind_c_dt;
+  std::function<double(size_t)> get_E_reduction;
 
   /* whether to revert to uniform sampling when all samples already have a center at distance 0
    * (obviously duplicated data)*/
@@ -706,10 +727,60 @@ void SkeletonClusterer::triangular_kmeanspp_after_initial(size_t aq2p_bin,
       set_sampleID_sampleID_distance(center_indices_init[k], i, p2bun.d_2(i), a_distance);
     };
 
-    update_c_ind_c_dt = [this, &v_cum_nearest_energies](size_t k) {
-      center_indices_init[k] = get_sample_from(v_cum_nearest_energies);
-      append_pp_from_ID(center_indices_init[k]);
+    get_E_reduction = [this, &p2bun, &a_distance, &kmeanspp_ndata, &set_distance_ik](size_t k) {
+      double E_reduction = 0;
+      for (size_t i = 0; i < kmeanspp_ndata; ++i)
+      {
+        set_distance_ik(i, k);
+        E_reduction += std::max(0.d, f_energy(p2bun.d_1(i)) - f_energy(a_distance));
+      }
+      return E_reduction;
     };
+
+    if (n_kmeans_greedy_samples > 1)
+    {
+      update_c_ind_c_dt = [this,
+                           &v_cum_nearest_energies,
+                           &p2bun,
+                           &a_distance,
+                           &kmeanspp_ndata,
+                           &set_distance_ik,
+                           &get_E_reduction](size_t k) {
+
+        double best_E_reduction = 0;
+        size_t best_E_new_k     = 0;
+
+        for (size_t i = 0; i < n_kmeans_greedy_samples; ++i)
+        {
+          auto new_k             = get_sample_from(v_cum_nearest_energies);
+          center_indices_init[k] = new_k;
+          double E_reduction     = get_E_reduction(k);
+          if (E_reduction >= best_E_reduction)
+          {
+            best_E_reduction = E_reduction;
+            best_E_new_k     = new_k;
+          }
+        }
+
+        center_indices_init[k] = best_E_new_k;
+        append_pp_from_ID(center_indices_init[k]);
+      };
+    }
+
+    else
+    {
+
+      update_c_ind_c_dt = [this,
+                           &v_cum_nearest_energies,
+                           &p2bun,
+                           &a_distance,
+                           &kmeanspp_ndata,
+                           &set_distance_ik,
+                           &get_E_reduction](size_t k) {
+        center_indices_init[k] = get_sample_from(v_cum_nearest_energies);
+        append_pp_from_ID(center_indices_init[k]);
+      };
+    }
 
     /* we can handle the exhausted case here */
     try_uniform_when_exhausted = true;
@@ -793,7 +864,9 @@ void SkeletonClusterer::triangular_kmeanspp_after_initial(size_t aq2p_bin,
       /* note that if k0 = 0, k_1(i) is 0 so this is fine. */
       if (kmoo_cc[p2bun.k_1(i) * K + k] < p2bun.d_1(i) + p2bun.d_2(i))
       {
+        // this sets a_distance:
         set_distance_ik(i, k);
+        // This updates p2bun if a_distance is small enough:
         kmpp_inner(i, k, a_distance, p2bun);
       }
       v_cum_nearest_energies[i + 1] = v_cum_nearest_energies[i] + f_energy(p2bun.d_1(i));
@@ -1019,7 +1092,6 @@ void SkeletonClusterer::core_kmedoids_loops()
     ++round;
   }
 }
-
 
 void SkeletonClusterer::go()
 {
@@ -2211,7 +2283,9 @@ void SkeletonClusterer::initialise_center_indices()
 
   /* initialisation with kmeans++ */
   else if (initialisation_method == "kmeans++" ||
-           initialisation_method.substr(0, 9) == "kmeans++-")
+           initialisation_method.substr(0, 9) == "kmeans++-" ||
+           initialisation_method.substr(0, 9) ==
+             "kmeans++~")  // greedy resampling, take lowest energy
   {
     initialise_with_kmeanspp();
   }
@@ -2220,7 +2294,10 @@ void SkeletonClusterer::initialise_center_indices()
   {
     std::stringstream vims_ss;
     vims_ss << "The valid strings for initialisation_method are [from_indices_init, uniform, "
-               "kmeans++-INT, afk-mc2-INT (for some positive INT)]";
+               "kmeans++-INT, kmeans++~INT, afk-mc2-INT (for some positive INT)]. "
+               "The string received, "
+            << initialisation_method << " is not valid.";
+
     throw zentas::zentas_error(vims_ss.str());
   }
 

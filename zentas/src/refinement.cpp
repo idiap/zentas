@@ -399,7 +399,7 @@ void SkeletonClusterer::run_refinement()
 
 bool SkeletonClusterer::is_rf_correct_d1_round()
 {
-  
+
   int rate_of_correct_e_print = 4;
   return (prd->rf_round < 5 || prd->rf_round % rate_of_correct_e_print == 0);
 }

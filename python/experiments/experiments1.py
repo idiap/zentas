@@ -19,6 +19,7 @@ import time
 import matplotlib 
 import datapaths
 
+LLOYDS = "LLOYD"
 
 # Font solution, based on stack-overflow page
 # https://stackoverflow.com/questions/17687213/how-to-obtain-the-same-font-style-size-etc-in-matplotlib-output-as-in-latex
@@ -56,7 +57,8 @@ import datapaths
 joensuu_datasets = ["dim032", "MopsiLocationsUntil2012-Finland", "europediff", "yeast", "housec8", "KDDCUP04Bio", "a1", "a2", "a3", "birch2"]
 all_datasets = joensuu_datasets + ["htru", "yearpredictionmsd", "mopac", "mnist", "dna"]
 
-#all_datasets = ["dna"]
+
+#all_datasets = ["dim032", "yeast", "housec8", "a1", "a2", "a3", "birch2"]
 
 print_names = {
 "KDDCUP04Bio" : "kdd04", 
@@ -77,9 +79,9 @@ print_names = {
 }
 
 alg_colors = {"kmpps" : "r", "clas" : "#000066"}
-alg_labels = {"kmpps" : "$K$-means++ - $K$-means", "clas" : "$K$-means++ - CLARANS - $K$-means"}
+alg_labels = {"kmpps" : "$K$-means++ - LLOYD", "clas" : "$K$-means++ - CLARANS - LLOYD"}
 
-def go(X, K, alg, seed):
+def go(X, K, alg, seed, kmpp_greedy):
   """
   One run.
   X : data
@@ -90,10 +92,18 @@ def go(X, K, alg, seed):
   if "kmpp-cla" in alg:
     max_itok = float(alg.split("-")[-1])
     
-    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = max_itok, max_time = 500.0, max_proposals = K**2, seed = seed, patient = True, nthreads = 4, init = "kmeans++-3", with_tests = False, capture_output = True, rooted = False)
+    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = max_itok, max_time = 500.0, max_proposals = K**2, seed = seed, patient = True, nthreads = 4, init = "kmeans++-6", with_tests = False, capture_output = True, rooted = False)
 
   elif alg == "kmpp":
-    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = 5.0, max_proposals = K**2, seed = seed, patient = True, nthreads = 4, init = "kmeans++-3", with_tests = False, capture_output = True, rooted = False)
+    
+    if (kmpp_greedy > 1):
+      init = "kmeans++~%d"%(kmpp_greedy)
+    
+    else:
+      init = "kmeans++-6"
+    
+     
+    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = 5.0, max_proposals = K**2, seed = seed, patient = True, nthreads = 4, init = init, with_tests = False, capture_output = True, rooted = False)
     
   else:
     raise RuntimeError("unrecognised alg in go")
@@ -106,7 +116,7 @@ def go(X, K, alg, seed):
     rf_alg = "exponion"
     do_vdimap = False
     
-  tangerine =  z.den(X, do_vdimap = do_vdimap, do_refinement = True, rf_alg = rf_alg, rf_max_rounds = 50) 
+  tangerine =  z.den(X, do_vdimap = do_vdimap, do_refinement = True, rf_alg = rf_alg, rf_max_rounds = 100) 
   tzen1 = time.time()
   results["t"] = tzen1 - tzen0
   results["out"] = pyzentas.get_processed_output(tangerine['output'])
@@ -169,10 +179,13 @@ def get_dataset(dataset):
   return X[0:ndata, :]
 
   
-def get_pkl_fn(dataset, N, K, n_kmpps):
-  return "%s_N%s_K%s_Nkmpp%d.pkl"%(dataset, N, K, n_kmpps)
+def get_pkl_fn(dataset, N, K, n_kmpps, kmpp_greedy):
+  if kmpp_greedy == 0:
+    return "%s_N%s_K%s_Nkmpp%d.pkl"%(dataset, N, K, n_kmpps)
+  else:
+    return "%s_N%s_K%s_Nkmpp%d_greed%d.pkl"%(dataset, N, K, n_kmpps, kmpp_greedy)
 
-def get_nips_results(ignore_cache = False, dataset = "dna", n_kmpps = 10, sched = None, N = "full", K = "sqrt"):  
+def get_nips_results(ignore_cache = False, dataset = "dna", n_kmpps = 10, sched = None, N = "full", K = "sqrt", kmpp_greedy = 0):  
   """
   ignore_cache : if True even if there is a pickle matching the control parameters (dataset, etc), run afresh.
   n_kmpps : number of runs of $K$-means++
@@ -182,7 +195,7 @@ def get_nips_results(ignore_cache = False, dataset = "dna", n_kmpps = 10, sched 
   """
   
   # check if the results in stored, in which case just load them up.
-  pkl_path = os.path.join(datapaths.datapaths["pkl_results_dir"], get_pkl_fn(dataset, N, K, n_kmpps))
+  pkl_path = os.path.join(datapaths.datapaths["pkl_results_dir"], get_pkl_fn(dataset, N, K, n_kmpps, kmpp_greedy))
 
   if ignore_cache == False and os.path.exists(pkl_path):
     print "loading cPickled results from", pkl_path
@@ -203,16 +216,17 @@ def get_nips_results(ignore_cache = False, dataset = "dna", n_kmpps = 10, sched 
     print "no pickle being loaded"
     run_from_scratch = True
 
-  if N != "full":
-    N = int(N)
-    if N > X.shape[0]:
-      raise RuntimeError("N is larger than dataset size")
-    else:
-      X = X[0:N, :]
 
   # if the results need to be generated from scratch,
   if run_from_scratch == True:
     X = get_dataset(dataset)
+    if N != "full":
+      N = int(N)
+      if N > X.shape[0]:
+        raise RuntimeError("N is larger than dataset size")
+      else:
+        X = X[0:N, :]
+
     if isinstance(K, str) and "sqrt" in K:
       if K == "sqrt":
         K = int(np.sqrt(X.shape[0]))
@@ -236,7 +250,7 @@ def get_nips_results(ignore_cache = False, dataset = "dna", n_kmpps = 10, sched 
     for i in range(n_kmpps):
       print i, 
       
-      aDict = go(X, K, "kmpp", seed)
+      aDict = go(X, K, "kmpp", seed, kmpp_greedy)
       kmpps.append(np.array([aDict["out"]["Tt"], aDict["out"]["mE"]]))
       seed = npr.randint(10000)
     
@@ -244,7 +258,7 @@ def get_nips_results(ignore_cache = False, dataset = "dna", n_kmpps = 10, sched 
     time_kmpp = time.time() - t0
     
     # K-means++ --> CLARANS --> K-means
-    clas = sched.get(time_kmpp, X, K)
+    clas = sched.get(time_kmpp, X, K, 0)
         
     print "\nopening file to cPickle...",
     filly = open(pkl_path, "w")
@@ -265,11 +279,11 @@ def get_nips_results(ignore_cache = False, dataset = "dna", n_kmpps = 10, sched 
 
 
   
-def get_nips_scaled_results(ignore_cache, dataset, n_kmpps, sched, N, K):
+def get_nips_scaled_results(ignore_cache, dataset, n_kmpps, sched, N, K, kmpp_greedy):
   """
   scale to have min E = 1 and for time to be in seconds.
   """
-  results = get_nips_results(ignore_cache, dataset, n_kmpps, sched, N, K)
+  results = get_nips_results(ignore_cache, dataset, n_kmpps, sched, N, K, kmpp_greedy)
 
   max_E, min_E = 0, 10**17
   for x in results["kmpps"]:
@@ -292,14 +306,14 @@ class fixed_schedule1():
   """
   Run clarans with a fixed series of max_itoks
   """
-  def get(self, time_limit, X, K):
+  def get(self, time_limit, X, K, kmpp_greedy):
     seed = npr.randint(10000)
     clas = []
     max_itoks = [0.5,1,2,3,4,5,6,7,8]
     print "clarans [ "
     for i in range(len(max_itoks)):    
       print i, 
-      aDict = go(X, K, "kmpp-cla-%.2f"%(max_itoks[i],), seed)
+      aDict = go(X, K, "kmpp-cla-%.2f"%(max_itoks[i],), seed, kmpp_greedy)
       clas.append(np.array([aDict["out"]["Tt"], aDict["out"]["mE"]]))
       seed = npr.randint(10000)
     
@@ -317,7 +331,7 @@ class time_schedule1():
   def __init__(self, itoks = [2, 5, 1, 10, 16]):
     self.itoks = itoks
     
-  def get(self, time_limit, X, K):    
+  def get(self, time_limit, X, K, kmpp_greedy):    
     seed = npr.randint(10000)
     clas = []
     t0 = time.time()
@@ -326,7 +340,7 @@ class time_schedule1():
     print "clarans [ ",
     while time.time() - t0 < time_limit:
       print n_runs,
-      aDict = go(X, K, "kmpp-cla-%d"%(self.itoks[n_runs%len(self.itoks)]), seed)
+      aDict = go(X, K, "kmpp-cla-%d"%(self.itoks[n_runs%len(self.itoks)]), seed, kmpp_greedy)
       clas.append(np.array([aDict["out"]["Tt"], aDict["out"]["mE"]]))
       n_runs += 1
       seed = npr.randint(10000)
@@ -376,19 +390,45 @@ def nips_base_plot(results, allpoints = True, trace = False):
 
 
     
-def nips_plot1():
+def nips_plot1(dataset = "dna", savefig = True, with_timeline = True):
 
-      
-  dataset = "dna"
-  savefig = True
-  sched = time_schedule1(itoks = [3])
-  #results = get_nips_scaled_results(ignore_cache = False, dataset = dataset, n_kmpps = 50, sched = sched, N="full", K="10sqrt")
-  results = get_nips_scaled_results(ignore_cache = False, dataset = dataset, n_kmpps = 47, sched = sched, N = "full", K = 400)
+  sched = time_schedule1(itoks = [2])
+  
+  results = get_nips_scaled_results(ignore_cache = False, dataset = dataset, n_kmpps = 47, sched = sched, N = "full", K = 400, kmpp_greedy = 0)
 
-  pl.figure(1, figsize = (6,2.2))
-  pl.ion()
-  pl.clf()
-    
+
+#"KDDCUP04Bio" : "kdd04", 
+#"a1" : "a1", 
+#"a2" : "a2", 
+#"a3" : "a3", 
+#"birch2" : "birch2", 
+#"dim032" : "dim032", 
+#"MopsiLocationsUntil2012-Finland": "mopsi", 
+#"europediff":"europe", 
+#"yeast":"yeast", 
+#"housec8":"housec8", 
+#"dna":"dna", 
+#"htru":"htru", 
+#"yearpredictionmsd":"song", 
+#"mopac" : "motion", 
+
+  
+  #results = get_nips_scaled_results(ignore_cache = False, dataset = "yeast", n_kmpps = 50, sched = sched, N = "full", K = "sqrt", kmpp_greedy = 5)
+
+  
+  if with_timeline == False:
+    pl.figure(1, figsize = (6,1.9))
+    pl.ion()
+    pl.clf()
+  
+  else:
+    pl.figure(1, figsize = (6,2.9))
+    pl.ion()
+    pl.clf()
+    gs1 = gridspec.GridSpec(8, 1)
+    ax2 = pl.subplot(gs1[0:5, :])
+
+
   extrema = get_extrema(results)
   nips_base_plot(results)
 
@@ -399,15 +439,57 @@ def nips_plot1():
   pl.plot([0,xmax], [extrema["min_mse"]["clas"], extrema["min_mse"]["clas"]], color = alg_colors["clas"], alpha = 0.2, linewidth = 0.4)
 
 
+  pl.xlabel("time [s]")#, fontproperties = fontprop_normal)
+  pl.ylabel("$E$")#, fontproperties = fontprop_italic) #, fontproperties = fontpropx)
+  
+  if with_timeline == False:
+    leg = pl.legend(fontsize = "medium", borderpad = 0.2, numpoints = 1, labelspacing = 0.3, columnspacing = 0.2)
+    leg.set_zorder(-10)
+    frame = leg.get_frame()
+    frame.set_linewidth(0.1)
+    frame.set_edgecolor("none")
 
-  pl.xlabel("time [s]", fontproperties = fontprop_normal)
-  pl.ylabel("$E$", fontproperties = fontprop_italic) #, fontproperties = fontpropx)
-  leg = pl.legend(fontsize = "medium", borderpad = 0.2, numpoints = 1, labelspacing = 0.3, columnspacing = 0.2)
-  frame = leg.get_frame()
-  frame.set_linewidth(0.1)
-  frame.set_edgecolor("none")
+  x_range = pl.xlim()
+  
+  if with_timeline == True:
+    ax1 = pl.subplot(gs1[6:8, :])
+    ax1.axis("off")
+    #pl.plot(x_range, [0,1])
+    #pl.ylim([0,1])
+    kwargs = {"marker":"o", "markersize":3.0,"linewidth":2.0,"color":alg_colors["kmpps"], "markeredgecolor":alg_colors["kmpps"], "alpha":0.5}
+    
+    ytop = 1.2
 
-  pl.subplots_adjust(bottom = 0.21, left = 0.2)
+    km_bops = [0, 1, 1.8]
+    km_texts = ["$K$-means++", LLOYDS]
+    cl_bops = [0, 1, 3, 3.6]
+    cl_texts = [r"$K$-means++", r"CLARANS ($\eta = 2$)", LLOYDS]
+
+    for i in range(2):
+      pl.plot([km_bops[i] + 0.1, km_bops[i+1] - 0.1], [ytop, ytop], **kwargs)
+      pl.text(km_bops[i] + 0.1, ytop+0.3, km_texts[i], horizontalalignment = "left", verticalalignment = "bottom")
+    
+    kwargs["color"] = alg_colors["clas"]
+    kwargs["markeredgecolor"] = alg_colors["clas"]
+    
+    for i in range(3):
+      pl.plot([cl_bops[i] + 0.1, cl_bops[i+1] - 0.1], [0,0], **kwargs)
+      pl.text(cl_bops[i] + 0.1, -0.8, cl_texts[i], horizontalalignment = "left", verticalalignment = "top")
+
+    
+    #pl.plot([0.1,1], [0,0], **kwargs)
+    #pl.plot([1,2], [0,0], **kwargs)
+    #pl.plot([2,3], [0,0], **kwargs)
+
+    pl.ylim(ymin = -ytop*0.5, ymax = ytop*4)    
+    pl.xlim(x_range)
+    
+
+    #pl.subplots_adjust(bottom = 0.25, left = 0.2, hspace = 4.0)#, wspace = 1.0)
+  
+  #else:
+  pl.subplots_adjust(bottom = 0.25, left = 0.2)
+
   
   if savefig:
     fn = datapaths.datapaths["nips_plot1"]
@@ -470,43 +552,11 @@ def nips_plot2():
     bla = commands.getstatusoutput("pdfcrop %s %s"%(fn, fn))
     
 
-def nips_plot3():    
-    
-  sched = time_schedule1()
-  savefig = True
-
-  colors = {"10sqrt":"#800909", "sqrt":"#f27d0c", "0.1sqrt":"#fdcf58"}
-  labels = {"10sqrt":"$K=10\sqrt{N}$", "sqrt":"$K=\sqrt{N}$", "0.1sqrt":"$K=0.1\sqrt{N}$"}
-  results = {}
-  ratios = {}
-
-  pl.figure(5, figsize = (4.3,3))
-  for Ki, K in enumerate(colors.keys()):
-      
-    results[K] = {}    
-    for ds in all_datasets:
-      print "In nips_plot2, dataset", ds    
-      results[K][ds] = get_nips_scaled_results(ignore_cache = False, dataset = ds, n_kmpps = 50, sched = sched, N = "full", K = K)
-  
-    ratios[K] = []
-    for dsi, ds in enumerate(all_datasets):
-      extrema = get_extrema(results[K][ds])  
-      min_mses = extrema["min_mse"]
-      max_mses = extrema["max_mse"]
-      ratios[K].append(min_mses["kmpps"]/min_mses["clas"])
-  
-    ratios[K] = np.array(ratios[K])
-    ratios[K].sort()
-    
-    Y = np.linspace(1, 0, len(ratios[K]))
-    pl.plot(ratios[K], Y, marker = '.', markersize = 10, color = colors[K], label = labels[K])
-    
-    print np.mean(ratios[K])
-
+def plot3_finishing(savekey):
   dimensions = {}
   for dsi, ds in enumerate(all_datasets):
     #can ignore cache here, there's barely any speed advantage in not ignoring it.
-    dimensions[ds] = get_dimensions(ds, ignore_cache = True)
+    dimensions[ds] = get_dimensions(ds, ignore_cache = False)
   
   for dsi, ds in enumerate(all_datasets):
     print dimensions[ds], ds
@@ -521,9 +571,73 @@ def nips_plot3():
   frame.set_linewidth(0.3)
   
 
-  if savefig:
-    fn = datapaths.datapaths["nips_plot3"]
+  if savekey != None and savekey != "none":
+    fn = datapaths.datapaths[savekey]
     pl.savefig(fn)
     import commands
     bla = commands.getstatusoutput("pdfcrop %s %s"%(fn, fn))
+
+
+def nips_plot3x(kmpp_greedy, fignum = 5, in_gray = False):    
     
+  sched = time_schedule1()  
+
+  colors = {"10sqrt":"#800909", "sqrt":"#f27d0c", "0.1sqrt":"#fdcf58"}
+  labels = {"10sqrt":"$K=10\sqrt{N}$", "sqrt":"$K=\sqrt{N}$", "0.1sqrt":"$K=0.1\sqrt{N}$"}
+  alphas = {}
+  for k in colors.keys():
+    alphas[k] = 1
+    
+  if in_gray:
+    for k in colors.keys():
+      labels[k] = None
+      alphas[k] = 0.1
+      
+  results = {}
+  ratios = {}
+
+  pl.figure(fignum, figsize = (4.3,2.4))
+  for Ki, K in enumerate(colors.keys()):
+      
+    results[K] = {}    
+    for ds in all_datasets:
+      print "In nips_plot2, dataset", ds    
+      
+      if ds == "dna" and kmpp_greedy != 0 and K == "10sqrt" :
+        N = 10000
+      else:
+        N = "full"
+      results[K][ds] = get_nips_scaled_results(ignore_cache = False, dataset = ds, n_kmpps = 50, sched = sched, N = N, K = K, kmpp_greedy = kmpp_greedy)
+  
+    ratios[K] = []
+    for dsi, ds in enumerate(all_datasets):
+      extrema = get_extrema(results[K][ds])  
+      min_mses = extrema["min_mse"]
+      max_mses = extrema["max_mse"]
+      ratios[K].append(min_mses["kmpps"]/min_mses["clas"])
+  
+    ratios[K] = np.array(ratios[K])
+    ratios[K].sort()
+    
+    Y = np.linspace(1, 0, len(ratios[K]))
+    pl.plot(ratios[K], Y, marker = '.', markersize = 10, color = colors[K], label = labels[K], alpha = alphas[K])
+  
+  
+    
+
+def nips_plot3():
+  nips_plot3x(kmpp_greedy = 0)
+  plot3_finishing(savekey = "nips_plot3")
+
+def nips_plot3_greedy():
+  """
+  version where the k-means++ -> k-means pipeline uses k-means++~5, that is 5 attempts
+  for every addition of a sample to the seeding set, the one (of five) which reduced the
+  energy the most is actually added. 
+  """
+  nips_plot3x(kmpp_greedy = 0, in_gray = True)
+  nips_plot3x(kmpp_greedy = 5)
+  plot3_finishing(savekey = "nips_plot3_greedy")
+
+
+
