@@ -19,6 +19,7 @@ import time
 import matplotlib 
 import datapaths
 
+LLOYDS = "LLOYD"
 
 # Font solution, based on stack-overflow page
 # https://stackoverflow.com/questions/17687213/how-to-obtain-the-same-font-style-size-etc-in-matplotlib-output-as-in-latex
@@ -78,7 +79,7 @@ print_names = {
 }
 
 alg_colors = {"kmpps" : "r", "clas" : "#000066"}
-alg_labels = {"kmpps" : "$K$-means++ - $K$-means", "clas" : "$K$-means++ - CLARANS - $K$-means"}
+alg_labels = {"kmpps" : "$K$-means++ - LLOYD", "clas" : "$K$-means++ - CLARANS - LLOYD"}
 
 def go(X, K, alg, seed, kmpp_greedy):
   """
@@ -91,7 +92,7 @@ def go(X, K, alg, seed, kmpp_greedy):
   if "kmpp-cla" in alg:
     max_itok = float(alg.split("-")[-1])
     
-    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = max_itok, max_time = 500.0, max_proposals = K**2, seed = seed, patient = True, nthreads = 4, init = "kmeans++-3", with_tests = False, capture_output = True, rooted = False)
+    z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = max_itok, max_time = 500.0, max_proposals = K**2, seed = seed, patient = True, nthreads = 4, init = "kmeans++-6", with_tests = False, capture_output = True, rooted = False)
 
   elif alg == "kmpp":
     
@@ -99,7 +100,7 @@ def go(X, K, alg, seed, kmpp_greedy):
       init = "kmeans++~%d"%(kmpp_greedy)
     
     else:
-      init = "kmeans++-1"
+      init = "kmeans++-6"
     
      
     z = pyzentas.pyzen(K = K, metric = 'l2', energy = 'quadratic', max_itok = 0.0, max_time = 5.0, max_proposals = K**2, seed = seed, patient = True, nthreads = 4, init = init, with_tests = False, capture_output = True, rooted = False)
@@ -389,11 +390,11 @@ def nips_base_plot(results, allpoints = True, trace = False):
 
 
     
-def nips_plot1(dataset = "dna", savefig = True):
+def nips_plot1(dataset = "dna", savefig = True, with_timeline = True):
 
-  sched = time_schedule1(itoks = [3])
+  sched = time_schedule1(itoks = [2])
   
-  #results = get_nips_scaled_results(ignore_cache = False, dataset = dataset, n_kmpps = 47, sched = sched, N = "full", K = 400, kmpp_greedy = 0)
+  results = get_nips_scaled_results(ignore_cache = False, dataset = dataset, n_kmpps = 47, sched = sched, N = "full", K = 400, kmpp_greedy = 0)
 
 
 #"KDDCUP04Bio" : "kdd04", 
@@ -412,12 +413,22 @@ def nips_plot1(dataset = "dna", savefig = True):
 #"mopac" : "motion", 
 
   
-  results = get_nips_scaled_results(ignore_cache = False, dataset = "yeast", n_kmpps = 50, sched = sched, N = "full", K = "sqrt", kmpp_greedy = 5)
+  #results = get_nips_scaled_results(ignore_cache = False, dataset = "yeast", n_kmpps = 50, sched = sched, N = "full", K = "sqrt", kmpp_greedy = 5)
 
-  pl.figure(1, figsize = (6,1.9))
-  pl.ion()
-  pl.clf()
-    
+  
+  if with_timeline == False:
+    pl.figure(1, figsize = (6,1.9))
+    pl.ion()
+    pl.clf()
+  
+  else:
+    pl.figure(1, figsize = (6,2.9))
+    pl.ion()
+    pl.clf()
+    gs1 = gridspec.GridSpec(8, 1)
+    ax2 = pl.subplot(gs1[0:5, :])
+
+
   extrema = get_extrema(results)
   nips_base_plot(results)
 
@@ -428,15 +439,57 @@ def nips_plot1(dataset = "dna", savefig = True):
   pl.plot([0,xmax], [extrema["min_mse"]["clas"], extrema["min_mse"]["clas"]], color = alg_colors["clas"], alpha = 0.2, linewidth = 0.4)
 
 
-
   pl.xlabel("time [s]")#, fontproperties = fontprop_normal)
   pl.ylabel("$E$")#, fontproperties = fontprop_italic) #, fontproperties = fontpropx)
-  leg = pl.legend(fontsize = "medium", borderpad = 0.2, numpoints = 1, labelspacing = 0.3, columnspacing = 0.2)
-  frame = leg.get_frame()
-  frame.set_linewidth(0.1)
-  frame.set_edgecolor("none")
+  
+  if with_timeline == False:
+    leg = pl.legend(fontsize = "medium", borderpad = 0.2, numpoints = 1, labelspacing = 0.3, columnspacing = 0.2)
+    leg.set_zorder(-10)
+    frame = leg.get_frame()
+    frame.set_linewidth(0.1)
+    frame.set_edgecolor("none")
 
+  x_range = pl.xlim()
+  
+  if with_timeline == True:
+    ax1 = pl.subplot(gs1[6:8, :])
+    ax1.axis("off")
+    #pl.plot(x_range, [0,1])
+    #pl.ylim([0,1])
+    kwargs = {"marker":"o", "markersize":3.0,"linewidth":2.0,"color":alg_colors["kmpps"], "markeredgecolor":alg_colors["kmpps"], "alpha":0.5}
+    
+    ytop = 1.2
+
+    km_bops = [0, 1, 1.8]
+    km_texts = ["$K$-means++", LLOYDS]
+    cl_bops = [0, 1, 3, 3.6]
+    cl_texts = [r"$K$-means++", r"CLARANS ($\eta = 2$)", LLOYDS]
+
+    for i in range(2):
+      pl.plot([km_bops[i] + 0.1, km_bops[i+1] - 0.1], [ytop, ytop], **kwargs)
+      pl.text(km_bops[i] + 0.1, ytop+0.3, km_texts[i], horizontalalignment = "left", verticalalignment = "bottom")
+    
+    kwargs["color"] = alg_colors["clas"]
+    kwargs["markeredgecolor"] = alg_colors["clas"]
+    
+    for i in range(3):
+      pl.plot([cl_bops[i] + 0.1, cl_bops[i+1] - 0.1], [0,0], **kwargs)
+      pl.text(cl_bops[i] + 0.1, -0.8, cl_texts[i], horizontalalignment = "left", verticalalignment = "top")
+
+    
+    #pl.plot([0.1,1], [0,0], **kwargs)
+    #pl.plot([1,2], [0,0], **kwargs)
+    #pl.plot([2,3], [0,0], **kwargs)
+
+    pl.ylim(ymin = -ytop*0.5, ymax = ytop*4)    
+    pl.xlim(x_range)
+    
+
+    #pl.subplots_adjust(bottom = 0.25, left = 0.2, hspace = 4.0)#, wspace = 1.0)
+  
+  #else:
   pl.subplots_adjust(bottom = 0.25, left = 0.2)
+
   
   if savefig:
     fn = datapaths.datapaths["nips_plot1"]
@@ -585,5 +638,6 @@ def nips_plot3_greedy():
   nips_plot3x(kmpp_greedy = 0, in_gray = True)
   nips_plot3x(kmpp_greedy = 5)
   plot3_finishing(savekey = "nips_plot3_greedy")
+
 
 

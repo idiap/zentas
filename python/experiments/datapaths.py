@@ -98,3 +98,18 @@ else:
   # https://fontlibrary.org/en/font/cmu-bright
   datapaths["font_dirs"] = tobesest
 
+  #directory where figures for a small demo of how clarans runs are saved 
+  datapaths["smld_clarans_demo_dir"] = tobesest
+
+  #full path name of figure comparing #implementations and #evaluations 
+  datapaths["smld_impl_vs_eval_fn_0"] = tobesest
+  
+  #as above, but with stopping criteria
+  datapaths["smld_impl_vs_eval_fn_1"] = tobesest
+
+  #the results file from levels.py
+  datapaths["comparing_levels_fn"] = tobesest
+
+  #the figure file from levels.py
+  datapaths["comparing_levels_fig_fn"] = tobesest
+
