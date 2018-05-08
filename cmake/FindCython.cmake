@@ -34,7 +34,7 @@ if( PYTHONINTERP_FOUND )
   get_filename_component( _python_path ${PYTHON_EXECUTABLE} PATH )
   find_program( CYTHON_EXECUTABLE
     NAMES cython cython.bat cython3
-    HINTS ${_python_path}
+    HINTS ${_python_path} /usr/local/opt/cython/bin
     )
 else()
   find_program( CYTHON_EXECUTABLE
