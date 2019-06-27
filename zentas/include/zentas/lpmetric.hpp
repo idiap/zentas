@@ -19,6 +19,7 @@ class TMetric{
 
 */
 
+#include <algorithm>
 #include <zentas/sparsevectorrfcenter.hpp>
 #include <zentas/tdatain.hpp>
 /* the above is included for this guy:
